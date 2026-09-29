@@ -64,7 +64,17 @@ form.addEventListener('submit',async e=>{
     if(upload.error)throw upload.error;
     const f=new FormData(form);
     const record={booking_id:bookingId,full_name:f.get('full_name'),residential_address:f.get('residential_address'),phone:f.get('phone'),id_type:f.get('id_type'),id_number:f.get('id_number')||null,id_document_url:path,emergency_contact_name:f.get('emergency_contact_name'),emergency_contact_phone:f.get('emergency_contact_phone'),status:'pending'};
-    const result=await sb.from('guest_verifications').insert(record);
+    const result=await sb.rpc('submit_guest_verification',{
+      p_token:token,
+      p_full_name:record.full_name,
+      p_residential_address:record.residential_address,
+      p_phone:record.phone,
+      p_id_type:record.id_type,
+      p_id_number:record.id_number,
+      p_id_document_url:record.id_document_url,
+      p_emergency_contact_name:record.emergency_contact_name,
+      p_emergency_contact_phone:record.emergency_contact_phone
+    });
     if(result.error){await sb.storage.from(BUCKET).remove([path]);throw result.error}
     form.reset();setStatus('Verification submitted successfully. Source Stays will review your details and contact you.',true);submitBtn.textContent='Submitted';
   }catch(err){console.error(err);setStatus(err&&err.message?err.message:'Something went wrong. Please try again.');submitBtn.disabled=false;submitBtn.textContent='Submit verification'}
