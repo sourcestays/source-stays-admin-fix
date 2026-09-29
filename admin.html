@@ -13,7 +13,7 @@
 'use strict';
 let editing=null;
 const login=document.getElementById('login'),dash=document.getElementById('dash'),loginForm=document.getElementById('loginForm'),loginMsg=document.getElementById('loginMsg'),propertyForm=document.getElementById('propertyForm');
-const BUCKET='property-images';
+const BUCKET='Property_images';
 const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const money=x=>Number(x||0).toLocaleString('en-NG');
 let client=null;
