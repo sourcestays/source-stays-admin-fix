@@ -14,9 +14,8 @@
 let editing=null;
 const login=document.getElementById('login'),dash=document.getElementById('dash'),loginForm=document.getElementById('loginForm'),loginMsg=document.getElementById('loginMsg'),propertyForm=document.getElementById('propertyForm');
 const BUCKET='Property_images';
-const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;"}[m]));
+const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const money=x=>Number(x||0).toLocaleString('en-NG');
-const waNumber=x=>{const n=String(x??'').replace(/\D/g,'');return n.startsWith('0')?'234'+n.slice(1):n;};
 let client=null;
 function msg(text, error=false){loginMsg.textContent=text||'';loginMsg.className=error?'danger':'';}
 function showLogin(){login.classList.remove('hidden');dash.classList.add('hidden');}
@@ -75,13 +74,12 @@ async function load(){
   const sb=getClient();
   const {data:p,error:pe}=await sb.from('properties').select('*').order('id',{ascending:false});
   if(pe) throw pe;
-  const propertyMap=Object.fromEntries(p.map(x=>[x.id,x]));
   const {data:e,error:ee}=await sb.from('enquiries').select('*').order('created_at',{ascending:false});
   const {data:b,error:be}=await sb.from('bookings').select('*').order('created_at',{ascending:false});
   if(ee) console.error(ee); if(be) console.error(be);
   statProps.textContent=p.length;statPublished.textContent=p.filter(x=>x.published).length;statEnq.textContent=(e?.length||0)+(b?.length||0);
   props.innerHTML=p.length?`<table class="table"><tr><th>Photo</th><th>Property</th><th>Price</th><th>Status</th><th>Actions</th></tr>${p.map(x=>`<tr><td><img class="thumb" src="${esc(x.image_url||'')}" onerror="this.style.display='none'"></td><td><b>${esc(x.title)}</b><br><span class="muted">${esc(x.location||'')}</span></td><td>₦${money(x.price)} / ${esc(x.price_period||'')}</td><td><span class="pill">${x.published?'Published':'Hidden'}</span></td><td><button onclick='edit(${JSON.stringify(x).replace(/'/g,'&#39;')})'>Edit</button> <button onclick='del(${x.id})'>Delete</button></td></tr>`).join('')}</table>`:'<p class="muted">No properties yet.</p>';
-  bookings.innerHTML=b?.length?`<h4>Bookings</h4><table class="table"><tr><th>Customer</th><th>Property</th><th>Dates</th><th>Guests</th><th>Status</th><th>Contact</th></tr>${b.map(x=>`<tr><td><b>${esc(x.customer_name)}</b><br>${esc(x.customer_phone||'')}<br>${esc(x.customer_email||'')}</td><td><b>${esc(propertyMap[x.property_id]?.title||'Property #'+(x.property_id||''))}</b><br><span class="muted">${esc(propertyMap[x.property_id]?.location||'')}</span></td><td>${esc(x.check_in||'')} → ${esc(x.check_out||'')}</td><td>${x.guests||1}</td><td><select onchange="bookingStatus(${x.id},this.value)"><option value="pending" ${x.status==='pending'?'selected':''}>Pending</option><option value="approved" ${x.status==='approved'?'selected':''}>Confirmed</option><option value="declined" ${x.status==='declined'?'selected':''}>Cancelled</option><option value="completed" ${x.status==='completed'?'selected':''}>Completed</option></select></td><td>${x.customer_phone?`<a class="btn" href="https://wa.me/${waNumber(x.customer_phone)}" target="_blank" rel="noopener">WhatsApp</a>`:''}${x.customer_email?`<br><a href="mailto:${encodeURIComponent(x.customer_email)}">Email</a>`:''}</td></tr>`).join('')}</table>`:'<p class="muted">No booking requests yet.</p>';
+  bookings.innerHTML=b?.length?`<h4>Bookings</h4><table class="table"><tr><th>Customer</th><th>Property ID</th><th>Dates</th><th>Guests</th><th>Status</th></tr>${b.map(x=>`<tr><td>${esc(x.customer_name)}<br>${esc(x.customer_phone)}</td><td>${esc(x.property_id||'')}</td><td>${esc(x.check_in||'')} → ${esc(x.check_out||'')}</td><td>${x.guests||1}</td><td><select onchange="bookingStatus(${x.id},this.value)"><option ${x.status==='pending'?'selected':''}>pending</option><option ${x.status==='approved'?'selected':''}>approved</option><option ${x.status==='declined'?'selected':''}>declined</option><option ${x.status==='completed'?'selected':''}>completed</option></select></td></tr>`).join('')}</table>`:'<p class="muted">No booking requests yet.</p>';
   enquiries.innerHTML=e?.length?`<h4>Enquiries</h4><table class="table"><tr><th>Customer</th><th>Interest</th><th>Property ID</th><th>Status</th></tr>${e.map(x=>`<tr><td>${esc(x.customer_name)}<br>${esc(x.customer_phone||'')}</td><td>${esc(x.subject||'Enquiry')}</td><td>${esc(x.property_id||'')}</td><td><select onchange="enquiryStatus(${x.id},this.value)"><option ${x.status==='new'?'selected':''}>new</option><option ${x.status==='contacted'?'selected':''}>contacted</option><option ${x.status==='closed'?'selected':''}>closed</option></select></td></tr>`).join('')}</table>`:'<p class="muted">No enquiries yet.</p>';
  }catch(err){console.error(err);props.innerHTML='<p class="danger">Could not load dashboard data: '+esc(err.message||err)+'</p>';}
 }
