@@ -1,0 +1,96 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Source Stays Admin Dashboard</title><link rel="stylesheet" href="styles.css"><style>
+.admin{width:min(1180px,94%);margin:auto;padding:28px 0}.top{display:flex;justify-content:space-between;align-items:center;gap:15px}.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}.box{background:#fff;border:1px solid #e5e2d9;border-radius:16px;padding:22px;margin-top:18px}.field{display:grid;gap:6px;margin:10px 0}.field input,.field select,.field textarea{padding:11px;border:1px solid #ddd;border-radius:8px;font:inherit}.field textarea{min-height:90px}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:13px}.pill{padding:4px 8px;border-radius:20px;background:#edf4f0}.login{max-width:430px;margin:8vh auto}.hidden{display:none}.thumb{width:70px;height:50px;object-fit:cover;border-radius:7px}.notice{background:#fff7df;border:1px solid #ead49a;padding:12px;border-radius:10px;font-size:13px}.danger{color:#9b2c2c}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{padding:16px;border:1px solid #eee;border-radius:12px}.stat b{display:block;font-size:25px;color:#123f32}@media(max-width:800px){.grid{grid-template-columns:1fr}.table{display:block;overflow:auto;white-space:nowrap}.stats{grid-template-columns:1fr}}
+</style></head><body><div class="admin">
+<div id="login" class="box login"><div class="eyebrow">Source Stays</div><h2>Admin dashboard</h2><p class="muted">Manage apartments, hotels and real-estate listings from one place.</p><div id="modeNotice" class="notice">Live Supabase login — demo login has been disabled.</div><form id="loginForm"><div class="field"><label>Email</label><input name="email" type="email" value="" required></div><div class="field"><label>Password</label><input name="password" type="password" placeholder="Enter admin password" required></div><button class="btn dark">Sign in</button><p id="loginMsg" class="muted"></p></form></div>
+<div id="dash" class="hidden"><div class="top"><div><div class="eyebrow">Management dashboard</div><h2>Source Stays Admin</h2></div><div><button class="btn gold" onclick="newProperty()">+ Add property</button> <button class="btn" onclick="location.href='index.html'">View website</button> <button class="btn" onclick="logout()">Log out</button></div></div>
+<div class="stats"><div class="stat"><span>Properties</span><b id="statProps">0</b></div><div class="stat"><span>Published</span><b id="statPublished">0</b></div><div class="stat"><span>Enquiries</span><b id="statEnq">0</b></div></div>
+<div class="grid"><section class="box"><h3>Properties</h3><div id="props"></div></section><section class="box"><h3 id="formTitle">Add property</h3><form id="propertyForm"><input type="hidden" name="id"><div class="field"><label>Title</label><input name="title" required></div><div class="field"><label>Category</label><select name="type"><option value="shortlet">Shortlet</option><option value="hotel">Hotel</option><option value="sale">For sale</option><option value="rent">For rent</option><option value="land">Land</option></select></div><div class="field"><label>Location</label><input name="location" placeholder="Lekki Phase 1, Lagos"></div><div class="field"><label>Price</label><input name="price" type="number"></div><div class="field"><label>Price unit</label><input name="price_period" value="per night" placeholder="per night / per month / total"></div><div class="field"><label>Bedrooms</label><input name="bedrooms" type="number"></div><div class="field"><label>Guests</label><input name="guests" type="number"></div><div class="field"><label>Amenities</label><input name="amenities" placeholder="Pool, Wi-Fi, Generator"></div><div class="field"><label>Description</label><textarea name="description"></textarea></div><div class="field"><label>Photo</label><input name="imageFile" type="file" accept="image/*"><small class="muted">Photos are uploaded to Source Stays secure storage.</small></div><div class="field"><label>Or image URL</label><input name="image_url" placeholder="https://..."></div><div><label><input name="featured" type="checkbox"> Featured</label> &nbsp; <label><input name="published" type="checkbox" checked> Published</label></div><br><button class="btn gold">Save property</button></form></section></div>
+<section class="box"><h3>Bookings & enquiries</h3><div id="bookings"></div><div id="enquiries"></div></section></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-config.js"></script>
+<script>
+(function(){
+'use strict';
+let editing=null;
+const login=document.getElementById('login'),dash=document.getElementById('dash'),loginForm=document.getElementById('loginForm'),loginMsg=document.getElementById('loginMsg'),propertyForm=document.getElementById('propertyForm');
+const BUCKET='property-images';
+const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;"}[m]));
+const money=x=>Number(x||0).toLocaleString('en-NG');
+let client=null;
+function msg(text, error=false){loginMsg.textContent=text||'';loginMsg.className=error?'danger':'';}
+function showLogin(){login.classList.remove('hidden');dash.classList.add('hidden');}
+function showDash(){login.classList.add('hidden');dash.classList.remove('hidden');load();}
+function getClient(){
+  if(client) return client;
+  if(!window.supabase || typeof window.supabase.createClient!=='function') throw new Error('Supabase library did not load. Please refresh the page.');
+  if(!window.SUPABASE_URL || !window.SUPABASE_PUBLISHABLE_KEY) throw new Error('Supabase configuration is missing.');
+  client=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  return client;
+}
+async function isAdmin(user){
+  const sb=getClient();
+  const {data,error}=await sb.from('admin_users').select('id').eq('id',user.id).maybeSingle();
+  if(error) throw error;
+  return !!data;
+}
+async function check(){
+  try{
+    const sb=getClient();
+    const {data,error}=await sb.auth.getSession();
+    if(error) throw error;
+    if(data.session && data.session.user){
+      if(await isAdmin(data.session.user)) return showDash();
+      await sb.auth.signOut();
+    }
+    showLogin();
+  }catch(err){console.error(err);showLogin();msg('Login service error: '+(err.message||String(err)),true);}
+}
+loginForm.addEventListener('submit',async function(e){
+  e.preventDefault();
+  e.stopPropagation();
+  const button=loginForm.querySelector('button[type="submit"],button');
+  button.disabled=true;button.textContent='Signing in...';msg('Checking your login details...');
+  try{
+    const email=String(loginForm.elements.email.value||'').trim();
+    const password=String(loginForm.elements.password.value||'');
+    if(!email || !password) throw new Error('Enter both your email and password.');
+    const sb=getClient();
+    const result=await sb.auth.signInWithPassword({email,password});
+    if(result.error) throw result.error;
+    if(!result.data || !result.data.user) throw new Error('Supabase did not return a user.');
+    if(!(await isAdmin(result.data.user))){await sb.auth.signOut();throw new Error('This email is not listed in Source Stays admin_users.');}
+    loginForm.reset();
+    showDash();
+  }catch(err){
+    console.error('Source Stays login error:',err);
+    msg(err && err.message ? err.message : 'Sign-in failed. Please try again.',true);
+    loginForm.elements.password.value='';
+    loginForm.elements.password.focus();
+  }finally{button.disabled=false;button.textContent='Sign in';}
+});
+
+async function load(){
+ try{
+  const sb=getClient();
+  const {data:p,error:pe}=await sb.from('properties').select('*').order('id',{ascending:false});
+  if(pe) throw pe;
+  const {data:e,error:ee}=await sb.from('enquiries').select('*').order('created_at',{ascending:false});
+  const {data:b,error:be}=await sb.from('bookings').select('*').order('created_at',{ascending:false});
+  if(ee) console.error(ee); if(be) console.error(be);
+  statProps.textContent=p.length;statPublished.textContent=p.filter(x=>x.published).length;statEnq.textContent=(e?.length||0)+(b?.length||0);
+  props.innerHTML=p.length?`<table class="table"><tr><th>Photo</th><th>Property</th><th>Price</th><th>Status</th><th>Actions</th></tr>${p.map(x=>`<tr><td><img class="thumb" src="${esc(x.image_url||'')}" onerror="this.style.display='none'"></td><td><b>${esc(x.title)}</b><br><span class="muted">${esc(x.location||'')}</span></td><td>₦${money(x.price)} / ${esc(x.price_period||'')}</td><td><span class="pill">${x.published?'Published':'Hidden'}</span></td><td><button onclick='edit(${JSON.stringify(x).replace(/'/g,'&#39;')})'>Edit</button> <button onclick='del(${x.id})'>Delete</button></td></tr>`).join('')}</table>`:'<p class="muted">No properties yet.</p>';
+  bookings.innerHTML=b?.length?`<h4>Bookings</h4><table class="table"><tr><th>Customer</th><th>Property ID</th><th>Dates</th><th>Guests</th><th>Status</th></tr>${b.map(x=>`<tr><td>${esc(x.customer_name)}<br>${esc(x.customer_phone)}</td><td>${esc(x.property_id||'')}</td><td>${esc(x.check_in||'')} → ${esc(x.check_out||'')}</td><td>${x.guests||1}</td><td><select onchange="bookingStatus(${x.id},this.value)"><option ${x.status==='pending'?'selected':''}>pending</option><option ${x.status==='approved'?'selected':''}>approved</option><option ${x.status==='declined'?'selected':''}>declined</option><option ${x.status==='completed'?'selected':''}>completed</option></select></td></tr>`).join('')}</table>`:'<p class="muted">No booking requests yet.</p>';
+  enquiries.innerHTML=e?.length?`<h4>Enquiries</h4><table class="table"><tr><th>Customer</th><th>Interest</th><th>Property ID</th><th>Status</th></tr>${e.map(x=>`<tr><td>${esc(x.customer_name)}<br>${esc(x.customer_phone||'')}</td><td>${esc(x.subject||'Enquiry')}</td><td>${esc(x.property_id||'')}</td><td><select onchange="enquiryStatus(${x.id},this.value)"><option ${x.status==='new'?'selected':''}>new</option><option ${x.status==='contacted'?'selected':''}>contacted</option><option ${x.status==='closed'?'selected':''}>closed</option></select></td></tr>`).join('')}</table>`:'<p class="muted">No enquiries yet.</p>';
+ }catch(err){console.error(err);props.innerHTML='<p class="danger">Could not load dashboard data: '+esc(err.message||err)+'</p>';}
+}
+window.newProperty=function(){editing=null;propertyForm.reset();propertyForm.elements.id.value='';propertyForm.elements.published.checked=true;propertyForm.elements.price_period.value='per night';formTitle.textContent='Add property';window.scrollTo({top:0,behavior:'smooth'});};
+window.edit=function(x){editing=x;for(const k of ['title','location','price','price_period','bedrooms','guests','amenities','description','image_url'])if(propertyForm.elements[k])propertyForm.elements[k].value=x[k]??'';propertyForm.elements.id.value=x.id;propertyForm.elements.type.value=x.category||'shortlet';propertyForm.elements.featured.checked=!!x.featured;propertyForm.elements.published.checked=!!x.published;formTitle.textContent='Edit property';window.scrollTo({top:0,behavior:'smooth'});};
+async function uploadImage(file,id){if(!file)return null;const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');const path=`${id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;const {error}=await getClient().storage.from(BUCKET).upload(path,file,{upsert:false,contentType:file.type});if(error)throw error;return getClient().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;}
+propertyForm.addEventListener('submit',async function(e){e.preventDefault();e.stopPropagation();const f=e.target;const fd=new FormData(f);const payload={title:fd.get('title'),category:fd.get('type'),location:fd.get('location'),price:Number(fd.get('price'))||0,price_period:fd.get('price_period')||'per night',bedrooms:Number(fd.get('bedrooms'))||0,bathrooms:0,guests:Number(fd.get('guests'))||0,amenities:fd.get('amenities'),description:fd.get('description'),image_url:fd.get('image_url')||null,featured:f.elements.featured.checked,published:f.elements.published.checked};try{let id=f.elements.id.value?Number(f.elements.id.value):null;if(id){const {error}=await getClient().from('properties').update(payload).eq('id',id);if(error)throw error}else{const {data,error}=await getClient().from('properties').insert(payload).select('id').single();if(error)throw error;id=data.id}const file=f.elements.imageFile.files[0];if(file){const url=await uploadImage(file,id);const {error}=await getClient().from('properties').update({image_url:url}).eq('id',id);if(error)throw error}alert('Property saved successfully.');newProperty();load();}catch(err){console.error(err);alert('Could not save property: '+(err.message||err));}});
+window.del=async function(id){if(!confirm('Delete this property?'))return;const {error}=await getClient().from('properties').delete().eq('id',id);if(error)alert(error.message);else load();};
+window.bookingStatus=async function(id,status){const {error}=await getClient().from('bookings').update({status}).eq('id',id);if(error)alert(error.message);};
+window.enquiryStatus=async function(id,status){const {error}=await getClient().from('enquiries').update({status}).eq('id',id);if(error)alert(error.message);};
+window.logout=async function(){try{await getClient().auth.signOut();}finally{showLogin();loginForm.reset();msg('');}};
+check();
+})();
+</script></body></html>
