@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guest Verification | Source Stays</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.verify-wrap{max-width:720px}.verify-card{background:#fff;border:1px solid #e5e5e5;border-radius:18px;padding:24px;box-shadow:0 8px 30px rgba(0,0,0,.05)}.verify-card h2{margin-top:0}.verify-note{background:#fff8e8;border:1px solid #ead9a0;border-radius:12px;padding:14px;margin:16px 0}.field{margin:14px 0}.field label{display:block;font-weight:700;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;box-sizing:border-box;padding:13px;border:1px solid #ddd;border-radius:8px;font:inherit}.field textarea{min-height:100px;resize:vertical}.small{font-size:.9rem;color:#666}.status{margin-top:16px;font-weight:700}.success{color:#126b4f}.error{color:#a33}
+</style>
+</head>
+<body>
+<header><div class="wrap nav"><a class="logo" href="index.html">SOURCE STAYS<span>HOSPITALITY • REAL ESTATE</span></a><a class="btn dark" href="index.html">Back</a></div></header>
+<main class="section"><div class="wrap verify-wrap"><div class="eyebrow">Guest verification</div><h2>Complete your verification</h2>
+<div class="verify-card">
+<p>Please provide the information below so Source Stays can verify your identity before your booking is confirmed.</p>
+<div class="verify-note"><b>Privacy notice</b><p class="small">Your information and identification document are collected for guest verification and booking security. Your ID document is stored in private storage and is not publicly accessible.</p></div>
+<form id="verifyForm">
+<div class="field"><label for="full_name">Full name</label><input id="full_name" name="full_name" required></div>
+<div class="field"><label for="residential_address">Residential address</label><textarea id="residential_address" name="residential_address" required></textarea></div>
+<div class="field"><label for="phone">Phone / WhatsApp</label><input id="phone" name="phone" type="tel" required></div>
+<div class="field"><label for="id_type">Identification type</label><select id="id_type" name="id_type" required><option value="">Select ID type</option><option>National ID</option><option>Driver's Licence</option><option>International Passport</option><option>Voter's Card</option></select></div>
+<div class="field"><label for="id_number">ID number <span class="small">(optional)</span></label><input id="id_number" name="id_number"></div>
+<div class="field"><label for="id_document">Upload your ID document</label><input id="id_document" name="id_document" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><p class="small">Accepted: JPG, PNG, WEBP or PDF. Maximum 8 MB.</p></div>
+<div class="field"><label for="emergency_contact_name">Emergency contact name</label><input id="emergency_contact_name" name="emergency_contact_name" required></div>
+<div class="field"><label for="emergency_contact_phone">Emergency contact phone</label><input id="emergency_contact_phone" name="emergency_contact_phone" type="tel" required></div>
+<div class="field"><label><input id="agreement" type="checkbox" required> I confirm that the information provided is accurate and I agree to Source Stays' guest verification and house rules.</label></div>
+<button id="submitBtn" class="btn dark" type="submit">Submit verification</button>
+</form><p id="status" class="status"></p>
+</div></div></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script>
+<script>
+const BUCKET='guest-verification-documents';
+const token=(new URLSearchParams(location.search).get('token')||'').trim();
+const form=document.getElementById('verifyForm'),statusEl=document.getElementById('status'),submitBtn=document.getElementById('submitBtn');
+let bookingId=null;
+function setStatus(text,ok=false){statusEl.textContent=text;statusEl.className='status '+(ok?'success':'error')}
+function disableForm(){form.querySelectorAll('input,select,textarea,button').forEach(x=>x.disabled=true)}
+async function resolveBooking(){
+  if(!token){disableForm();setStatus('This verification link is missing its secure reference. Please contact Source Stays.');return}
+  try{
+    const sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);
+    const result=await sb.rpc('get_booking_id_by_verification_token',{p_token:token});
+    if(result.error) throw result.error;
+    bookingId=result.data;
+    if(!bookingId){disableForm();setStatus('This verification link is invalid or has expired. Please contact Source Stays.');return}
+  }catch(err){console.error(err);disableForm();setStatus('We could not validate this verification link. Please try again or contact Source Stays.')}
+}
+resolveBooking();
+form.addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!bookingId){setStatus('This verification link is not valid.');return}
+  const file=document.getElementById('id_document').files[0];
+  if(!file){setStatus('Please select your ID document.');return}
+  const allowed=['image/jpeg','image/png','image/webp','application/pdf'];
+  if(!allowed.includes(file.type)){setStatus('Please upload a JPG, PNG, WEBP or PDF file.');return}
+  if(file.size>8*1024*1024){setStatus('The ID document must be 8 MB or smaller.');return}
+  submitBtn.disabled=true;submitBtn.textContent='Submitting...';setStatus('Please wait while your verification is submitted...');
+  try{
+    const sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);
+    const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const path='booking-'+bookingId+'/'+crypto.randomUUID()+'-'+safeName;
+    const upload=await sb.storage.from(BUCKET).upload(path,file,{upsert:false,contentType:file.type});
+    if(upload.error)throw upload.error;
+    const f=new FormData(form);
+    const record={booking_id:bookingId,full_name:f.get('full_name'),residential_address:f.get('residential_address'),phone:f.get('phone'),id_type:f.get('id_type'),id_number:f.get('id_number')||null,id_document_url:path,emergency_contact_name:f.get('emergency_contact_name'),emergency_contact_phone:f.get('emergency_contact_phone'),status:'pending'};
+    const result=await sb.from('guest_verifications').insert(record);
+    if(result.error){await sb.storage.from(BUCKET).remove([path]);throw result.error}
+    form.reset();setStatus('Verification submitted successfully. Source Stays will review your details and contact you.',true);submitBtn.textContent='Submitted';
+  }catch(err){console.error(err);setStatus(err&&err.message?err.message:'Something went wrong. Please try again.');submitBtn.disabled=false;submitBtn.textContent='Submit verification'}
+});
+</script></body></html>
