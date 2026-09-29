@@ -59,9 +59,15 @@ form.addEventListener('submit',async e=>{
   try{
     const sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY);
     const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-    const path='booking-'+bookingId+'/'+crypto.randomUUID()+'-'+safeName;
-    const upload=await sb.storage.from(BUCKET).upload(path,file,{upsert:false,contentType:file.type});
-    if(upload.error)throw upload.error;
+    const uploadSetup=await sb.functions.invoke('create-verification-upload',{
+      body:{token,fileName:safeName,contentType:file.type}
+    });
+    if(uploadSetup.error)throw uploadSetup.error;
+    const uploadInfo=uploadSetup.data;
+    if(!uploadInfo||!uploadInfo.path||!uploadInfo.token){throw new Error('Could not prepare the secure upload.');}
+    const signedUpload=await sb.storage.from(BUCKET).uploadToSignedUrl(uploadInfo.path,uploadInfo.token,file,{contentType:file.type});
+    if(signedUpload.error)throw signedUpload.error;
+    const path=uploadInfo.path;
     const f=new FormData(form);
     const record={booking_id:bookingId,full_name:f.get('full_name'),residential_address:f.get('residential_address'),phone:f.get('phone'),id_type:f.get('id_type'),id_number:f.get('id_number')||null,id_document_url:path,emergency_contact_name:f.get('emergency_contact_name'),emergency_contact_phone:f.get('emergency_contact_phone'),status:'pending'};
     const result=await sb.rpc('submit_guest_verification',{
