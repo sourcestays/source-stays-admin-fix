@@ -55,48 +55,129 @@
 <script>
 const id = Number(new URLSearchParams(location.search).get('id')) || null;
 
+const id = Number(new URLSearchParams(location.search).get('id')) || null;
+
 const checkIn = document.getElementById('check_in');
 const checkOut = document.getElementById('check_out');
+const form = document.getElementById('form');
+const msg = document.getElementById('msg');
+
 const today = new Date().toISOString().split('T')[0];
 
 checkIn.min = today;
 checkOut.min = today;
 
+let property = null;
+let bookingTotal = 0;
+let nights = 0;
+
+const totalBox = document.createElement('div');
+totalBox.style.cssText =
+'background:#f7f3ea;border:1px solid #e6e2d9;border-radius:10px;padding:15px;margin:15px 0;font-weight:700;display:none;';
+form.insertBefore(totalBox, form.querySelector('button'));
+
+function calculateTotal() {
+  if (!property || !checkIn.value || !checkOut.value) {
+    totalBox.style.display = 'none';
+    bookingTotal = 0;
+    nights = 0;
+    return;
+  }
+
+  const start = new Date(checkIn.value);
+  const end = new Date(checkOut.value);
+
+  nights = Math.round((end - start) / 86400000);
+
+  if (nights <= 0) {
+    totalBox.style.display = 'none';
+    bookingTotal = 0;
+    return;
+  }
+
+  const price = Number(property.price || 0);
+  bookingTotal = price * nights;
+
+  totalBox.style.display = 'block';
+  totalBox.innerHTML =
+    `₦${price.toLocaleString('en-NG')} × ${nights} night${nights === 1 ? '' : 's'}<br>` +
+    `<strong style="font-size:20px">Estimated total: ₦${bookingTotal.toLocaleString('en-NG')}</strong>`;
+}
+
+async function loadProperty() {
+  if (!id) return;
+
+  try {
+    property = await SourceStays.getProperty(id);
+    calculateTotal();
+  } catch (err) {
+    console.error('Could not load property:', err);
+  }
+}
+
 checkIn.addEventListener('change', () => {
-checkOut.min = checkIn.value || today;
+  checkOut.min = checkIn.value || today;
+  calculateTotal();
 });
 
-document.getElementById('form').onsubmit = async e => {
-e.preventDefault();
+checkOut.addEventListener('change', calculateTotal);
 
-const b = Object.fromEntries(new FormData(e.target));
+form.onsubmit = async e => {
+  e.preventDefault();
 
-b.property_id = id ? Number(id) : null;
-b.customer_name = b.name;
-b.customer_phone = b.phone;
-b.customer_email = b.email || null;
+  if (!id) {
+    msg.textContent = 'Please select a property before making a booking request.';
+    return;
+  }
 
-delete b.name;
-delete b.phone;
-delete b.email;
+  if (!property) {
+    msg.textContent = 'Property information could not be loaded. Please try again.';
+    return;
+  }
 
-try {
-await SourceStays.submitBooking(b);
+  calculateTotal();
 
-document.getElementById('msg').textContent =
-'Request received. Source Stays will contact you shortly.';
+  if (!bookingTotal || nights <= 0) {
+    msg.textContent = 'Please select valid check-in and check-out dates.';
+    return;
+  }
 
-e.target.reset();
+  const b = Object.fromEntries(new FormData(e.target));
 
-} catch (err) {
+  b.property_id = id;
+  b.customer_name = b.name;
+  b.customer_phone = b.phone;
+  b.customer_email = b.email || null;
 
-console.error(err);
+  b.amount_due = bookingTotal;
+  b.currency = 'NGN';
+  b.payment_status = 'unpaid';
 
-document.getElementById('msg').textContent =
-'Something went wrong. Please try again or use WhatsApp.';
+  delete b.name;
+  delete b.phone;
+  delete b.email;
 
-}
+  try {
+    await SourceStays.submitBooking(b);
+
+    msg.textContent =
+      'Request received. Source Stays will confirm availability and contact you with payment instructions.';
+
+    e.target.reset();
+    totalBox.style.display = 'none';
+    bookingTotal = 0;
+    nights = 0;
+
+  } catch (err) {
+
+    console.error(err);
+
+    msg.textContent =
+      'Something went wrong. Please try again or use WhatsApp.';
+  }
 };
+
+loadProperty();
 </script>
 
 </body>
