@@ -39,7 +39,19 @@
 
 <textarea name="message" placeholder="Special request" style="width:100%;padding:13px;margin:6px 0;min-height:120px"></textarea>
 
-<button class="btn dark">Submit booking request</button>
+<div style="background:#fff3cd;border:2px solid #b45309;border-radius:10px;padding:16px;margin:18px 0">
+  <div style="font-weight:800;font-size:18px;margin-bottom:8px">⚠️ NO REFUND POLICY</div>
+  <div style="line-height:1.5">
+    All payments made to Source Stays are non-refundable once a booking has been confirmed and payment has been received.
+    Please confirm your dates, property selection, and booking details carefully before making payment.
+  </div>
+</div>
+
+<label style="display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-weight:600;line-height:1.45">
+  <input id="no_refund_agree" type="checkbox" required style="margin-top:4px">
+  <span>I have read and agree to the Source Stays No Refund Policy and understand that my payment is non-refundable once my booking is confirmed.</span>
+</label>
+  <button class="btn dark">Submit booking request</button>
 
 </form>
 
