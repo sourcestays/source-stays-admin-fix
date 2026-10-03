@@ -57,6 +57,21 @@
 </form>
 
 <p id="msg"></p>
+<div id="successModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;padding:20px;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:18px;max-width:520px;width:100%;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center">
+    <div style="font-size:48px;margin-bottom:8px">✓</div>
+    <h3 style="margin:0 0 12px;font-size:26px">Booking Request Received</h3>
+    <p style="margin:0 0 22px;line-height:1.6;color:#555">
+      Thank you. Your booking request has been received successfully. Source Stays will confirm availability and contact you with payment instructions.
+    </p>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+      <button type="button" id="homeBtn" class="btn dark">Go to Homepage</button>
+      <button type="button" id="waitBtn" class="btn">Wait for response</button>
+    </div>
+  </div>
+</div>
+  
 
 </div>
 </main>
@@ -172,9 +187,7 @@ form.onsubmit = async e => {
 
   try {
     await SourceStays.submitBooking(b);
-
-    msg.textContent =
-      'Request received. Source Stays will confirm availability and contact you with payment instructions.';
+   successModal.style.display = 'flex';   
 
     e.target.reset();
     totalBox.style.display = 'none';
@@ -189,7 +202,17 @@ form.onsubmit = async e => {
       'Something went wrong. Please try again or use WhatsApp.';
   }
 };
+const successModal = document.getElementById('successModal');
+const homeBtn = document.getElementById('homeBtn');
+const waitBtn = document.getElementById('waitBtn');
 
+homeBtn.addEventListener('click', () => {
+  window.location.href = 'index.html';
+});
+
+waitBtn.addEventListener('click', () => {
+  successModal.style.display = 'none';
+});
 loadProperty();
 </script>
 
