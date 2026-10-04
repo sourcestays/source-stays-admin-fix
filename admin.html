@@ -122,6 +122,9 @@ async function load(){
 }
 window.requestPayment=async function(id){try{const sb=getClient();const result=await sb.functions.invoke('initialize-payment',{body:{booking_id:id}});if(result.error)throw result.error;const data=result.data||{};if(!data.authorization_url)throw new Error(data.error||'Could not create payment link.'); navigator.clipboard?.writeText(data.authorization_url);
 const paymentLink=data.authorization_url;
+const {data:booking}=await sb.from('bookings').select('customer_phone').eq('id',id).single();
+const rawPhone=String(booking?.customer_phone||'').replace(/\D/g,'');
+const whatsappPhone=rawPhone.startsWith('0')?'234'+rawPhone.slice(1):rawPhone;
 const oldModal=document.getElementById('sourcePaymentModal');
 if(oldModal)oldModal.remove();
 const modal=document.createElement('div');
@@ -134,7 +137,7 @@ modal.innerHTML=`<div style="background:#fff;width:100%;max-width:520px;border-r
 <div style="background:#f5f7fa;border:1px solid #ddd;border-radius:10px;padding:12px;margin-bottom:18px;word-break:break-all;font-size:14px;color:#333;">${paymentLink}</div>
 <div style="display:flex;gap:10px;flex-wrap:wrap;">
 <button id="copyPaymentBtn" style="flex:1;min-width:140px;border:0;border-radius:10px;padding:13px;background:#111;color:#fff;font-weight:bold;cursor:pointer;">Copy Payment Link</button>
-<a href="https://wa.me/?text=${encodeURIComponent('Hello, please use this secure Source Stays payment link to complete your booking payment: '+paymentLink)}" target="_blank" rel="noopener" style="flex:1;min-width:140px;text-align:center;text-decoration:none;border-radius:10px;padding:13px;background:#25D366;color:#fff;font-weight:bold;box-sizing:border-box;">Send via WhatsApp</a>
+<a https://wa.me/${whatsappPhone}?text=${encodeURIComponent('Hello, please use this secure Source Stays payment link to complete your booking payment: '+paymentLink)}" target="_blank" rel="noopener" style="flex:1;min-width:140px;text-align:center;text-decoration:none;border-radius:10px;padding:13px;background:#25D366;color:#fff;font-weight:bold;box-sizing:border-box;">Send via WhatsApp</a>
 <button id="closePaymentBtn" style="flex:1;min-width:140px;border:1px solid #ddd;border-radius:10px;padding:13px;background:#fff;color:#333;font-weight:bold;cursor:pointer;">Close</button>
 </div>
 </div>`;
