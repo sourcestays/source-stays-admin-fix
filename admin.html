@@ -120,8 +120,27 @@ async function load(){
   enquiries.innerHTML=e?.length?`<h4>Enquiries</h4><table class="table"><tr><th>Customer</th><th>Interest</th><th>Property ID</th><th>Status</th></tr>${e.map(x=>`<tr><td>${esc(x.customer_name)}<br>${esc(x.customer_phone||'')}</td><td>${esc(x.subject||'Enquiry')}</td><td>${esc(x.property_id||'')}</td><td><select onchange="enquiryStatus(${x.id},this.value)"><option ${x.status==='new'?'selected':''}>new</option><option ${x.status==='contacted'?'selected':''}>contacted</option><option ${x.status==='closed'?'selected':''}>closed</option></select></td></tr>`).join('')}</table>`:'<p class="muted">No enquiries yet.</p>';
  }catch(err){console.error(err);props.innerHTML='<p class="danger">Could not load dashboard data: '+esc(err.message||err)+'</p>';}
 }
-window.requestPayment=async function(id){try{const sb=getClient();const result=await sb.functions.invoke('initialize-payment',{body:{booking_id:id}});if(result.error)throw result.error;const data=result.data||{};if(!data.authorization_url)throw new Error(data.error||'Could not create payment link.');navigator.clipboard?.writeText(data.authorization_url);
-alert('Payment link created and copied to clipboard:\n\n' + data.authorization_url);}catch(err){console.error(err);alert('Could not create payment link: '+(err.message||err));}};
+window.requestPayment=async function(id){try{const sb=getClient();const result=await sb.functions.invoke('initialize-payment',{body:{booking_id:id}});if(result.error)throw result.error;const data=result.data||{};if(!data.authorization_url)throw new Error(data.error||'Could not create payment link.'); navigator.clipboard?.writeText(data.authorization_url);
+const paymentLink=data.authorization_url;
+const oldModal=document.getElementById('sourcePaymentModal');
+if(oldModal)oldModal.remove();
+const modal=document.createElement('div');
+modal.id='sourcePaymentModal';
+modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;box-sizing:border-box;';
+modal.innerHTML=`<div style="background:#fff;width:100%;max-width:520px;border-radius:18px;padding:26px;box-sizing:border-box;box-shadow:0 20px 60px rgba(0,0,0,.3);font-family:Arial,sans-serif;">
+<div style="text-align:center;font-size:42px;margin-bottom:8px;">✓</div>
+<h2 style="margin:0 0 8px;text-align:center;color:#111;">Payment Request Created</h2>
+<p style="text-align:center;color:#666;margin:0 0 20px;">The customer can use the link below to complete payment securely through Paystack.</p>
+<div style="background:#f5f7fa;border:1px solid #ddd;border-radius:10px;padding:12px;margin-bottom:18px;word-break:break-all;font-size:14px;color:#333;">${paymentLink}</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;">
+<button id="copyPaymentBtn" style="flex:1;min-width:140px;border:0;border-radius:10px;padding:13px;background:#111;color:#fff;font-weight:bold;cursor:pointer;">Copy Payment Link</button>
+<a href="https://wa.me/?text=${encodeURIComponent('Hello, please use this secure Source Stays payment link to complete your booking payment: '+paymentLink)}" target="_blank" rel="noopener" style="flex:1;min-width:140px;text-align:center;text-decoration:none;border-radius:10px;padding:13px;background:#25D366;color:#fff;font-weight:bold;box-sizing:border-box;">Send via WhatsApp</a>
+<button id="closePaymentBtn" style="flex:1;min-width:140px;border:1px solid #ddd;border-radius:10px;padding:13px;background:#fff;color:#333;font-weight:bold;cursor:pointer;">Close</button>
+</div>
+</div>`;
+document.body.appendChild(modal);
+document.getElementById('copyPaymentBtn').onclick=async()=>{await navigator.clipboard.writeText(paymentLink);document.getElementById('copyPaymentBtn').textContent='✓ Link Copied';};
+document.getElementById('closePaymentBtn').onclick=()=>modal.remove();}catch(err){console.error(err);alert('Could not create payment link: '+(err.message||err));}};
   window.copyVerificationLink=async function(id){try{const sb=getClient();const {data,error}=await sb.from('bookings').select('verification_token').eq('id',id).single();if(error)throw error;const url=verificationUrl(data.verification_token);if(!url)throw new Error('This booking does not have a verification token.');await navigator.clipboard.writeText(url);alert('Secure verification link copied.');}catch(err){alert('Could not copy link: '+(err.message||err));}};
 window.viewVerification=async function(id){try{const sb=getClient();const {data,error}=await sb.rpc('get_admin_guest_verification',{p_verification_id:id});if(error)throw error;const row=Array.isArray(data)?data[0]:data;if(!row)throw new Error('Verification not found.');alert(`Guest verification\n\nName: ${row.full_name||''}\nAddress: ${row.residential_address||''}\nPhone: ${row.phone||''}\nID type: ${row.id_type||''}\nID number: ${row.id_number||'Not provided'}\nEmergency contact: ${row.emergency_contact_name||''}\nEmergency phone: ${row.emergency_contact_phone||''}\nStatus: ${row.status||'pending'}`);}catch(err){alert('Could not load verification: '+(err.message||err));}};
 window.viewVerificationDocument=async function(id){try{const sb=getClient();const {data,error}=await sb.rpc('get_admin_guest_verification',{p_verification_id:id});if(error)throw error;const row=Array.isArray(data)?data[0]:data;if(!row?.id_document_url)throw new Error('No ID document was uploaded.');const result=await sb.storage.from('guest-verification-documents').createSignedUrl(row.id_document_url,300);if(result.error)throw result.error;if(!result.data?.signedUrl)throw new Error('Could not create secure viewing link.');window.open(result.data.signedUrl,'_blank','noopener');}catch(err){alert('Could not open ID document: '+(err.message||err));}};
