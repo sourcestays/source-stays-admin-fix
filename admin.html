@@ -154,7 +154,9 @@ async function uploadImage(file,id){if(!file)return null;const ext=(file.name.sp
 propertyForm.addEventListener('submit',async function(e){e.preventDefault();e.stopPropagation();const saveButton=propertyForm.querySelector('button[type="submit"]');
 if(saveButton.disabled)return;
 saveButton.disabled=true;
-saveButton.textContent='Saving...';const f=e.target;const fd=new FormData(f);const payload={title:fd.get('title'),category:fd.get('type'),location:fd.get('location'),price:Number(fd.get('price'))||0,price_period:fd.get('price_period')||'per night',bedrooms:Number(fd.get('bedrooms'))||0,bathrooms:0,guests:Number(fd.get('guests'))||0,amenities:fd.get('amenities'),description:fd.get('description'),image_url:fd.get('image_url')||null,featured:f.elements.featured.checked,published:f.elements.published.checked};try{let id=f.elements.id.value?Number(f.elements.id.value):null;if(id){const {error}=await getClient().from('properties').update(payload).eq('id',id);if(error)throw error}else{const {data,error}=await getClient().from('properties').insert(payload).select('id').single();if(error)throw error;id=data.id}
+saveButton.textContent='⏳ Saving...';
+await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+const f=e.target;const fd=new FormData(f);const payload={title:fd.get('title'),category:fd.get('type'),location:fd.get('location'),price:Number(fd.get('price'))||0,price_period:fd.get('price_period')||'per night',bedrooms:Number(fd.get('bedrooms'))||0,bathrooms:0,guests:Number(fd.get('guests'))||0,amenities:fd.get('amenities'),description:fd.get('description'),image_url:fd.get('image_url')||null,featured:f.elements.featured.checked,published:f.elements.published.checked};try{let id=f.elements.id.value?Number(f.elements.id.value):null;if(id){const {error}=await getClient().from('properties').update(payload).eq('id',id);if(error)throw error}else{const {data,error}=await getClient().from('properties').insert(payload).select('id').single();if(error)throw error;id=data.id}
 const files=Array.from(f.elements.imageFile.files||[]);
 if(files.length){
   const urls=[];
