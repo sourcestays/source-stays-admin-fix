@@ -6,14 +6,7 @@ async function show(){
   try{
     const p=await SourceStays.getProperty(id);
 
-    const { data: galleryImages, error: galleryError } =
-      await supabase
-        .from('property_images')
-        .select('image_url')
-        .eq('property_id', id)
-        .order('id');
-
-    if(galleryError) throw galleryError;
+   const galleryImages = await SourceStays.getPropertyImages(id);
 
     const images = galleryImages?.length
       ? galleryImages.map(x => x.image_url)
