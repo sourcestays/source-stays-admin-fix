@@ -17,6 +17,15 @@ async function loadListings(){
 }
 async function submitBooking(payload){const {data,error}=await supabaseClient.from('bookings').insert(payload).select('id').single();if(error)throw error;return data;}
 async function submitEnquiry(payload){const {data,error}=await supabaseClient.from('enquiries').insert(payload).select('id').single();if(error)throw error;return data;}
-async function getProperty(id){const {data,error}=await supabaseClient.from('properties').select('*').eq('id',id).eq('published',true).single();if(error)throw error;return data;}
-window.SourceStays={supabase:supabaseClient,BUCKET,esc,money,getListings,loadListings,submitBooking,submitEnquiry,getProperty};
+async function getProperty(id){const {data,error}=await supabaseClient.from('properties').select('*').eq('id',id).eq('published',true).single();if(error)throw error;return data;}async function getPropertyImages(id){
+  const {data,error}=await supabaseClient
+    .from('property_images')
+    .select('image_url')
+    .eq('property_id',id)
+    .order('id');
+
+  if(error) throw error;
+  return data || [];
+}
+window.SourceStays={supabase:supabaseClient,BUCKET,esc,money,getListings,loadListings,submitBooking,submitEnquiry,getProperty,getPropertyImages};
 if(document.getElementById('listings')) loadListings();
