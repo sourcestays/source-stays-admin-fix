@@ -151,18 +151,41 @@ window.setVerificationStatus=async function(id,status){try{const label=status===
 window.newProperty=function(){editing=null;propertyForm.reset();propertyForm.elements.id.value='';propertyForm.elements.published.checked=true;propertyForm.elements.price_period.value='per night';formTitle.textContent='Add property';window.scrollTo({top:0,behavior:'smooth'});};
 window.edit=function(x){editing=x;for(const k of ['title','location','price','price_period','bedrooms','guests','amenities','description','image_url'])if(propertyForm.elements[k])propertyForm.elements[k].value=x[k]??'';propertyForm.elements.id.value=x.id;propertyForm.elements.type.value=x.category||'shortlet';propertyForm.elements.featured.checked=!!x.featured;propertyForm.elements.published.checked=!!x.published;formTitle.textContent='Edit property';window.scrollTo({top:0,behavior:'smooth'});};
 async function uploadImage(file,id){if(!file)return null;const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');const path=`${id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;const {error}=await getClient().storage.from(BUCKET).upload(path,file,{upsert:false,contentType:file.type});if(error)throw error;return getClient().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;}
-propertyForm.addEventListener('submit',async function(e){e.preventDefault();e.stopPropagation();const f=e.target;const fd=new FormData(f);const payload={title:fd.get('title'),category:fd.get('type'),location:fd.get('location'),price:Number(fd.get('price'))||0,price_period:fd.get('price_period')||'per night',bedrooms:Number(fd.get('bedrooms'))||0,bathrooms:0,guests:Number(fd.get('guests'))||0,amenities:fd.get('amenities'),description:fd.get('description'),image_url:fd.get('image_url')||null,featured:f.elements.featured.checked,published:f.elements.published.checked};try{let id=f.elements.id.value?Number(f.elements.id.value):null;if(id){const {error}=await getClient().from('properties').update(payload).eq('id',id);if(error)throw error}else{const {data,error}=await getClient().from('properties').insert(payload).select('id').single();if(error)throw error;id=data.id}const files=Array.from(f.elements.imageFile.files||[]);
+propertyForm.addEventListener('submit',async function(e){e.preventDefault();e.stopPropagation();const f=e.target;const fd=new FormData(f);const payload={title:fd.get('title'),category:fd.get('type'),location:fd.get('location'),price:Number(fd.get('price'))||0,price_period:fd.get('price_period')||'per night',bedrooms:Number(fd.get('bedrooms'))||0,bathrooms:0,guests:Number(fd.get('guests'))||0,amenities:fd.get('amenities'),description:fd.get('description'),image_url:fd.get('image_url')||null,featured:f.elements.featured.checked,published:f.elements.published.checked};try{let id=f.elements.id.value?Number(f.elements.id.value):null;if(id){const {error}=await getClient().from('properties').update(payload).eq('id',id);if(error)throw error}else{const {data,error}=await getClient().from('properties').insert(payload).select('id').single();if(error)throw error;id=data.id}
+const files=Array.from(f.elements.imageFile.files||[]);
 if(files.length){
   const urls=[];
+
   for(const file of files){
     urls.push(await uploadImage(file,id));
   }
-  const {error:imageError}=await getClient().from('properties').update({image_url:urls[0]}).eq('id',id);
+
+  const {error:deleteGalleryError}=await getClient()
+    .from('property_images')
+    .delete()
+    .eq('property_id',id);
+
+  if(deleteGalleryError)throw deleteGalleryError;
+
+  const {error:imageError}=await getClient()
+    .from('properties')
+    .update({image_url:urls[0]})
+    .eq('id',id);
+
   if(imageError)throw imageError;
-  const imageRows=urls.map(url=>({property_id:id,image_url:url}));
-  const {error:galleryError}=await getClient().from('property_images').insert(imageRows);
+
+  const imageRows=urls.map(url=>({
+    property_id:id,
+    image_url:url
+  }));
+
+  const {error:galleryError}=await getClient()
+    .from('property_images')
+    .insert(imageRows);
+
   if(galleryError)throw galleryError;
-}alert('Property saved successfully.');newProperty();load();}catch(err){console.error(err);alert('Could not save property: '+(err.message||err));}});
+}
+alert('Property saved successfully.');newProperty();load();}catch(err){console.error(err);alert('Could not save property: '+(err.message||err));}});
 window.del=async function(id){if(!confirm('Delete this property?'))return;const {error}=await getClient().from('properties').delete().eq('id',id);if(error)alert(error.message);else load();};
 window.bookingStatus=async function(id,status){const {error}=await getClient().from('bookings').update({status}).eq('id',id);if(error)alert(error.message);};
 window.enquiryStatus=async function(id,status){const {error}=await getClient().from('enquiries').update({status}).eq('id',id);if(error)alert(error.message);};
