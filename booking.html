@@ -30,8 +30,7 @@
 <input name="email" type="email" placeholder="Email" style="width:100%;padding:13px;margin:6px 0">
 
 <label for="check_in" style="display:block;font-weight:700;margin:10px 0 4px">Check-in</label>
-<input id="check_in" name="check_in" type="date" required style="width:100%;padding:13px;margin:0 0 8px">
-
+<input id="check_in" name="check_in" type="date" required onchange="document.getElementById('check_out').min=this.value" style="width:100%;padding:13px;margin:0 0 8px">
 <label for="check_out" style="display:block;font-weight:700;margin:10px 0 4px">Check-out</label>
 <input id="check_out" name="check_out" type="date" required style="width:100%;padding:13px;margin:0 0 8px">
 
