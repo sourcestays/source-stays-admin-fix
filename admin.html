@@ -151,7 +151,7 @@ window.setVerificationStatus=async function(id,status){try{const label=status===
 window.newProperty=function(){editing=null;propertyForm.reset();propertyForm.elements.id.value='';propertyForm.elements.published.checked=true;propertyForm.elements.price_period.value='per night';formTitle.textContent='Add property';window.scrollTo({top:0,behavior:'smooth'});};
 window.edit=function(x){editing=x;for(const k of ['title','location','price','price_period','bedrooms','guests','amenities','description','image_url'])if(propertyForm.elements[k])propertyForm.elements[k].value=x[k]??'';propertyForm.elements.id.value=x.id;propertyForm.elements.type.value=x.category||'shortlet';propertyForm.elements.featured.checked=!!x.featured;propertyForm.elements.published.checked=!!x.published;formTitle.textContent='Edit property';window.scrollTo({top:0,behavior:'smooth'});};
 async function uploadImage(file,id){if(!file)return null;const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');const path=`${id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;const {error}=await getClient().storage.from(BUCKET).upload(path,file,{upsert:false,contentType:file.type});if(error)throw error;return getClient().storage.from(BUCKET).getPublicUrl(path).data.publicUrl;}
-propertyForm.addEventListener('submit',async function(e){e.preventDefault();e.stopPropagation();const saveButton=propertyForm.querySelector('button[type="submit"]');
+propertyForm.addEventListener('submit',async function(e){e.preventDefault();e.stopPropagation();const saveButton=propertyForm.querySelector('button');
 if(saveButton.disabled)return;
 saveButton.disabled=true;
 saveButton.textContent='⏳ Saving...';
