@@ -26,23 +26,34 @@ document.getElementById('detail').innerHTML = `
         "
       >
 
-        <div
-          id="mainPropertyImage"
-          class="panel"
-          style="
-            background-image:url('${SourceStays.esc(mainImage)}');
-            background-size:contain;
-            background-position:center;
-            background-repeat:no-repeat;
-            cursor:pointer;
-            height:420px;
-min-height:420px;
-max-height:420px;
-overflow:hidden;
-border-radius:12px;
-          "
-          onclick="openGallery(0)"
-        ></div>
+       <div
+    id="mainPropertyImage"
+    style="
+        position:relative;
+        width:100%;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        background:#f7f7f7;
+        border-radius:12px;
+        overflow:hidden;
+        cursor:pointer;
+    "
+    onclick="openGallery(0)"
+>
+    <img
+        src="${SourceStays.esc(mainImage)}"
+        alt="Property image"
+        style="
+            display:block;
+            width:auto;
+            max-width:100%;
+            height:auto;
+            max-height:420px;
+            object-fit:contain;
+        "
+    >
+</div>
 
         ${images.length > 1 ? `
           <button
