@@ -256,9 +256,12 @@ function changeMainImage(index){
   const main = document.getElementById('mainPropertyImage');
   const modalImage = document.getElementById('galleryModalImage');
 
-  if(main){
-    main.style.backgroundImage = `url('${url}')`;
-  }
+ if(main){
+    const mainImg = main.querySelector('img');
+    if(mainImg){
+        mainImg.src = url;
+    }
+}
 
   if(modalImage){
     modalImage.src = url;
