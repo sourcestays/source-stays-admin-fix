@@ -112,11 +112,15 @@ object-fit:contain;
 
       <div
         style="
-          display:flex;
-          gap:10px;
-          margin-top:12px;
-          overflow-x:auto;
-          padding-bottom:8px;
+         display:flex;
+gap:10px;
+margin-top:12px;
+overflow-x:auto;
+overflow-y:hidden;
+padding-bottom:8px;
+width:100%;
+max-width:100%;
+flex-wrap:nowrap;
         "
       >
         ${images.map((img,index)=>`
