@@ -20,9 +20,22 @@
 
     body { background: var(--ss-paper); color: var(--ss-ink); }
     header { background: rgba(255,255,255,.96); border-bottom: 1px solid var(--ss-line); }
-    header .nav { min-height: 82px; }
-    header .logo { color: var(--ss-green); font-weight: 800; letter-spacing: .12em; line-height: 1.15; }
-    header .logo span { display: block; margin-top: 5px; color: var(--ss-muted); font-size: 10px; letter-spacing: .13em; }
+    header .nav { min-height: 88px; }
+    /* Use only the current green-and-gold logo image; suppress any inherited artwork. */
+    header .logo {
+      display: inline-flex; align-items: center; justify-content: flex-start;
+      width: 190px; height: 72px; padding: 0; margin: 0;
+      background: transparent !important; background-image: none !important;
+      box-shadow: none !important; border: 0; text-decoration: none;
+      flex: 0 0 auto; overflow: visible;
+    }
+    header .logo::before, header .logo::after { content: none !important; display: none !important; }
+    header .logo img {
+      display: block; width: 100%; height: 100%; max-width: 190px; max-height: 72px;
+      object-fit: contain; object-position: left center; padding: 0; margin: 0;
+      background: transparent !important; background-image: none !important;
+      border: 0; box-shadow: none; filter: none;
+    }
     header .btn { border-radius: 999px; padding: 11px 20px; }
     .section { padding-top: 36px; padding-bottom: 64px; }
 
@@ -41,10 +54,7 @@
       overflow: hidden; border: 1px solid rgba(18,63,50,.06); border-radius: 20px;
       background: #eeefea; box-shadow: 0 14px 36px rgba(23,42,32,.09);
     }
-    .main-gallery .image-backdrop {
-      position: absolute; inset: 0; z-index: 0; background-position: center; background-size: cover;
-      filter: blur(18px); transform: scale(1.08); opacity: .08; pointer-events: none;
-    }
+    .main-gallery .image-backdrop { display: none !important; }
     .main-gallery .main-photo {
       position: relative; z-index: 1; display: block; width: 100%; height: 100%;
       object-fit: contain; pointer-events: none;
@@ -121,6 +131,8 @@
     }
     @media (max-width: 760px) {
       header .nav { min-height: 72px; }
+      header .logo { width: 150px; height: 58px; }
+      header .logo img { max-width: 150px; max-height: 58px; }
       .section { padding-top: 22px; padding-bottom: 42px; }
       #detail .property-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; }
       .main-gallery { height: min(78vw, 430px); min-height: 260px; border-radius: 16px; }
@@ -138,21 +150,14 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
     }
-    header .logo img {
-  display: block;
-  width: 150px;
-  height: auto;
-  object-fit: contain;
-  margin: 0;
-}
   </style>
 </head>
 
 <body>
   <header>
     <div class="wrap nav">
-      <a class="logo" href="index.html">
-       <img src="source-stays-logo-green-gold.png" alt="Source Stays" style="width: 150px; height: auto; display: block;">
+      <a class="logo" href="index.html" aria-label="Source Stays home">
+        <img src="source-stays-logo-green-gold.png" alt="Source Stays">
       </a>
       <a class="btn dark" href="index.html">Back</a>
     </div>
@@ -263,8 +268,6 @@
         <div class="property-layout">
           <section class="property-gallery" aria-label="Property photos">
             <div class="main-gallery" id="mainGallery">
-              <div class="image-backdrop" id="imageBackdrop"></div>
-
               <img
                 class="main-photo"
                 id="mainPhoto"
