@@ -1,4 +1,115 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Property | Source Stays</title><link rel="stylesheet" href="styles.css"></head><body><header><div class="wrap nav"><a class="logo" href="index.html">SOURCE STAYS<span>HOSPITALITY • REAL ESTATE</span></a><a class="btn dark" href="index.html">Back</a></div></header><main class="section"><div class="wrap" id="detail">Loading...</div></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="app.js"></script>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Property | Source Stays</title><link rel="stylesheet" href="styles.css">
+  
+<style>
+  #detail {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  #detail .split {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.85fr) !important;
+    align-items: start;
+    gap: 28px !important;
+  }
+
+  #detail .split > div {
+    min-width: 0;
+  }
+
+  #mainPropertyImage {
+    height: 440px !important;
+    border-radius: 16px !important;
+    background: #f1f0ec !important;
+    box-shadow: 0 8px 26px rgba(0,0,0,.07);
+  }
+
+  #mainPropertyImage > img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .property-thumbnails {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    width: 100%;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    padding: 2px 2px 12px;
+    scrollbar-width: thin;
+    scrollbar-color: #b9c5bf #f1f3f1;
+  }
+
+  .property-thumbnails img {
+    width: 88px !important;
+    height: 68px !important;
+    flex: 0 0 88px;
+    object-fit: cover;
+    border-radius: 9px !important;
+    transition: transform .2s ease;
+  }
+
+  .property-thumbnails img:hover {
+    transform: translateY(-2px);
+  }
+
+  .property-info {
+    padding: 26px;
+    border: 1px solid #e8ebe8;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 8px 26px rgba(0,0,0,.045);
+  }
+
+  .property-info h2 {
+    font-size: clamp(26px, 3vw, 36px);
+    line-height: 1.15;
+    margin: 10px 0 14px;
+  }
+
+  .property-info h3 {
+    font-size: 24px;
+    margin: 20px 0;
+  }
+
+  .property-info .btn {
+    display: block;
+    text-align: center;
+    margin-top: 24px;
+    padding: 14px 18px;
+    border-radius: 9px;
+  }
+
+  @media (max-width: 760px) {
+    #detail .split {
+      grid-template-columns: minmax(0, 1fr) !important;
+      gap: 22px !important;
+    }
+
+    #mainPropertyImage {
+      height: min(72vw, 380px) !important;
+      min-height: 250px;
+    }
+
+    .property-info {
+      padding: 20px;
+    }
+
+    .property-thumbnails img {
+      width: 76px !important;
+      height: 60px !important;
+      flex-basis: 76px;
+    }
+  }
+</style>
+
+</head><body><header><div class="wrap nav"><a class="logo" href="index.html">SOURCE STAYS<span>HOSPITALITY • REAL ESTATE</span></a><a class="btn dark" href="index.html">Back</a></div></header><main class="section"><div class="wrap" id="detail">Loading...</div></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="app.js"></script>
 <script>
 const id=Number(new URLSearchParams(location.search).get('id'));
 
@@ -110,19 +221,9 @@ object-fit:contain;
 
       </div>
 
-      <div
-        style="
-         display:flex;
-gap:10px;
-margin-top:12px;
-overflow-x:auto;
-overflow-y:hidden;
-padding-bottom:8px;
-width:100%;
-max-width:100%;
-flex-wrap:nowrap;
-        "
-      >
+  
+<div class="property-thumbnails">
+
         ${images.map((img,index)=>`
           <img
             src="${SourceStays.esc(img)}"
@@ -142,9 +243,9 @@ flex-wrap:nowrap;
 
     </div>
 
-    <div>
-
-      <div class="eyebrow">
+    
+<div class="property-info">
+<div class="eyebrow">
         ${SourceStays.esc(p.category||'shortlet')}
       </div>
 
