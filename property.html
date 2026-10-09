@@ -150,7 +150,7 @@ document.getElementById('detail').innerHTML = `
         overflow:hidden;
         cursor:pointer;
     "
-    onclick="openGallery(0)"
+    onclick="if(event.target===this) openGallery(window.currentImageIndex||0)"
 >
     <div style="
         position:absolute;
