@@ -1,436 +1,668 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Property | Source Stays</title><link rel="stylesheet" href="styles.css">
-  
-<style>
-  #detail {
-    max-width: 1240px;
-    margin: 0 auto;
-  }
 
-  #detail .split {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1.65fr) minmax(280px, 0.85fr) !important;
-    align-items: start;
-    gap: 28px !important;
-  }
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Property | Source Stays</title>
+  <link rel="stylesheet" href="styles.css">
 
-  #detail .split > div {
-    min-width: 0;
-  }
-
-  #mainPropertyImage {
-    height: 440px !important;
-    border-radius: 16px !important;
-    background: #f1f0ec !important;
-    box-shadow: 0 8px 26px rgba(0,0,0,.07);
-  }
-
-  #mainPropertyImage > img {
-    width: 100% !important;
-    height: 100% !important;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
-
-  .property-thumbnails {
-    display: flex;
-    gap: 10px;
-    margin-top: 14px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    width: 100%;
-    max-width: 100%;
-    flex-wrap: nowrap;
-    padding: 2px 2px 12px;
-    scrollbar-width: thin;
-    scrollbar-color: #b9c5bf #f1f3f1;
-  }
-
-  .property-thumbnails img {
-    width: 88px !important;
-    height: 68px !important;
-    flex: 0 0 88px;
-    object-fit: cover;
-    border-radius: 9px !important;
-    transition: transform .2s ease;
-  }
-
-  .property-thumbnails img:hover {
-    transform: translateY(-2px);
-  }
-
-  .property-info {
-    padding: 26px;
-    border: 1px solid #e8ebe8;
-    border-radius: 16px;
-    background: #fff;
-    box-shadow: 0 8px 26px rgba(0,0,0,.045);
-  }
-
-  .property-info h2 {
-    font-size: clamp(26px, 3vw, 36px);
-    line-height: 1.15;
-    margin: 10px 0 14px;
-  }
-
-  .property-info h3 {
-    font-size: 24px;
-    margin: 20px 0;
-  }
-
-  .property-info .btn {
-    display: block;
-    text-align: center;
-    margin-top: 24px;
-    padding: 14px 18px;
-    border-radius: 9px;
-  }
-
-  @media (max-width: 760px) {
-    #detail .split {
-      grid-template-columns: minmax(0, 1fr) !important;
-      gap: 22px !important;
+  <style>
+    #detail {
+      max-width: 1240px;
+      margin: 0 auto;
     }
 
-    #mainPropertyImage {
-      height: min(72vw, 380px) !important;
-      min-height: 250px;
+    #detail .property-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(280px, .85fr);
+      gap: 28px;
+      align-items: start;
     }
 
-    .property-info {
-      padding: 20px;
+    #detail .property-layout > * {
+      min-width: 0;
+    }
+
+    .main-gallery {
+      position: relative;
+      isolation: isolate;
+      width: 100%;
+      height: 440px;
+      overflow: hidden;
+      border-radius: 16px;
+      background: #f1f0ec;
+      box-shadow: 0 8px 26px rgba(0, 0, 0, .07);
+    }
+
+    .main-gallery .image-backdrop {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background-position: center;
+      background-size: cover;
+      filter: blur(20px);
+      transform: scale(1.08);
+      opacity: .35;
+      pointer-events: none;
+    }
+
+    .main-gallery .main-photo {
+      position: relative;
+      z-index: 1;
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .gallery-arrow {
+      position: absolute;
+      top: 50%;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 46px;
+      height: 46px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, .62);
+      color: #fff;
+      font-size: 30px;
+      line-height: 1;
+      cursor: pointer;
+      transform: translateY(-50%);
+      pointer-events: auto;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .gallery-arrow:hover {
+      background: #123f32;
+    }
+
+    .gallery-arrow:focus-visible {
+      outline: 3px solid #d5b56a;
+      outline-offset: 3px;
+    }
+
+    .gallery-arrow.previous {
+      left: 14px;
+    }
+
+    .gallery-arrow.next {
+      right: 14px;
+    }
+
+    .gallery-count {
+      position: absolute;
+      z-index: 5;
+      right: 12px;
+      bottom: 12px;
+      padding: 6px 10px;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, .65);
+      color: #fff;
+      font-size: 13px;
+      pointer-events: none;
+    }
+
+    .property-thumbnails {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      max-width: 100%;
+      margin-top: 14px;
+      padding: 2px 2px 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      flex-wrap: nowrap;
+      scrollbar-width: thin;
+      scrollbar-color: #b9c5bf #f1f3f1;
+    }
+
+    .property-thumbnails button {
+      flex: 0 0 88px;
+      width: 88px;
+      height: 68px;
+      padding: 0;
+      overflow: hidden;
+      border: 2px solid transparent;
+      border-radius: 9px;
+      background: #f1f0ec;
+      cursor: pointer;
+    }
+
+    .property-thumbnails button[aria-current="true"] {
+      border-color: #123f32;
     }
 
     .property-thumbnails img {
-      width: 76px !important;
-      height: 60px !important;
-      flex-basis: 76px;
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
     }
-  }
-</style>
 
-</head><body><header><div class="wrap nav"><a class="logo" href="index.html">SOURCE STAYS<span>HOSPITALITY • REAL ESTATE</span></a><a class="btn dark" href="index.html">Back</a></div></header><main class="section"><div class="wrap" id="detail">Loading...</div></main><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="app.js"></script>
-<script>
-const id=Number(new URLSearchParams(location.search).get('id'));
+    .property-info {
+      padding: 26px;
+      border: 1px solid #e8ebe8;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 8px 26px rgba(0, 0, 0, .045);
+      overflow-wrap: anywhere;
+    }
 
-async function show(){
-  try{
-    const p=await SourceStays.getProperty(id);
+    .property-info h2 {
+      margin: 10px 0 14px;
+      font-size: clamp(26px, 3vw, 36px);
+      line-height: 1.15;
+    }
 
-   const galleryImages = await SourceStays.getPropertyImages(id);
+    .property-info h3 {
+      margin: 20px 0;
+      color: #123f32;
+      font-size: 24px;
+      line-height: 1.3;
+    }
 
-    const images = galleryImages?.length
-      ? galleryImages.map(x => x.image_url)
-      : [p.image_url].filter(Boolean);
-const mainImage = images[0] || '';
-window.galleryImages = images;
-window.currentImageIndex = 0;
-document.getElementById('detail').innerHTML = `
-  <div class="split">
+    .property-info .btn {
+      display: block;
+      margin-top: 24px;
+      padding: 14px 18px;
+      border-radius: 9px;
+      text-align: center;
+    }
 
-    <div>
+    .gallery-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, .95);
+    }
 
-   
-<div
-  class="main-gallery"
-  style="
-    position:relative;
-    width:100%;
-    height:420px;
-  "
->
+    .gallery-modal.is-open {
+      display: flex;
+    }
 
-<div
-    id="mainPropertyImage"
-    style="
-        position:relative;
-        width:100%;
-        height:420px;
-        display:flex;
-        justify-content:center;
-        align-items:center;
-        background:#f7f7f7;
-        border-radius:12px;
-        overflow:hidden;
-        cursor:pointer;
-    "
-    onclick="if(event.target===this) openGallery(window.currentImageIndex||0)"
->
-    <div style="
-        position:absolute;
-        inset:0;
-        background-image:url('${SourceStays.esc(mainImage)}');
-        background-size:cover;
-        background-position:center;
-        filter:blur(20px);
-        transform:scale(1.08);
-        opacity:.35;
-    "></div>
+    .gallery-modal img {
+      display: block;
+      max-width: 90vw;
+      max-height: 85vh;
+      object-fit: contain;
+      border-radius: 8px;
+    }
 
-    <img
-        src="${SourceStays.esc(mainImage)}"
-        alt="Property image"
-        style="
-            position:relative;
-            z-index:1;
-            display:block;
-           width:auto;
-max-width:100%;
-height:auto;
-max-height:420px;
-object-fit:contain;
-        "
-    >
-</div>
+    .gallery-modal .modal-close {
+      position: absolute;
+      top: 18px;
+      right: 20px;
+      z-index: 2;
+      width: 46px;
+      height: 46px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .18);
+      color: #fff;
+      font-size: 30px;
+      cursor: pointer;
+    }
 
-    
+    .gallery-modal .modal-arrow {
+      position: absolute;
+      top: 50%;
+      z-index: 2;
+      width: 48px;
+      height: 48px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .18);
+      color: #fff;
+      font-size: 32px;
+      cursor: pointer;
+      transform: translateY(-50%);
+    }
 
-        ${images.length > 1 ? `
+    .gallery-modal .modal-previous {
+      left: 18px;
+    }
+
+    .gallery-modal .modal-next {
+      right: 18px;
+    }
+
+    .gallery-modal button:hover {
+      background: #123f32;
+    }
+
+    .gallery-modal button:focus-visible {
+      outline: 3px solid #d5b56a;
+      outline-offset: 3px;
+    }
+
+    .gallery-modal .modal-count {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      padding: 7px 12px;
+      border-radius: 20px;
+      background: rgba(0, 0, 0, .6);
+      color: #fff;
+      transform: translateX(-50%);
+    }
+
+    @media (max-width: 760px) {
+      #detail .property-layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 22px;
+      }
+
+      .main-gallery {
+        height: min(72vw, 380px);
+        min-height: 250px;
+      }
+
+      .gallery-arrow {
+        width: 40px;
+        height: 40px;
+        font-size: 26px;
+      }
+
+      .gallery-arrow.previous {
+        left: 10px;
+      }
+
+      .gallery-arrow.next {
+        right: 10px;
+      }
+
+      .property-info {
+        padding: 20px;
+      }
+
+      .property-thumbnails button {
+        flex-basis: 76px;
+        width: 76px;
+        height: 60px;
+      }
+
+      .gallery-modal {
+        padding: 12px;
+      }
+
+      .gallery-modal img {
+        max-width: 94vw;
+        max-height: 78vh;
+      }
+
+      .gallery-modal .modal-previous {
+        left: 8px;
+      }
+
+      .gallery-modal .modal-next {
+        right: 8px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap nav">
+      <a class="logo" href="index.html">
+        SOURCE STAYS
+        <span>HOSPITALITY • REAL ESTATE</span>
+      </a>
+      <a class="btn dark" href="index.html">Back</a>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="wrap" id="detail">Loading property...</div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="app.js"></script>
+
+  <script>
+    const propertyId = Number(
+      new URLSearchParams(location.search).get("id")
+    );
+
+    let galleryImages = [];
+    let currentImageIndex = 0;
+    let galleryReady = false;
+
+    const detail = document.getElementById("detail");
+
+    function safeImageUrl(url) {
+      if (typeof url !== "string") return "";
+      return url;
+    }
+
+    function changeMainImage(index) {
+      if (!galleryImages.length) return;
+
+      currentImageIndex =
+        (Number(index) + galleryImages.length) % galleryImages.length;
+
+      const url = safeImageUrl(galleryImages[currentImageIndex]);
+      const mainImage = document.getElementById("mainPhoto");
+      const backdrop = document.getElementById("imageBackdrop");
+      const modalImage = document.getElementById("modalPhoto");
+
+      if (mainImage) mainImage.src = url;
+      if (backdrop) backdrop.style.backgroundImage = `url("${url}")`;
+      if (modalImage) modalImage.src = url;
+
+      document.querySelectorAll(".property-thumbnails button")
+        .forEach((button, index) => {
+          const active = index === currentImageIndex;
+          button.setAttribute("aria-current", String(active));
+        });
+
+      updateGalleryCounts();
+    }
+
+    function updateGalleryCounts() {
+      const text = galleryImages.length
+        ? `${currentImageIndex + 1} / ${galleryImages.length}`
+        : "";
+
+      const mainCount = document.getElementById("mainGalleryCount");
+      const modalCount = document.getElementById("modalGalleryCount");
+
+      if (mainCount) mainCount.textContent = text;
+      if (modalCount) modalCount.textContent = text;
+    }
+
+    function previousImage() {
+      changeMainImage(currentImageIndex - 1);
+    }
+
+    function nextImage() {
+      changeMainImage(currentImageIndex + 1);
+    }
+
+    function openGallery() {
+      if (!galleryImages.length) return;
+
+      changeMainImage(currentImageIndex);
+
+      const modal = document.getElementById("galleryModal");
+      if (!modal) return;
+
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+
+      const closeButton = modal.querySelector(".modal-close");
+      if (closeButton) closeButton.focus();
+    }
+
+    function closeGallery() {
+      const modal = document.getElementById("galleryModal");
+      if (!modal) return;
+
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    function renderProperty(p) {
+      const title = SourceStays.esc(p.title || "Property");
+      const category = SourceStays.esc(p.category || "shortlet");
+      const location = SourceStays.esc(p.location || "Lagos");
+      const description = SourceStays.esc(p.description || "");
+      const amenities = SourceStays.esc(p.amenities || "—");
+      const period = SourceStays.esc(p.price_period || "per night");
+
+      detail.innerHTML = `
+        <div class="property-layout">
+          <section class="property-gallery" aria-label="Property photos">
+            <div class="main-gallery" id="mainGallery">
+              <div class="image-backdrop" id="imageBackdrop"></div>
+
+              <img
+                class="main-photo"
+                id="mainPhoto"
+                src=""
+                alt="${title}"
+              >
+
+              <button
+                type="button"
+                class="gallery-arrow previous"
+                id="mainPrevious"
+                aria-label="Previous property photo"
+              >‹</button>
+
+              <button
+                type="button"
+                class="gallery-arrow next"
+                id="mainNext"
+                aria-label="Next property photo"
+              >›</button>
+
+              <span class="gallery-count" id="mainGalleryCount"></span>
+            </div>
+
+            <div
+              class="property-thumbnails"
+              id="propertyThumbnails"
+              aria-label="Choose property photo"
+            ></div>
+          </section>
+
+          <section class="property-info">
+            <div class="eyebrow">${category}</div>
+
+            <h2>${title}</h2>
+
+            <p class="muted">
+              ${location}
+              • ${p.bedrooms || 0} bedroom(s)
+              • ${p.guests || 0} guests
+            </p>
+
+            <h3>
+              ₦${SourceStays.money(p.price)} / ${period}
+            </h3>
+
+            <p>${description}</p>
+
+            <p><b>Amenities:</b> ${amenities}</p>
+
+            <a class="btn dark" href="booking.html?id=${encodeURIComponent(p.id)}">
+              Request booking
+            </a>
+          </section>
+        </div>
+
+        <div
+          class="gallery-modal"
+          id="galleryModal"
+          role="dialog"
+          aria-label="Property photo gallery"
+          aria-modal="true"
+          aria-hidden="true"
+        >
           <button
-            onclick="alert('MAIN LEFT ARROW CLICKED'); window.previousImage(); return false;"
-            style="
-              position:absolute;
-              left:15px;
-              top:50%;
-              transform:translateY(-50%);
-              width:42px;
-              height:42px;
-              border:0;
-              border-radius:50%;
-              background:rgba(0,0,0,.55);
-              color:white;
-              font-size:24px;
-              cursor:pointer;
-            "
+            type="button"
+            class="modal-close"
+            aria-label="Close gallery"
+          >×</button>
+
+          <button
+            type="button"
+            class="modal-arrow modal-previous"
+            aria-label="Previous photo"
           >‹</button>
 
+          <img id="modalPhoto" src="" alt="${title}">
+
           <button
-            onclick="alert('MAIN RIGHT ARROW CLICKED'); window.nextImage(); return false;"
-            style="
-              position:absolute;
-              right:15px;
-              top:50%;
-              transform:translateY(-50%);
-              width:42px;
-              height:42px;
-              border:0;
-              border-radius:50%;
-              background:rgba(0,0,0,.55);
-              color:white;
-              font-size:24px;
-              cursor:pointer;
-            "
+            type="button"
+            class="modal-arrow modal-next"
+            aria-label="Next photo"
           >›</button>
-        ` : ''}
 
-      </div>
+          <span class="modal-count" id="modalGalleryCount"></span>
+        </div>
+      `;
 
-  
-<div class="property-thumbnails">
+      const thumbnailContainer =
+        document.getElementById("propertyThumbnails");
 
-        ${images.map((img,index)=>`
-          <img
-            src="${SourceStays.esc(img)}"
-            onclick="changeMainImage(${index})"
-            style="
-              width:90px;
-              height:70px;
-              object-fit:cover;
-              border-radius:8px;
-              cursor:pointer;
-              flex-shrink:0;
-              border:2px solid ${index===0 ? '#123f32' : 'transparent'};
-            "
-          >
-        `).join('')}
-      </div>
+      galleryImages.forEach((url, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.setAttribute("aria-label", `Show photo ${index + 1}`);
+        button.setAttribute("aria-current", String(index === 0));
 
-    </div>
+        const image = document.createElement("img");
+        image.src = safeImageUrl(url);
+        image.alt = `${title} photo ${index + 1}`;
+        image.loading = "lazy";
 
-    
-<div class="property-info">
-<div class="eyebrow">
-        ${SourceStays.esc(p.category||'shortlet')}
-      </div>
+        button.appendChild(image);
 
-      <h2>${SourceStays.esc(p.title)}</h2>
+        button.addEventListener("click", () => {
+          changeMainImage(index);
+        });
 
-      <p class="muted">
-        ${SourceStays.esc(p.location||'Lagos')}
-        • ${p.bedrooms||0} bedroom(s)
-        • ${p.guests||0} guests
-      </p>
+        thumbnailContainer.appendChild(button);
+      });
 
-      <h3 style="color:#123f32">
-        ₦${SourceStays.money(p.price)}
-        / ${SourceStays.esc(p.price_period||'per night')}
-      </h3>
+      const mainGallery = document.getElementById("mainGallery");
+      const mainPrevious = document.getElementById("mainPrevious");
+      const mainNext = document.getElementById("mainNext");
+      const modal = document.getElementById("galleryModal");
 
-      <p>${SourceStays.esc(p.description||'')}</p>
+      mainPrevious.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        previousImage();
+      });
 
-      <p>
-        <b>Amenities:</b>
-        ${SourceStays.esc(p.amenities||'—')}
-      </p>
+      mainNext.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        nextImage();
+      });
 
-      <a class="btn dark" href="booking.html?id=${p.id}">
-        Request booking
-      </a>
+      mainGallery.addEventListener("click", (event) => {
+        if (
+          event.target === mainGallery ||
+          event.target.id === "mainPhoto" ||
+          event.target.id === "imageBackdrop"
+        ) {
+          openGallery();
+        }
+      });
 
-    </div>
+      modal.querySelector(".modal-close")
+        .addEventListener("click", closeGallery);
 
-  </div>
+      modal.querySelector(".modal-previous")
+        .addEventListener("click", (event) => {
+          event.stopPropagation();
+          previousImage();
+        });
 
-  <div
-    id="galleryModal"
-    style="
-      display:none;
-      position:fixed;
-      inset:0;
-      z-index:9999;
-      background:rgba(0,0,0,.95);
-      align-items:center;
-      justify-content:center;
-      padding:20px;
-    "
-    onclick="closeGallery()"
-  >
+      modal.querySelector(".modal-next")
+        .addEventListener("click", (event) => {
+          event.stopPropagation();
+          nextImage();
+        });
 
-    <button
-      onclick="event.stopPropagation(); closeGallery();"
-      style="
-        position:absolute;
-        top:20px;
-        right:25px;
-        width:45px;
-        height:45px;
-        border:0;
-        border-radius:50%;
-        background:rgba(255,255,255,.2);
-        color:white;
-        font-size:28px;
-        cursor:pointer;
-      "
-    >×</button>
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) closeGallery();
+      });
 
-    <button
-      onclick="event.stopPropagation(); previousImage();"
-      style="
-        position:absolute;
-        left:20px;
-        top:50%;
-        width:50px;
-        height:50px;
-        border:0;
-        border-radius:50%;
-        background:rgba(255,255,255,.2);
-        color:white;
-        font-size:32px;
-        cursor:pointer;
-      "
-    >‹</button>
+      modal.querySelector("#modalPhoto")
+        .addEventListener("click", (event) => {
+          event.stopPropagation();
+        });
 
-    <img
-      id="galleryModalImage"
-      src=""
-      onclick="event.stopPropagation()"
-      style="
-        max-width:90vw;
-        max-height:85vh;
-        object-fit:contain;
-        border-radius:8px;
-      "
-    >
+      document.addEventListener("keydown", (event) => {
+        if (!modal.classList.contains("is-open")) return;
 
-    <button type="button" onclick="alert('Right arrow clicked'); window.nextImage();"
-      style="
-        position:absolute;
-        right:20px;
-        top:50%;
-        width:50px;
-        height:50px;
-        border:0;
-        border-radius:50%;
-        background:rgba(255,255,255,.2);
-        color:white;
-        font-size:32px;
-        cursor:pointer;
-      "
-    >›</button>
+        if (event.key === "Escape") closeGallery();
+        if (event.key === "ArrowLeft") previousImage();
+        if (event.key === "ArrowRight") nextImage();
+      });
 
-  </div>
-`;
-    
-  }catch(e){
-    console.error(e);
-    document.getElementById('detail').textContent='Property not found.';
-  }
-}
+      if (galleryImages.length <= 1) {
+        mainPrevious.hidden = true;
+        mainNext.hidden = true;
+      }
 
-function changeMainImage(index){
-  const images = window.galleryImages || [];
-  if(!images.length)return;
-
-  window.currentImageIndex =
-    (Number(index) + images.length) % images.length;
-
-  const url = images[window.currentImageIndex];
-
-  const main = document.getElementById('mainPropertyImage');
-  const modalImage = document.getElementById('galleryModalImage');
-
- if(main){
-    const mainImg = main.querySelector('img');
-    if(mainImg){
-        mainImg.src = url;
+      changeMainImage(0);
+      galleryReady = true;
     }
-}
 
-  if(modalImage){
-    modalImage.src = url;
-  }
+    async function showProperty() {
+      try {
+        if (!Number.isFinite(propertyId) || propertyId <= 0) {
+          throw new Error("Invalid property ID");
+        }
 
-  const thumbnails =
-    document.querySelectorAll('.property-thumbnails img');
+        const property = await SourceStays.getProperty(propertyId);
 
-  thumbnails.forEach((img,i)=>{
-    img.style.border =
-      i === window.currentImageIndex
-        ? '2px solid #123f32'
-        : '2px solid transparent';
-  });
-}
+        if (!property) {
+          throw new Error("Property not found");
+        }
 
-function previousImage(){
-  changeMainImage(
-    (window.currentImageIndex || 0) - 1
-  );
-}
+        let propertyImages = [];
 
-function nextImage(){
-  changeMainImage(
-    (window.currentImageIndex || 0) + 1
-  );
-}
+        try {
+          const result = await SourceStays.getPropertyImages(propertyId);
+          if (Array.isArray(result)) {
+            propertyImages = result
+              .map((item) => item.image_url)
+              .filter((url) => typeof url === "string" && url.length > 0);
+          }
+        } catch (imageError) {
+          console.error("Could not load additional property images:", imageError);
+        }
 
-function openGallery(index){
-  changeMainImage(index);
+        if (!propertyImages.length && property.image_url) {
+          propertyImages = [property.image_url];
+        }
 
-  const modal = document.getElementById('galleryModal');
+        galleryImages = propertyImages;
+        currentImageIndex = 0;
 
-  if(modal){
-    modal.style.display = 'flex';
-  }
-}
+        if (!galleryImages.length) {
+          detail.innerHTML = `
+            <p>This property has no photos available yet.</p>
+            <a class="btn dark" href="index.html">Back to properties</a>
+          `;
+          return;
+        }
 
-function closeGallery(){
-  const modal = document.getElementById('galleryModal');
+        renderProperty(property);
 
-  if(modal){
-    modal.style.display = 'none';
-  }
-}
+      } catch (error) {
+        console.error("Could not load property:", error);
+        detail.innerHTML = `
+          <p>We couldn't load this property. Please try again.</p>
+          <a class="btn dark" href="index.html">Back to properties</a>
+        `;
+      }
+    }
 
-show();
-</script>
-</body></html>
+    showProperty();
+  </script>
+</body>
+</html>
