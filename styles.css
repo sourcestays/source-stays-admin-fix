@@ -247,7 +247,7 @@ h1 {
 }
 
 .search select {
-  padding-right: 38px;
+  padding: 0 28px 0 10px;
   cursor: pointer;
   text-align: left;
 }
