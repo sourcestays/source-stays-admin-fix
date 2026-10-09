@@ -183,7 +183,7 @@ object-fit:contain;
 
         ${images.length > 1 ? `
           <button
-            onclick="event.stopPropagation(); previousImage();"
+            onclick="previousImage(); return false;"
             style="
               position:absolute;
               left:15px;
@@ -201,7 +201,7 @@ object-fit:contain;
           >‹</button>
 
           <button
-            onclick="event.stopPropagation(); nextImage();"
+            onclick="nextImage(); return false;"
             style="
               position:absolute;
               right:15px;
@@ -388,7 +388,7 @@ function changeMainImage(index){
   }
 
   const thumbnails =
-    document.querySelectorAll('#detail img');
+    document.querySelectorAll('.property-thumbnails img');
 
   thumbnails.forEach((img,i)=>{
     img.style.border =
