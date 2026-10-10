@@ -150,6 +150,25 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
     }
+  .verification-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.verification-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: #e8f4ec;
+  color: #123f32;
+  border: 1px solid #c5a35b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
   </style>
 </head>
 
@@ -303,6 +322,10 @@
             <div class="eyebrow">${category}</div>
 
             <h2>${title}</h2>
+<div class="verification-badges">
+  ${p.owner_identity_verified ? '<span class="verification-badge">✓ Source Verified</span>' : ''}
+  ${p.physical_inspection_verified ? '<span class="verification-badge">✓ Physical Inspection Completed</span>' : ''}
+</div>
 
             <p class="muted">
               ${location}
