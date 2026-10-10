@@ -1,0 +1,292 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Source Stays | Property Inspections</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<style>
+body{font-family:Arial,sans-serif;background:#f7f6f1;color:#24352c;margin:0;padding:20px}
+main{max-width:1050px;margin:auto}
+header,.panel{background:white;padding:22px;border-radius:14px;margin-bottom:18px;border:1px solid #e5e2d9}
+h1,h2{color:#244c38}
+label{display:block;font-weight:600;margin:12px 0 6px}
+input:not([type=checkbox]),select,textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #ccc;border-radius:7px}
+.check label{font-weight:400}
+button{background:#28553c;color:white;padding:10px 14px;border:0;border-radius:7px;cursor:pointer;margin:5px 4px 5px 0}
+button.reject{background:#8b3434}
+button:disabled{opacity:.6}
+.muted{color:#666;font-size:14px}
+.message{white-space:pre-wrap;margin:12px 0}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;background:white}
+th,td{text-align:left;padding:10px;border-bottom:1px solid #ddd;vertical-align:top}
+th{background:#edf2ed}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Source Stays</h1>
+<h2>Property Inspection Management</h2>
+<p>Record property inspections, evidence and findings, then submit them for review.</p>
+<p id="account" class="muted">Checking administrator access...</p>
+<button id="logout" hidden>Log out</button>
+</header>
+
+<section id="loginPanel" class="panel" hidden>
+<h2>Administrator login</h2>
+<form id="loginForm">
+<label>Email</label>
+<input name="email" type="email" required>
+<label>Password</label>
+<input name="password" type="password" required>
+<button type="submit">Sign in</button>
+</form>
+<p id="loginMessage" class="message"></p>
+</section>
+
+<div id="app" hidden>
+<section class="panel">
+<h2>New inspection record</h2>
+<form id="inspectionForm">
+<label>Property</label>
+<select name="property_id" id="propertySelect" required>
+<option value="">Loading properties...</option>
+</select>
+
+<label>Inspector name</label>
+<input name="inspector_name" required>
+
+<label>Inspection date</label>
+<input name="inspection_date" type="date" required>
+
+<div class="check">
+<label><input type="checkbox" name="cleanliness"> Cleanliness and property condition</label>
+<label><input type="checkbox" name="safety"> Safety and security</label>
+<label><input type="checkbox" name="utilities"> Utilities working</label>
+<label><input type="checkbox" name="amenities"> Advertised amenities present</label>
+<label><input type="checkbox" name="matches"> Property matches its listing</label>
+</div>
+
+<label>Findings and recommended actions</label>
+<textarea name="findings" rows="4" placeholder="Describe observations, defects and actions required"></textarea>
+
+<label>Evidence photo URLs (one URL per line)</label>
+<textarea name="evidence_photos" rows="3" placeholder="Paste image URLs here"></textarea>
+<p class="muted">This first version stores image links; it does not upload photographs from your device.</p>
+
+<button id="submitInspection" type="submit">Submit inspection for review</button>
+</form>
+<p id="formMessage" class="message"></p>
+</section>
+
+<section class="panel">
+<h2>Inspection records</h2>
+<button id="refresh">Refresh records</button>
+<div id="records" class="table-wrap">Loading records...</div>
+</section>
+</div>
+</main>
+
+<script>
+(function(){
+const sb=window.supabase.createClient(
+  window.SUPABASE_URL,
+  window.SUPABASE_PUBLISHABLE_KEY
+);
+const $=id=>document.getElementById(id);
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[c]));
+let properties=[];
+
+function message(id,text){$(id).textContent=text;}
+
+async function start(){
+  $('app').hidden=true;
+  $('loginPanel').hidden=true;
+  $('logout').hidden=true;
+  const {data:{user},error}=await sb.auth.getUser();
+  if(error||!user){
+    $('loginPanel').hidden=false;
+    message('account','Please sign in as an administrator.');
+    return;
+  }
+
+  const {data:admin,error:adminError}=await sb
+    .from('admin_users').select('id').eq('id',user.id).maybeSingle();
+
+  if(adminError||!admin){
+    message('account','This account is not authorised as an administrator.');
+    await sb.auth.signOut();
+    $('loginPanel').hidden=false;
+    return;
+  }
+
+  message('account','Signed in as '+user.email);
+  $('logout').hidden=false;
+  $('app').hidden=false;
+  await loadProperties();
+  await loadRecords();
+}
+
+async function loadProperties(){
+  const {data,error}=await sb.from('properties')
+    .select('id,title,location').order('id',{ascending:false});
+  if(error){
+    message('formMessage','Could not load properties: '+error.message);
+    return;
+  }
+  properties=data||[];
+  $('propertySelect').innerHTML='<option value="">Select a property</option>'+
+    properties.map(p=>'<option value="'+esc(p.id)+'">'+
+      esc(p.title||('Property #'+p.id))+' — '+esc(p.location||'')+
+      '</option>').join('');
+}
+
+async function loadRecords(){
+  $('records').textContent='Loading records...';
+  const {data,error}=await sb.from('property_inspections')
+    .select('*').order('created_at',{ascending:false});
+  if(error){
+    $('records').textContent='Could not load records: '+error.message;
+    return;
+  }
+  if(!data||!data.length){
+    $('records').textContent='No inspection records yet.';
+    return;
+  }
+
+  $('records').innerHTML='<table><thead><tr><th>Property</th><th>Inspector/date</th><th>Checklist and findings</th><th>Status/review</th></tr></thead><tbody>'+
+    data.map(r=>{
+      const p=properties.find(x=>Number(x.id)===Number(r.property_id));
+      const checks=r.checklist||{};
+      const checklist=Object.entries(checks)
+        .map(([k,v])=>esc(k.replace(/_/g,' '))+': '+(v?'Yes':'No'))
+        .join('<br>');
+      const photos=Array.isArray(r.evidence_photos)?r.evidence_photos:[];
+      const evidence=photos.map(url=>'<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">View evidence</a>').join('<br>');
+      const actions=r.status==='submitted'
+        ?'<button data-review="approved" data-id="'+Number(r.id)+'">Approve</button><button class="reject" data-review="rejected" data-id="'+Number(r.id)+'">Reject</button>'
+        :'—';
+      return '<tr><td>'+esc(p?.title||('Property #'+r.property_id))+
+        '</td><td>'+esc(r.inspector_name)+'<br>'+esc(r.inspection_date)+
+        '</td><td>'+checklist+'<p>'+esc(r.findings||'No findings entered')+
+        '</p>'+evidence+'</td><td>'+esc(r.status)+'<br>'+actions+'</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+
+$('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const f=e.currentTarget;
+  message('loginMessage','Signing in...');
+  const {error}=await sb.auth.signInWithPassword({
+    email:f.elements.email.value,
+    password:f.elements.password.value
+  });
+  if(error){message('loginMessage',error.message);return;}
+  await start();
+});
+
+$('inspectionForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const f=e.currentTarget;
+  const btn=$('submitInspection');
+  btn.disabled=true;
+  message('formMessage','Saving inspection...');
+  try{
+    const checklist={
+      cleanliness:f.elements.cleanliness.checked,
+      safety_security:f.elements.safety.checked,
+      utilities_working:f.elements.utilities.checked,
+      advertised_amenities_present:f.elements.amenities.checked,
+      property_matches_listing:f.elements.matches.checked
+    };
+    const evidence=f.elements.evidence_photos.value.split(/\r?\n/)
+      .map(x=>x.trim()).filter(Boolean);
+    for(const url of evidence){
+      const parsed=new URL(url);
+      if(!['https:','http:'].includes(parsed.protocol))
+        throw new Error('Evidence links must use HTTP or HTTPS.');
+    }
+    const payload={
+      property_id:Number(f.elements.property_id.value),
+      inspector_name:f.elements.inspector_name.value.trim(),
+      inspection_date:f.elements.inspection_date.value,
+      checklist,
+      findings:f.elements.findings.value.trim(),
+      evidence_photos:evidence,
+      status:'submitted',
+      updated_at:new Date().toISOString()
+    };
+    const {error}=await sb.from('property_inspections').insert(payload);
+    if(error)throw error;
+    f.reset();
+    message('formMessage','Inspection submitted successfully for review.');
+    await loadRecords();
+  }catch(err){
+    message('formMessage','Could not save inspection: '+err.message);
+  }finally{
+    btn.disabled=false;
+  }
+});
+
+$('records').addEventListener('click',async e=>{
+  const btn=e.target.closest('button[data-review]');
+  if(!btn)return;
+  const status=btn.dataset.review;
+  const id=Number(btn.dataset.id);
+  if(!confirm((status==='approved'?'Approve':'Reject')+' this inspection?'))return;
+  btn.disabled=true;
+  try{
+    const {data:{user},error:userError}=await sb.auth.getUser();
+    if(userError||!user)throw userError||new Error('Please sign in again.');
+    const {data:record,error:recordError}=await sb.from('property_inspections')
+      .select('property_id,checklist').eq('id',id).single();
+    if(recordError)throw recordError;
+    const {error}=await sb.from('property_inspections').update({
+      status,
+      reviewed_by:user.id,
+      reviewed_at:new Date().toISOString(),
+      updated_at:new Date().toISOString()
+    }).eq('id',id);
+    if(error)throw error;
+
+    if(status==='approved'){
+      const c=record.checklist||{};
+      const complete=['cleanliness','safety_security','utilities_working',
+        'advertised_amenities_present','property_matches_listing']
+        .every(k=>c[k]===true);
+      if(complete){
+        const {error:propertyError}=await sb.from('properties')
+          .update({physical_inspection_verified:true})
+          .eq('id',record.property_id);
+        if(propertyError)message('formMessage',
+          'Inspection approved, but the property badge was not updated: '+propertyError.message);
+      }else{
+        message('formMessage','Inspection approved, but the physical inspection badge was not enabled because not every checklist item was completed.');
+      }
+    }
+    await loadRecords();
+  }catch(err){
+    alert('Review failed: '+err.message);
+  }finally{
+    btn.disabled=false;
+  }
+});
+
+$('refresh').addEventListener('click',loadRecords);
+$('logout').addEventListener('click',async()=>{
+  await sb.auth.signOut();
+  await start();
+});
+start().catch(err=>{
+  message('account','Could not start inspection page: '+err.message);
+});
+})();
+</script>
+</body>
+</html>
