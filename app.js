@@ -12,7 +12,20 @@ async function getListings(){
 }
 async function loadListings(){
  const box=document.getElementById('listings'); if(!box)return;
- try{const items=await getListings(); 
+ 
+try {
+  const items = await getListings();
+
+  console.log('[Source Stays diagnostic]', {
+    listingsLoaded: items.length,
+    verificationFields: items.slice(0, 5).map(p => ({
+      id: p.id,
+      title: p.title,
+      owner_identity_verified: p.owner_identity_verified,
+      physical_inspection_verified: p.physical_inspection_verified
+    }))
+  });
+ 
 box.innerHTML=items.length?items.map(p=>`<article class="card"><div class="photo" style="background-image:url('${esc(p.image_url||'')}')"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(p.title)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(p.location||'Lagos')} • ${p.bedrooms||0} bedroom(s) • ${p.guests||0} guest(s)</div><div class="price">₦${money(p.price)} / ${esc(p.price_period||'per night')}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`).join(''):'<p>No matching listings yet. Try another location or contact Source Stays.'}
 
  catch(e){console.error(e);box.innerHTML='<p>Listings are temporarily unavailable. Please try again or contact Source Stays on WhatsApp.</p>'}
