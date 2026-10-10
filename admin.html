@@ -4,7 +4,27 @@
 <div id="login" class="box login"><a class="brand-logo" href="index.html"><img src="source-stays-logo-green-gold.png" alt="Source Stays"></a><div class="eyebrow" style="margin-top:12px">Source Stays</div><h2>Admin dashboard</h2><p class="muted">Manage apartments, hotels and real-estate listings from one place.</p><div id="modeNotice" class="notice">Live Supabase login — demo login has been disabled.</div><form id="loginForm"><div class="field"><label>Email</label><input name="email" type="email" value="" required></div><div class="field"><label>Password</label><input name="password" type="password" placeholder="Enter admin password" required></div><button class="btn dark">Sign in</button><p id="loginMsg" class="muted"></p></form></div>
 <div id="dash" class="hidden"><div class="top"><div><a class="brand-logo" href="index.html"><img src="source-stays-logo-green-gold.png" alt="Source Stays"></a><div class="eyebrow">Management dashboard</div><h2>Source Stays Admin</h2></div><div><button class="btn gold" onclick="newProperty()">+ Add property</button> <button class="btn" onclick="location.href='index.html'">View website</button> <button class="btn" onclick="logout()">Log out</button></div></div>
 <div class="stats"><div class="stat"><span>Properties</span><b id="statProps">0</b></div><div class="stat"><span>Published</span><b id="statPublished">0</b></div><div class="stat"><span>Enquiries</span><b id="statEnq">0</b></div></div>
-<div class="grid"><section class="box"><h3>Properties</h3><div id="props"></div></section><section class="box"><h3 id="formTitle">Add property</h3><form id="propertyForm"><input type="hidden" name="id"><div class="field"><label>Title</label><input name="title" required></div><div class="field"><label>Category</label><select name="type"><option value="shortlet">Shortlet</option><option value="hotel">Hotel</option><option value="sale">For sale</option><option value="rent">For rent</option><option value="land">Land</option></select></div><div class="field"><label>Location</label><input name="location" placeholder="Lekki Phase 1, Lagos"></div><div class="field"><label>Price</label><input name="price" type="number"></div><div class="field"><label>Price unit</label><input name="price_period" value="per night" placeholder="per night / per month / total"></div><div class="field"><label>Bedrooms</label><input name="bedrooms" type="number"></div><div class="field"><label>Guests</label><input name="guests" type="number"></div><div class="field"><label>Amenities</label><input name="amenities" placeholder="Pool, Wi-Fi, Generator"></div><div class="field"><label>Description</label><textarea name="description"></textarea></div><div class="field"><label>Photo</label><input name="imageFile" type="file" accept="image/*"multiple><small class="muted">Photos are uploaded to Source Stays secure storage.</small></div><div class="field"><label>Or image URL</label><input name="image_url" placeholder="https://..."></div><div><label><input name="featured" type="checkbox"> Featured</label> &nbsp; <label><input name="published" type="checkbox" checked> Published</label></div><br><button class="btn gold">Save property</button></form></section></div>
+<div class="grid"><section class="box"><h3>Properties</h3><div id="props"></div></section><section class="box"><h3 id="formTitle">Add property</h3><form id="propertyForm"><input type="hidden" name="id"><div class="field"><label>Title</label><input name="title" required></div><div class="field"><label>Category</label><select name="type"><option value="shortlet">Shortlet</option><option value="hotel">Hotel</option><option value="sale">For sale</option><option value="rent">For rent</option><option value="land">Land</option></select></div><div class="field"><label>Location</label><input name="location" placeholder="Lekki Phase 1, Lagos"></div><div class="field"><label>Price</label><input name="price" type="number"></div><div class="field"><label>Price unit</label><input name="price_period" value="per night" placeholder="per night / per month / total"></div><div class="field"><label>Bedrooms</label><input name="bedrooms" type="number"></div><div class="field"><label>Guests</label><input name="guests" type="number"></div><div class="field"><label>Amenities</label><input name="amenities" placeholder="Pool, Wi-Fi, Generator"></div><div class="field"><label>Description</label><textarea name="description"></textarea></div><div class="field"><label>Photo</label><input name="imageFile" type="file" accept="image/*"multiple><small class="muted">Photos are uploaded to Source Stays secure storage.</small></div><div class="field"><label>Or image URL</label><input name="image_url" placeholder="https://..."></div>```html
+<div class="field">
+  <label>
+    <input name="owner_identity_verified" type="checkbox">
+    Owner/agent identity verified
+  </label>
+</div>
+<div class="field">
+  <label>
+    <input name="physical_inspection_verified" type="checkbox">
+    Physical inspection completed
+  </label>
+</div>
+<div>
+  <label><input name="featured" type="checkbox"> Featured</label>
+  &nbsp;
+  <label><input name="published" type="checkbox" checked> Published</label>
+</div>
+<br>
+<button class="btn gold">Save property</button>
+</form></section></div>
 <section class="box"><h3>Bookings & enquiries</h3><div id="bookings"></div><div id="enquiries"></div></section></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase-config.js"></script>
