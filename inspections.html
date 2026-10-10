@@ -244,32 +244,51 @@ $('records').addEventListener('click',async e=>{
   try{
     const {data:{user},error:userError}=await sb.auth.getUser();
     if(userError||!user)throw userError||new Error('Please sign in again.');
-    const {data:record,error:recordError}=await sb.from('property_inspections')
-      .select('property_id,checklist').eq('id',id).single();
-    if(recordError)throw recordError;
-    const {error}=await sb.from('property_inspections').update({
-      status,
-      reviewed_by:user.id,
-      reviewed_at:new Date().toISOString(),
-      updated_at:new Date().toISOString()
-    }).eq('id',id);
-    if(error)throw error;
+  
+const {data:record,error:recordError}=await sb.from('property_inspections')
+  .select('property_id,checklist').eq('id',id).single();
+if(recordError)throw recordError;
 
-    if(status==='approved'){
-      const c=record.checklist||{};
-      const complete=['cleanliness','safety_security','utilities_working',
-        'advertised_amenities_present','property_matches_listing']
-        .every(k=>c[k]===true);
-      if(complete){
-        const {error:propertyError}=await sb.from('properties')
-          .update({physical_inspection_verified:true})
-          .eq('id',record.property_id);
-        if(propertyError)message('formMessage',
-          'Inspection approved, but the property badge was not updated: '+propertyError.message);
-      }else{
-        message('formMessage','Inspection approved, but the physical inspection badge was not enabled because not every checklist item was completed.');
-      }
-    }
+if(status==='approved'){
+  const c=record.checklist||{};
+  const required=[
+    'cleanliness',
+    'safety_security',
+    'utilities_working',
+    'advertised_amenities_present',
+    'property_matches_listing'
+  ];
+  const incomplete=required.filter(k=>c[k]!==true);
+
+  if(incomplete.length){
+    throw new Error(
+      'Cannot approve this inspection. Complete all five checklist items first.'
+    );
+  }
+}
+
+const {error}=await sb.from('property_inspections').update({
+  status,
+  reviewed_by:user.id,
+  reviewed_at:new Date().toISOString(),
+  updated_at:new Date().toISOString()
+}).eq('id',id);
+
+if(error)throw error;
+
+if(status==='approved'){
+  const {error:propertyError}=await sb.from('properties')
+    .update({physical_inspection_verified:true})
+    .eq('id',record.property_id);
+
+  if(propertyError){
+    throw new Error(
+      'Inspection was approved, but the property badge could not be updated: '+
+      propertyError.message
+    );
+  }
+}
+
     await loadRecords();
   }catch(err){
     alert('Review failed: '+err.message);
