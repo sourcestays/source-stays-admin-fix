@@ -628,3 +628,29 @@ a:focus-visible {
     padding: 32px 0;
   }
 }
+
+/* =========================================
+   PROPERTY VERIFICATION BADGES
+========================================= */
+
+.verification-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.verification-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid #c9a45c;
+  border-radius: 999px;
+  background: #f7f3ea;
+  color: #123f32;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.4;
+}
