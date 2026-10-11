@@ -42,5 +42,33 @@ async function getProperty(id){const {data,error}=await supabaseClient.from('pro
   if(error) throw error;
   return data || [];
 }
-window.SourceStays={supabase:supabaseClient,BUCKET,esc,money,getListings,loadListings,submitBooking,submitEnquiry,getProperty,getPropertyImages};
+
+async function checkAvailability(propertyId, checkIn, checkOut) {
+  const { data, error } = await supabaseClient.rpc(
+    'check_property_availability',
+    {
+      p_property_id: Number(propertyId),
+      p_check_in: checkIn,
+      p_check_out: checkOut
+    }
+  );
+
+  if (error) throw error;
+  return data === true;
+}
+
+window.SourceStays = {
+  supabase: supabaseClient,
+  BUCKET,
+  esc,
+  money,
+  getListings,
+  loadListings,
+  submitBooking,
+  submitEnquiry,
+  getProperty,
+  getPropertyImages,
+  checkAvailability
+};
+
 if(document.getElementById('listings')) loadListings();
