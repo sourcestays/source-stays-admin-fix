@@ -347,6 +347,22 @@
           </section>
         </div>
 
+        ${p.video_url ? `
+        <section class="property-video" style="margin: 28px 0;">
+          <h2>Property Video Tour</h2>
+          <video
+            controls
+            playsinline
+            preload="metadata"
+            style="width: 100%; max-width: 900px; border-radius: 12px; display: block;"
+            src="${SourceStays.esc(p.video_url)}"
+          >
+            Your browser does not support video playback.
+          </video>
+        </section>
+        ` : ''}
+
+
         <div
           class="gallery-modal"
           id="galleryModal"
