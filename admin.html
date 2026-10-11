@@ -7,6 +7,11 @@
 <div class="stats"><div class="stat"><span>Properties</span><b id="statProps">0</b></div><div class="stat"><span>Published</span><b id="statPublished">0</b></div><div class="stat"><span>Enquiries</span><b id="statEnq">0</b></div></div>
 <div class="grid"><section class="box"><h3>Properties</h3><div id="props"></div></section><section class="box"><h3 id="formTitle">Add property</h3><form id="propertyForm"><input type="hidden" name="id"><div class="field"><label>Title</label><input name="title" required></div><div class="field"><label>Category</label><select name="type"><option value="shortlet">Shortlet</option><option value="hotel">Hotel</option><option value="sale">For sale</option><option value="rent">For rent</option><option value="land">Land</option></select></div><div class="field"><label>Location</label><input name="location" placeholder="Lekki Phase 1, Lagos"></div><div class="field"><label>Price</label><input name="price" type="number"></div><div class="field"><label>Price unit</label><input name="price_period" value="per night" placeholder="per night / per month / total"></div><div class="field"><label>Bedrooms</label><input name="bedrooms" type="number"></div><div class="field"><label>Guests</label><input name="guests" type="number"></div><div class="field"><label>Amenities</label><input name="amenities" placeholder="Pool, Wi-Fi, Generator"></div><div class="field"><label>Description</label><textarea name="description"></textarea></div><div class="field"><label>Photo</label><input name="imageFile" type="file" accept="image/*"multiple><small class="muted">Photos are uploaded to Source Stays secure storage.</small></div><div class="field"><label>Or image URL</label><input name="image_url" placeholder="https://..."></div>
 <div class="field">
+  <label>Property video (MP4 or WebM)</label>
+  <input name="videoFile" type="file" accept="video/mp4,video/webm,video/quicktime">
+  <small class="muted">Upload a property walkthrough video, ideally 60 seconds or longer.</small>
+</div>
+  <div class="field">
   <label>
     <input name="owner_identity_verified" type="checkbox">
     Owner/agent identity verified
@@ -212,6 +217,47 @@ if(files.length){
 
   if(galleryError)throw galleryError;
 }
+ 
+const videoFile = (f.elements.videoFile.files || [])[0];
+
+if (videoFile) {
+  if (videoFile.size > 50 * 1024 * 1024) {
+    throw new Error('Video must be 50 MB or smaller.');
+  }
+
+  if (!['video/mp4', 'video/webm', 'video/quicktime'].includes(videoFile.type)) {
+    throw new Error('Please choose an MP4, WebM or QuickTime video.');
+  }
+
+  const ext = (videoFile.name.split('.').pop() || 'mp4')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+
+  const videoPath = id + '/' + Date.now() + '-' +
+    crypto.randomUUID() + '.' + ext;
+
+  const { error: uploadError } = await getClient()
+    .storage
+    .from('Property_videos')
+    .upload(videoPath, videoFile, {
+      upsert: false,
+      contentType: videoFile.type
+    });
+
+  if (uploadError) throw uploadError;
+
+  const videoUrl = getClient()
+    .storage
+    .from('Property_videos')
+    .getPublicUrl(videoPath).data.publicUrl;
+
+  const { error: saveError } = await getClient()
+    .from('properties')
+    .update({ video_url: videoUrl })
+    .eq('id', id);
+
+  if (saveError) throw saveError;
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
 alert('Property saved successfully.');
 saveButton.disabled=false;
 saveButton.textContent='Save property';
