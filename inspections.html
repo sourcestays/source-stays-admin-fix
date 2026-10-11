@@ -14,6 +14,7 @@ header,.panel{background:white;padding:22px;border-radius:14px;margin-bottom:18p
 h1,h2{color:#244c38}
 label{display:block;font-weight:600;margin:12px 0 6px}
 input:not([type=checkbox]),select,textarea{box-sizing:border-box;width:100%;padding:11px;border:1px solid #ccc;border-radius:7px}
+input[type=file]{background:#fff}
 .check label{font-weight:400}
 button{background:#28553c;color:white;padding:10px 14px;border:0;border-radius:7px;cursor:pointer;margin:5px 4px 5px 0}
 button.reject{background:#8b3434}
@@ -74,9 +75,9 @@ th{background:#edf2ed}
 <label>Findings and recommended actions</label>
 <textarea name="findings" rows="4" placeholder="Describe observations, defects and actions required"></textarea>
 
-<label>Evidence photo URLs (one URL per line)</label>
-<textarea name="evidence_photos" rows="3" placeholder="Paste image URLs here"></textarea>
-<p class="muted">This first version stores image links; it does not upload photographs from your device.</p>
+<label>Inspection photographs</label>
+<input name="evidence_photos" id="evidencePhotos" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+<p class="muted">Choose photographs from your device. JPG, PNG, WEBP or GIF; maximum 10 MB per photo.</p>
 
 <button id="submitInspection" type="submit">Submit inspection for review</button>
 </form>
@@ -168,7 +169,9 @@ async function loadRecords(){
         .map(([k,v])=>esc(k.replace(/_/g,' '))+': '+(v?'Yes':'No'))
         .join('<br>');
       const photos=Array.isArray(r.evidence_photos)?r.evidence_photos:[];
-      const evidence=photos.map(url=>'<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">View evidence</a>').join('<br>');
+      const evidence=photos.length
+        ?photos.map(path=>'<button type="button" data-evidence="'+esc(path)+'">View photo</button>').join(' ')
+        :'No photos attached';
       const actions=r.status==='submitted'
         ?'<button data-review="approved" data-id="'+Number(r.id)+'">Approve</button><button class="reject" data-review="rejected" data-id="'+Number(r.id)+'">Reject</button>'
         :'—';
@@ -205,15 +208,27 @@ $('inspectionForm').addEventListener('submit',async e=>{
       advertised_amenities_present:f.elements.amenities.checked,
       property_matches_listing:f.elements.matches.checked
     };
-    const evidence=f.elements.evidence_photos.value.split(/\r?\n/)
-      .map(x=>x.trim()).filter(Boolean);
-    for(const url of evidence){
-      const parsed=new URL(url);
-      if(!['https:','http:'].includes(parsed.protocol))
-        throw new Error('Evidence links must use HTTP or HTTPS.');
+    const files=Array.from(f.elements.evidence_photos.files||[]);
+    const allowedTypes=['image/jpeg','image/png','image/webp','image/gif'];
+    for(const file of files){
+      if(!allowedTypes.includes(file.type))
+        throw new Error('Please choose JPG, PNG, WEBP or GIF photos only.');
+      if(file.size>10*1024*1024)
+        throw new Error('Each photo must be 10 MB or smaller.');
+    }
+    const propertyId=Number(f.elements.property_id.value);
+    const {data:{user},error:userError}=await sb.auth.getUser();
+    if(userError||!user)throw userError||new Error('Please sign in again.');
+    const evidence=[];
+    for(const file of files){
+      const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+      const path=propertyId+'/'+Date.now()+'_'+Math.random().toString(36).slice(2,9)+'_'+safeName;
+      const {error:uploadError}=await sb.storage.from('inspection-evidence').upload(path,file,{contentType:file.type,upsert:false});
+      if(uploadError)throw uploadError;
+      evidence.push(path);
     }
     const payload={
-      property_id:Number(f.elements.property_id.value),
+      property_id:propertyId,
       inspector_name:f.elements.inspector_name.value.trim(),
       inspection_date:f.elements.inspection_date.value,
       checklist,
@@ -235,6 +250,20 @@ $('inspectionForm').addEventListener('submit',async e=>{
 });
 
 $('records').addEventListener('click',async e=>{
+  const photoBtn=e.target.closest('button[data-evidence]');
+  if(photoBtn){
+    photoBtn.disabled=true;
+    try{
+      const {data,error}=await sb.storage.from('inspection-evidence').createSignedUrl(photoBtn.dataset.evidence,300);
+      if(error)throw error;
+      window.open(data.signedUrl,'_blank','noopener,noreferrer');
+    }catch(err){
+      alert('Could not open photo: '+err.message);
+    }finally{
+      photoBtn.disabled=false;
+    }
+    return;
+  }
   const btn=e.target.closest('button[data-review]');
   if(!btn)return;
   const status=btn.dataset.review;
