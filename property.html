@@ -322,9 +322,11 @@
             <div class="eyebrow">${category}</div>
 
             <h2>${title}</h2>
+
 <div class="verification-badges">
-  ${p.owner_identity_verified ? '<span class="verification-badge">✓ Source Verified</span>' : ''}
+  ${p.owner_identity_verified ? '<span class="verification-badge">✓ Owner/Agent Verified</span>' : ''}
   ${p.physical_inspection_verified ? '<span class="verification-badge">✓ Physical Inspection Completed</span>' : ''}
+  ${p.owner_identity_verified && p.physical_inspection_verified ? '<span class="verification-badge">✓ Source Verified</span>' : ''}
 </div>
 
             <p class="muted">
