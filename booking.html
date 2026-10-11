@@ -146,12 +146,74 @@ async function loadProperty() {
   }
 }
 
+
+const availabilityMsg = document.createElement('p');
+availabilityMsg.setAttribute('role', 'status');
+availabilityMsg.style.cssText =
+  'font-weight:700;margin:10px 0;padding:10px;border-radius:8px;';
+checkOut.insertAdjacentElement('afterend', availabilityMsg);
+
+let checkingAvailability = false;
+let datesAvailable = false;
+let availabilityRequest = 0;
+
+async function checkSelectedDates() {
+  const requestId = ++availabilityRequest;
+  datesAvailable = false;
+
+  if (!id || !checkIn.value || !checkOut.value) {
+    availabilityMsg.textContent = '';
+    return;
+  }
+
+  if (checkOut.value <= checkIn.value) {
+    availabilityMsg.textContent =
+      'Check-out must be after check-in.';
+    availabilityMsg.style.color = '#b42318';
+    return;
+  }
+
+  checkingAvailability = true;
+  availabilityMsg.style.color = '#555';
+  availabilityMsg.textContent = 'Checking availability...';
+
+  try {
+    const available = await SourceStays.checkAvailability(
+      id,
+      checkIn.value,
+      checkOut.value
+    );
+
+    if (requestId !== availabilityRequest) return;
+
+    datesAvailable = available;
+    availabilityMsg.style.color = available ? '#087443' : '#b42318';
+    availabilityMsg.textContent = available
+      ? '✓ Available for these dates'
+      : 'Sorry, these dates are unavailable. Please choose different dates.';
+  } catch (error) {
+    if (requestId !== availabilityRequest) return;
+    console.error('Availability check failed:', error);
+    availabilityMsg.style.color = '#b45309';
+    availabilityMsg.textContent =
+      'We could not check availability. Please try again.';
+  } finally {
+    if (requestId === availabilityRequest) {
+      checkingAvailability = false;
+    }
+  }
+}
+
 checkIn.addEventListener('change', () => {
   checkOut.min = checkIn.value || today;
   calculateTotal();
+  checkSelectedDates();
 });
 
-checkOut.addEventListener('change', calculateTotal);
+checkOut.addEventListener('change', () => {
+  calculateTotal();
+  checkSelectedDates();
+});
 
 form.onsubmit = async e => {
   e.preventDefault();
@@ -172,6 +234,44 @@ form.onsubmit = async e => {
     msg.textContent = 'Please select valid check-in and check-out dates.';
     return;
   }
+
+if (checkingAvailability) {
+  msg.textContent = 'Please wait while we check availability.';
+  return;
+}
+
+if (!datesAvailable) {
+  await checkSelectedDates();
+
+  if (!datesAvailable) {
+    msg.textContent =
+      'These dates are unavailable or could not be verified. Please select dates again.';
+    return;
+  }
+}
+
+// Recheck immediately before submitting the booking request.
+try {
+  const available = await SourceStays.checkAvailability(
+    id,
+    checkIn.value,
+    checkOut.value
+  );
+
+  if (!available) {
+    datesAvailable = false;
+    availabilityMsg.textContent =
+      'Sorry, these dates are no longer available. Please choose other dates.';
+    availabilityMsg.style.color = '#b42318';
+    msg.textContent = 'Please select different dates.';
+    return;
+  }
+} catch (error) {
+  console.error('Final availability check failed:', error);
+  msg.textContent =
+    'We could not verify availability. Please try again shortly.';
+  return;
+}
 
   const b = Object.fromEntries(new FormData(e.target));
 
