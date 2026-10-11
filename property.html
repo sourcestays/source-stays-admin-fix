@@ -350,17 +350,17 @@
         ${p.video_url ? `
         <section class="property-video" style="margin: 28px 0;">
           <h2>Property Video Tour</h2>
-          <video
-            controls
-            playsinline
-            preload="metadata"
-            
-style="width: 100%; max-width: 720px; max-height: 70vh; object-fit: contain; border-radius: 12px; display: block;"
+        
+<video
+  controls
+  playsinline
+  preload="metadata"
+  style="width: auto; height: auto; max-width: 100%; max-height: 70vh; border-radius: 12px; display: block; margin: 0 auto;"
+  src="${SourceStays.esc(p.video_url)}"
+>
+  Your browser does not support video playback.
+</video>
 
-            src="${SourceStays.esc(p.video_url)}"
-          >
-            Your browser does not support video playback.
-          </video>
         </section>
         ` : ''}
 
