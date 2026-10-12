@@ -142,7 +142,17 @@ async function load(){
   for(const v of verifications){if(!verificationMap.has(Number(v.booking_id)))verificationMap.set(Number(v.booking_id),v);}
   statProps.textContent=p.length;statPublished.textContent=p.filter(x=>x.published).length;statEnq.textContent=(e?.length||0)+(b?.length||0);
   props.innerHTML=p.length?`<table class="table"><tr><th>Photo</th><th>Property</th><th>Price</th><th>Status</th><th>Actions</th></tr>${p.map(x=>`<tr><td><img class="thumb" src="${esc(x.image_url||'')}" onerror="this.style.display='none'"></td><td><b>${esc(x.title)}</b><br><span class="muted">${esc(x.location||'')}</span></td><td>₦${money(x.price)} / ${esc(x.price_period||'')}</td><td><span class="pill">${x.published?'Published':'Hidden'}</span></td><td><button onclick='edit(${JSON.stringify(x).replace(/'/g,'&#39;')})'>Edit</button> <button onclick='del(${x.id})'>Delete</button></td></tr>`).join('')}</table>`:'<p class="muted">No properties yet.</p>';
-  bookings.innerHTML=b?.length?`<h4>Bookings</h4><table class="table"><tr><th>Customer</th><th>Property</th><th>Dates</th><th>Guests</th><th>Verification</th><th>Status</th></tr>${b.map(x=>{const pr=propertyMap.get(Number(x.property_id));const v=verificationMap.get(Number(x.id));return `<tr><td><b>${esc(x.customer_name)}</b><br>${esc(x.customer_phone||'')}<br>${x.customer_email?`<a href="mailto:${encodeURIComponent(x.customer_email)}">${esc(x.customer_email)}</a>`:''}<br><a class="btn" style="display:inline-block;padding:5px 8px;font-size:12px;text-decoration:none" href="https://wa.me/${phoneForWhatsApp(x.customer_phone)}" target="_blank" rel="noopener">WhatsApp</a>${x.customer_email?` <a class="btn" style="display:inline-block;padding:5px 8px;font-size:12px;text-decoration:none" href="mailto:${encodeURIComponent(x.customer_email)}">Email</a>`:''}</td><td><b>${esc(pr?.title||('Property #'+(x.property_id||'')))}</b><br><span class="muted">${esc(pr?.location||'')}</span></td><td>${esc(x.check_in||'')} → ${esc(x.check_out||'')}</td><td>${x.guests||1}</td><td>${paymentCell(x)}</td><td>${verificationButtons(x)}${verificationSummary(v)}</td><td><select onchange="bookingStatus(${x.id},this.value)"><option value="pending" ${x.status==='pending'?'selected':''}>Pending</option><option value="approved" ${x.status==='approved'?'selected':''}>Confirmed</option><option value="declined" ${x.status==='declined'?'selected':''}>Cancelled</option><option value="completed" ${x.status==='completed'?'selected':''}>Completed</option></select></td></tr>`;}).join('')}</table>`:'<p class="muted">No booking requests yet.</p>';
+  bookings.innerHTML=b?.length?`<h4>Bookings</h4><table class="table"><tr><th>Customer</th><th>Property</th><th>Dates</th>
+<th>Guests</th><th>Payment</th><th>Owner Availability</th><th>Guest Verification</th><th>Status</th>
+</tr>${b.map(x=>{const pr=propertyMap.get(Number(x.property_id));const v=verificationMap.get(Number(x.id));return `<tr><td><b>${esc(x.customer_name)}</b><br>${esc(x.customer_phone||'')}<br>${x.customer_email?`<a href="mailto:${encodeURIComponent(x.customer_email)}">${esc(x.customer_email)}</a>`:''}<br><a class="btn" style="display:inline-block;padding:5px 8px;font-size:12px;text-decoration:none" href="https://wa.me/${phoneForWhatsApp(x.customer_phone)}" target="_blank" rel="noopener">WhatsApp</a>${x.customer_email?` <a class="btn" style="display:inline-block;padding:5px 8px;font-size:12px;text-decoration:none" href="mailto:${encodeURIComponent(x.customer_email)}">Email</a>`:''}</td><td><b>${esc(pr?.title||('Property #'+(x.property_id||'')))}</b><br><span class="muted">${esc(pr?.location||'')}</span></td><td>${esc(x.check_in||'')} → ${esc(x.check_out||'')}</td><td>${x.guests||1}</td>
+<td>${paymentCell(x)}</td><td>
+<strong>${esc(x.owner_availability_status==='available'?'✓ Owner confirmed':x.owner_availability_status==='unavailable'?'✕ Owner says unavailable':'Not checked')}</strong><br>
+<button type="button" onclick="ownerAvailability(${x.id},'available')">Available</button>
+<button type="button" onclick="ownerAvailability(${x.id},'unavailable')">Unavailable</button>
+${x.owner_availability_checked_at?`<br><small>${esc(new Date(x.owner_availability_checked_at).toLocaleString())}</small>`:''}
+${x.owner_availability_notes?`<br><small>${esc(x.owner_availability_notes)}</small>`:''}
+</td><td>${verificationButtons(x)}${verificationSummary(v)}</td><td><select onchange="bookingStatus(${x.id},this.value)">
+<option value="pending" ${x.status==='pending'?'selected':''}>Pending</option><option value="approved" ${x.status==='approved'?'selected':''}>Confirmed</option><option value="declined" ${x.status==='declined'?'selected':''}>Cancelled</option><option value="completed" ${x.status==='completed'?'selected':''}>Completed</option></select></td></tr>`;}).join('')}</table>`:'<p class="muted">No booking requests yet.</p>';
   enquiries.innerHTML=e?.length?`<h4>Enquiries</h4><table class="table"><tr><th>Customer</th><th>Interest</th><th>Property ID</th><th>Status</th></tr>${e.map(x=>`<tr><td>${esc(x.customer_name)}<br>${esc(x.customer_phone||'')}</td><td>${esc(x.subject||'Enquiry')}</td><td>${esc(x.property_id||'')}</td><td><select onchange="enquiryStatus(${x.id},this.value)"><option ${x.status==='new'?'selected':''}>new</option><option ${x.status==='contacted'?'selected':''}>contacted</option><option ${x.status==='closed'?'selected':''}>closed</option></select></td></tr>`).join('')}</table>`:'<p class="muted">No enquiries yet.</p>';
  }catch(err){console.error(err);props.innerHTML='<p class="danger">Could not load dashboard data: '+esc(err.message||err)+'</p>';}
 }
@@ -270,6 +280,34 @@ alert('Could not save property: '+(err.message||err));
 }});
 window.del=async function(id){if(!confirm('Delete this property?'))return;const {error}=await getClient().from('properties').delete().eq('id',id);if(error)alert(error.message);else load();};
 window.bookingStatus=async function(id,status){const {error}=await getClient().from('bookings').update({status}).eq('id',id);if(error)alert(error.message);};
+  
+window.ownerAvailability = async function(id, status) {
+  const sb = getClient();
+
+  const notes = prompt(
+    'Optional: enter the owner’s response or any notes:'
+  );
+
+  if (notes === null) return;
+
+  const { error } = await sb
+    .from('bookings')
+    .update({
+      owner_availability_status: status,
+      owner_availability_checked_at: new Date().toISOString(),
+      owner_availability_notes: notes.trim() || null
+    })
+    .eq('id', id);
+
+  if (error) {
+    alert('Could not save owner confirmation: ' + error.message);
+    return;
+  }
+
+  alert('Owner availability response saved.');
+  load();
+};
+
 window.enquiryStatus=async function(id,status){const {error}=await getClient().from('enquiries').update({status}).eq('id',id);if(error)alert(error.message);};
 window.logout=async function(){try{await getClient().auth.signOut();}finally{showLogin();loginForm.reset();msg('');}};
 check();
