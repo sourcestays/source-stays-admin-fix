@@ -279,7 +279,61 @@ saveButton.textContent='Save property';
 alert('Could not save property: '+(err.message||err));
 }});
 window.del=async function(id){if(!confirm('Delete this property?'))return;const {error}=await getClient().from('properties').delete().eq('id',id);if(error)alert(error.message);else load();};
-window.bookingStatus=async function(id,status){const {error}=await getClient().from('bookings').update({status}).eq('id',id);if(error)alert(error.message);};
+
+window.bookingStatus = async function(id, status) {
+  const sb = getClient();
+
+  if (status === 'approved') {
+    const { data, error } = await sb
+      .from('bookings')
+      .select('owner_availability_status')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      alert('Could not verify owner availability: ' + error.message);
+      load();
+      return;
+    }
+
+    if (data.owner_availability_status !== 'available') {
+      alert(
+        'This booking cannot be confirmed yet. ' +
+        'Contact the property owner and mark availability as Available first.'
+      );
+      load();
+      return;
+    }
+
+    if (!confirm(
+      'The owner has confirmed availability. Confirm this booking now?'
+    )) {
+      load();
+      return;
+    }
+  }
+
+  if (status === 'declined') {
+    if (!confirm('Cancel this booking request?')) {
+      load();
+      return;
+    }
+  }
+
+  const { error } = await sb
+    .from('bookings')
+    .update({ status })
+    .eq('id', id);
+
+  if (error) {
+    alert('Could not update booking status: ' + error.message);
+    load();
+    return;
+  }
+
+  load();
+};
+
   
 window.ownerAvailability = async function(id, status) {
   const sb = getClient();
