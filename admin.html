@@ -170,11 +170,92 @@ function verificationSummary(v){
  const status=v.status||'pending';
  return `<div class="verify-box"><b>${esc(v.full_name||'Guest verification')}</b><br><span class="muted">${esc(v.id_type||'ID')} • ${esc(status)}</span><div class="verify-actions"><button type="button" onclick="viewVerification(${v.id})">View details</button>${v.id_document_url?`<button type="button" onclick="viewVerificationDocument(${v.id})">View ID</button>`:''}<button type="button" onclick="setVerificationStatus(${v.id},'approved')">Approve</button><button type="button" onclick="setVerificationStatus(${v.id},'declined')">Reject</button></div></div>`;
 }
+function populateBlockPropertySelect(properties){
+  const select=document.getElementById('blockProperty');
+  if(!select)return;
+  const previous=select.value;
+  select.innerHTML='<option value="">Choose a property</option>'+(properties||[]).map(p=>
+    `<option value="${Number(p.id)}">${esc(p.title||('Property #'+p.id))}${p.location?' — '+esc(p.location):''}</option>`
+  ).join('');
+  if(previous && (properties||[]).some(p=>String(p.id)===previous))select.value=previous;
+}
+
+async function loadDateBlocks(){
+  const container=document.getElementById('dateBlocksList');
+  if(!container)return;
+  container.innerHTML='<p class="muted">Loading blocked dates…</p>';
+  try{
+    const sb=getClient();
+    const {data:blocks,error}=await sb.from('property_date_blocks').select('*').order('start_date',{ascending:true});
+    if(error)throw error;
+    const {data:properties,error:propertyError}=await sb.from('properties').select('id,title,location');
+    if(propertyError)throw propertyError;
+    const map=new Map((properties||[]).map(p=>[Number(p.id),p]));
+    if(!blocks||!blocks.length){container.innerHTML='<p class="muted">No blocked dates yet.</p>';return;}
+    container.innerHTML=`<table class="table"><thead><tr><th>Property</th><th>Blocked dates</th><th>Reason</th><th>Action</th></tr></thead><tbody>${blocks.map(b=>{
+      const p=map.get(Number(b.property_id));
+      return `<tr><td><b>${esc(p?.title||('Property #'+b.property_id))}</b><br><small>${esc(p?.location||'')}</small></td><td>${esc(b.start_date)} → ${esc(b.end_date)}</td><td>${esc(b.reason||'Unavailable')}</td><td><button type="button" onclick="removeDateBlock(${Number(b.id)})">Remove block</button></td></tr>`;
+    }).join('')}</tbody></table>`;
+  }catch(err){
+    console.error('Could not load property date blocks:',err);
+    container.innerHTML='<p class="danger">Could not load blocked dates: '+esc(err.message||err)+'</p>';
+  }
+}
+
+const dateBlockForm=document.getElementById('dateBlockForm');
+if(dateBlockForm){
+  dateBlockForm.addEventListener('submit',async function(e){
+    e.preventDefault();
+    const form=e.currentTarget;
+    const button=form.querySelector('button[type="submit"]');
+    const message=document.getElementById('blockMessage');
+    const propertyId=Number(form.elements.property_id.value);
+    const start=form.elements.start_date.value;
+    const end=form.elements.end_date.value;
+    const reason=String(form.elements.reason.value||'').trim();
+    const say=(text,isError=false)=>{message.textContent=text;message.className=isError?'danger':'muted';};
+    if(!propertyId||!start||!end||!reason){say('Please complete every field.',true);return;}
+    if(end<=start){say('The end date must be after the start date.',true);return;}
+    button.disabled=true;button.textContent='Saving block…';say('Checking for conflicts…');
+    try{
+      const sb=getClient();
+      const {data:conflicts,error:conflictError}=await sb.from('bookings').select('id,check_in,check_out').eq('property_id',propertyId).eq('status','approved').lt('check_in',end).gt('check_out',start).limit(1);
+      if(conflictError)throw conflictError;
+      if(conflicts&&conflicts.length)throw new Error('These dates overlap a confirmed booking. Do not block dates already promised to a guest.');
+      const {data:existing,error:existingError}=await sb.from('property_date_blocks').select('id').eq('property_id',propertyId).lt('start_date',end).gt('end_date',start).limit(1);
+      if(existingError)throw existingError;
+      if(existing&&existing.length)throw new Error('These dates overlap an existing date block. Review the existing block first.');
+      const {data:userResult}=await sb.auth.getUser();
+      const payload={property_id:propertyId,start_date:start,end_date:end,reason};
+      if(userResult?.user?.id)payload.created_by=userResult.user.id;
+      const {error}=await sb.from('property_date_blocks').insert(payload);
+      if(error)throw error;
+      say('Dates blocked successfully.');
+      form.elements.start_date.value='';form.elements.end_date.value='';form.elements.reason.value='';
+      await loadDateBlocks();
+    }catch(err){console.error(err);say('Could not block dates: '+(err.message||err),true);}
+    finally{button.disabled=false;button.textContent='Block these dates';}
+  });
+}
+
+window.removeDateBlock=async function(id){
+  if(!confirm('Remove this date block? These dates may become available for booking again.'))return;
+  try{
+    const {error}=await getClient().from('property_date_blocks').delete().eq('id',id);
+    if(error)throw error;
+    const message=document.getElementById('blockMessage');
+    if(message){message.textContent='Date block removed.';message.className='muted';}
+    await loadDateBlocks();
+  }catch(err){alert('Could not remove date block: '+(err.message||err));}
+};
+
 async function load(){
  try{
   const sb=getClient();
   const {data:p,error:pe}=await sb.from('properties').select('*').order('id',{ascending:false});
   if(pe) throw pe;
+   populateBlockPropertySelect(p);
+   await loadDateBlocks();
   const {data:e,error:ee}=await sb.from('enquiries').select('*').order('created_at',{ascending:false});
   const {data:b,error:be}=await sb.from('bookings').select('*').order('created_at',{ascending:false});
   const bookingIds=(b||[]).map(x=>x.id);
