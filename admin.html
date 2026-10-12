@@ -338,9 +338,18 @@ window.bookingStatus = async function(id, status) {
 window.ownerAvailability = async function(id, status) {
   const sb = getClient();
 
-  const notes = prompt(
-    'Optional: enter the owner’s response or any notes:'
-  );
+const notes = prompt(
+  status === 'available'
+    ? 'Confirm the owner has explicitly confirmed these dates. Enter their response and how they confirmed (WhatsApp or phone):'
+    : 'Enter why the owner says these dates are unavailable:'
+);
+
+if (notes === null) return;
+
+if (!notes.trim()) {
+  alert('Please enter the owner’s actual response before saving.');
+  return;
+}
 
   if (notes === null) return;
 
