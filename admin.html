@@ -31,6 +31,54 @@
 <br>
 <button class="btn gold">Save property</button>
 </form></section></div>
+  
+<section class="box" id="availabilityManagement">
+  <h3>Availability Management</h3>
+  <p class="muted">
+    Block dates when a property is unavailable, for example because of
+    maintenance or an owner's existing reservation.
+  </p>
+
+  <form id="dateBlockForm">
+    <div class="field">
+      <label for="blockProperty">Select property</label>
+      <select id="blockProperty" name="property_id" required>
+        <option value="">Choose a property</option>
+      </select>
+    </div>
+
+    <div class="grid">
+      <div class="field">
+        <label for="blockStart">Unavailable from</label>
+        <input id="blockStart" name="start_date"
+               type="date" required>
+      </div>
+
+      <div class="field">
+        <label for="blockEnd">Unavailable until (checkout date)</label>
+        <input id="blockEnd" name="end_date"
+               type="date" required>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="blockReason">Reason for blocking</label>
+      <input id="blockReason" name="reason" required
+             placeholder="e.g. Owner's existing booking or maintenance">
+    </div>
+
+    <button class="btn gold" type="submit">
+      Block these dates
+    </button>
+    <p id="blockMessage" class="muted"></p>
+  </form>
+
+  <hr>
+  <h4>Existing blocked dates</h4>
+  <div id="dateBlocksList">
+    <p class="muted">Availability blocks will appear here.</p>
+  </div>
+</section>
 <section class="box"><h3>Bookings & enquiries</h3><div id="bookings"></div><div id="enquiries"></div></section></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase-config.js"></script>
