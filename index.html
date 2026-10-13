@@ -7,24 +7,41 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <div class="wrap nav">
-      <a class="logo" href="index.html" aria-label="Source Stays home">
-        <img src="source-stays-logo-green-gold.png" alt="Source Stays">
-      </a>
 
-<nav>
-  <a href="#stays">Shortlets</a>
-  <a href="#hotels">Hotels</a>
-  <a href="#realestate">Real Estate</a>
-  <a href="#rewards">Rewards</a>
-  <a href="about.html">About Us</a>
-  <a href="#contact">Contact</a>
-</nav>
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="index.html" aria-label="Source Stays home">
+      <img src="source-stays-logo-green-gold.png" alt="Source Stays">
+    </a>
 
-      <a class="btn dark" href="https://wa.me/2347085404814">Book / Enquire</a>
-    </div>
-  </header>
+    <button
+      class="menu-toggle"
+      id="menuToggle"
+      type="button"
+      aria-label="Open navigation menu"
+      aria-expanded="false"
+      aria-controls="primaryNav"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav id="primaryNav">
+      <a href="index.html#stays">Shortlets</a>
+      <a href="index.html#hotels">Hotels</a>
+      <a href="index.html#realestate">Real Estate</a>
+      <a href="index.html#rewards">Rewards</a>
+      <a href="about.html">About Us</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+
+    <a class="btn dark nav-book" href="https://wa.me/2347085404814">
+      Book / Enquire
+    </a>
+  </div>
+</header>
+
   <main>
     <section class="hero">
       <div class="wrap">
