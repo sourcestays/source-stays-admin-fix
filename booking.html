@@ -126,13 +126,29 @@ function calculateTotal() {
     return;
   }
 
+  const money = value => Number(value || 0).toLocaleString('en-NG');
   const price = Number(property.price || 0);
-  bookingTotal = price * nights;
+  const accommodation = price * nights;
+  const guests = Math.max(1, Number(document.getElementById('guests').value || 1));
+  const extraGuest = Math.max(0, guests - 1) * Number(property.extra_guest_fee || 0);
+  const cleaning = Number(property.cleaning_fee || 0);
+  const service = Number(property.service_fee || 0);
+  const other = Number(property.other_fee || 0);
+  const caution = Number(property.caution_fee || 0);
+  bookingTotal = accommodation + extraGuest + cleaning + service + other + caution;
 
+  const lines = [
+    `<div>Accommodation: ₦${money(price)} × ${nights} night${nights === 1 ? '' : 's'} = ₦${money(accommodation)}</div>`,
+    ...(cleaning ? [`<div>Cleaning fee: ₦${money(cleaning)}</div>`] : []),
+    ...(service ? [`<div>Service fee: ₦${money(service)}</div>`] : []),
+    ...(extraGuest ? [`<div>Additional guest fee (${guests - 1}): ₦${money(extraGuest)}</div>`] : []),
+    ...(other ? [`<div>${String(property.other_fee_label || 'Other charge').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}: ₦${money(other)}</div>`] : []),
+    ...(caution ? [`<div style="margin-top:6px">Refundable caution deposit: ₦${money(caution)} <span style="font-weight:400">(refundable subject to property terms and any documented damage or deductions)</span></div>`] : []),
+    `<div style="border-top:1px solid #ddd;margin-top:10px;padding-top:10px"><strong style="font-size:20px">Estimated amount due: ₦${money(bookingTotal)}</strong></div>`
+  ];
+  if (property.fees_due_later) lines.push(`<div style="margin-top:10px;font-weight:400"><strong>Fees payable later / additional notes:</strong><br>${String(property.fees_due_later).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])).replace(/\n/g,'<br>')}</div>`);
   totalBox.style.display = 'block';
-  totalBox.innerHTML =
-    `₦${price.toLocaleString('en-NG')} × ${nights} night${nights === 1 ? '' : 's'}<br>` +
-    `<strong style="font-size:20px">Estimated total: ₦${bookingTotal.toLocaleString('en-NG')}</strong>`;
+  totalBox.innerHTML = lines.join('');
 }
 
 async function loadProperty() {
