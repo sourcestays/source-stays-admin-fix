@@ -202,5 +202,169 @@
   })();
 </script>
 
+<!-- SOURCE STAYS: REAL ESTATE CASHBACK POPUP -->
+<style>
+  #recbPopup {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, .78);
+    padding: 18px;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+  }
+
+  #recbPopup.is-visible {
+    display: flex;
+  }
+
+  #recbPopup .recb-dialog {
+    position: relative;
+    width: min(520px, 100%);
+    max-height: 92vh;
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 20px 70px rgba(0, 0, 0, .4);
+  }
+
+  #recbPopup .recb-close {
+    position: absolute;
+    top: 17px;
+    right: 17px;
+    z-index: 2;
+    width: 40px;
+    height: 40px;
+    border: 2px solid white;
+    border-radius: 50%;
+    background: #252525;
+    color: white;
+    font-size: 27px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  #recbPopup .recb-banner {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 9px;
+  }
+
+  #recbPopup .recb-copy {
+    text-align: center;
+    padding: 12px 6px 5px;
+  }
+
+  #recbPopup .recb-copy p {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #555;
+  }
+
+  #recbPopup .recb-action {
+    display: block;
+    padding: 14px 12px;
+    border-radius: 8px;
+    background: #f47712;
+    color: #fff;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 800;
+  }
+
+  #recbPopup .recb-action:hover {
+    background: #d85f00;
+  }
+
+  @media (max-width: 480px) {
+    #recbPopup {
+      padding: 10px;
+    }
+
+    #recbPopup .recb-dialog {
+      padding: 8px;
+      max-height: 94vh;
+    }
+  }
+</style>
+
+<div id="recbPopup" aria-hidden="true">
+  <div
+    class="recb-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="recbPopupTitle"
+  >
+    <button
+      type="button"
+      class="recb-close"
+      id="recbClose"
+      aria-label="Close popup"
+    >×</button>
+
+    <img
+      class="recb-banner"
+      src="recb-buy-to-resell.jpg"
+      alt="Real Estate CashBack Buy to Resell promotional banner"
+    >
+
+    <div class="recb-copy">
+      <h2 id="recbPopupTitle">Real Estate CashBack (RECB)</h2>
+      <p>
+        Explore the programme through Source Stays.
+        Advertised dividends are subject to the official terms and conditions
+        and are not guaranteed returns.
+      </p>
+
+      <a class="recb-action" href="recb.html">
+        Explore Real Estate CashBack (RECB)
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const popup = document.getElementById("recbPopup");
+  const closeButton = document.getElementById("recbClose");
+
+  if (!popup || !closeButton) return;
+
+  function closeRecbPopup() {
+    popup.classList.remove("is-visible");
+    popup.setAttribute("aria-hidden", "true");
+  }
+
+  closeButton.addEventListener("click", closeRecbPopup);
+
+  popup.addEventListener("click", function (event) {
+    if (event.target === popup) closeRecbPopup();
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") closeRecbPopup();
+  });
+
+  try {
+    if (!sessionStorage.getItem("sourceStaysRecbPopupSeen")) {
+      window.setTimeout(function () {
+        popup.classList.add("is-visible");
+        popup.setAttribute("aria-hidden", "false");
+        sessionStorage.setItem("sourceStaysRecbPopupSeen", "yes");
+      }, 5000);
+    }
+  } catch (error) {
+    window.setTimeout(function () {
+      popup.classList.add("is-visible");
+      popup.setAttribute("aria-hidden", "false");
+    }, 5000);
+  }
+})();
+</script>
+
 </body>
 </html>
