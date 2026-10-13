@@ -172,6 +172,98 @@ checkOut.insertAdjacentElement('afterend', availabilityMsg);
 let checkingAvailability = false;
 let datesAvailable = false;
 let availabilityRequest = 0;
+let recommendationRequest = 0;
+
+const recommendationModal = document.createElement('div');
+recommendationModal.id = 'similarPropertiesModal';
+recommendationModal.style.cssText = 'display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.68);padding:18px;align-items:center;justify-content:center;';
+recommendationModal.innerHTML = `
+  <section role="dialog" aria-modal="true" aria-labelledby="similarTitle" style="background:#fff;border-radius:18px;max-width:760px;width:100%;max-height:85vh;overflow:auto;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+      <div><h2 id="similarTitle" style="margin:0 0 8px">This property is unavailable</h2><p id="similarIntro" style="margin:0 0 16px;color:#555">Here are similar properties available for your selected dates.</p></div>
+      <button type="button" id="closeSimilarModal" aria-label="Close recommendations" style="font-size:24px;border:0;background:transparent;cursor:pointer">×</button>
+    </div>
+    <div id="similarPropertiesResults" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px"></div>
+    <p style="margin:18px 0 0"><a href="index.html" style="color:#123f32;font-weight:700">Browse all properties</a></p>
+  </section>`;
+document.body.appendChild(recommendationModal);
+document.getElementById('closeSimilarModal').addEventListener('click', () => {
+  recommendationModal.style.display = 'none';
+});
+recommendationModal.addEventListener('click', event => {
+  if (event.target === recommendationModal) recommendationModal.style.display = 'none';
+});
+
+const safeText = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[ch]));
+
+async function showSimilarAvailableProperties(requestId) {
+  const currentRecommendationRequest = ++recommendationRequest;
+  recommendationModal.style.display = 'flex';
+  document.getElementById('similarPropertiesResults').innerHTML =
+    '<p style="color:#555">Finding similar properties available for your dates…</p>';
+  document.getElementById('similarIntro').textContent =
+    'We’re checking other published properties for the same dates.';
+
+  try {
+    const all = await SourceStays.getListings();
+    if (requestId !== availabilityRequest || currentRecommendationRequest !== recommendationRequest) return;
+
+    const currentCategory = String(property?.category || '').trim().toLowerCase();
+    const currentLocation = String(property?.location || '').trim().toLowerCase();
+    const candidates = all.filter(item => Number(item.id) !== Number(id));
+    candidates.sort((a, b) => {
+      const score = item => {
+        let value = 0;
+        if (currentCategory && String(item.category || '').trim().toLowerCase() === currentCategory) value += 2;
+        if (currentLocation && String(item.location || '').trim().toLowerCase() === currentLocation) value += 1;
+        return value;
+      };
+      return score(b) - score(a);
+    });
+
+    const availableAlternatives = [];
+    for (const item of candidates) {
+      if (availableAlternatives.length >= 3) break;
+      try {
+        const available = await SourceStays.checkAvailability(item.id, checkIn.value, checkOut.value);
+        if (available) availableAlternatives.push(item);
+      } catch (availabilityError) {
+        console.warn('Could not check alternative property availability:', item.id, availabilityError);
+      }
+      if (requestId !== availabilityRequest || currentRecommendationRequest !== recommendationRequest) return;
+    }
+
+    const results = document.getElementById('similarPropertiesResults');
+    if (!availableAlternatives.length) {
+      document.getElementById('similarIntro').textContent =
+        'We couldn’t find another published property available for those exact dates. Try changing your dates or browsing all listings.';
+      results.innerHTML = '<p>No matching available alternatives were found for these dates.</p>';
+      return;
+    }
+
+    document.getElementById('similarIntro').textContent =
+      'These alternatives are available for your selected dates.';
+    results.innerHTML = availableAlternatives.map(item => `
+      <article style="border:1px solid #e4e8e4;border-radius:12px;overflow:hidden">
+        ${item.image_url ? `<img src="${safeText(item.image_url)}" alt="" style="display:block;width:100%;height:135px;object-fit:cover;background:#f1f3f0">` : ''}
+        <div style="padding:12px">
+          <div style="font-size:12px;color:#8b7138;font-weight:800;text-transform:uppercase">${safeText(item.category || 'Property')}</div>
+          <h3 style="margin:6px 0;font-size:17px">${safeText(item.title || 'Source Stays property')}</h3>
+          <p style="margin:4px 0;color:#555">${safeText(item.location || 'Location available on request')}</p>
+          <p style="margin:8px 0 12px;font-weight:800">₦${Number(item.price || 0).toLocaleString('en-NG')} / ${safeText(item.price_period || 'stay')}</p>
+          <a href="booking.html?id=${encodeURIComponent(item.id)}" style="display:inline-block;background:#123f32;color:#fff;text-decoration:none;border-radius:8px;padding:10px 13px;font-weight:700">Choose this property</a>
+        </div>
+      </article>`).join('');
+  } catch (error) {
+    console.error('Could not load similar properties:', error);
+    document.getElementById('similarIntro').textContent =
+      'We couldn’t load recommendations right now. Please browse all properties or try different dates.';
+    document.getElementById('similarPropertiesResults').innerHTML =
+      '<p>Recommendations are temporarily unavailable.</p>';
+  }
+}
 
 async function checkSelectedDates() {
   const requestId = ++availabilityRequest;
@@ -206,7 +298,13 @@ async function checkSelectedDates() {
     availabilityMsg.style.color = available ? '#087443' : '#b42318';
     availabilityMsg.textContent = available
       ? '✓ Available for these dates'
-      : 'Sorry, these dates are unavailable. Please choose different dates.';
+      : 'Sorry, these dates are unavailable. We’ll show similar available properties.';
+    if (!available) {
+      showSimilarAvailableProperties(requestId);
+    } else {
+      recommendationRequest++;
+      recommendationModal.style.display = 'none';
+    }
   } catch (error) {
     if (requestId !== availabilityRequest) return;
     console.error('Availability check failed:', error);
