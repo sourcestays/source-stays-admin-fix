@@ -654,3 +654,109 @@ a:focus-visible {
   font-weight: 800;
   line-height: 1.4;
 }
+
+/* =========================================
+   SOURCE STAYS — MOBILE HAMBURGER MENU
+========================================= */
+
+.menu-toggle {
+  display: none;
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  flex: 0 0 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--green);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.menu-toggle span {
+  display: block;
+  width: 21px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--green);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.menu-toggle[aria-expanded="true"] span:first-child {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.menu-toggle[aria-expanded="true"] span:nth-child(2) {
+  opacity: 0;
+}
+
+.menu-toggle[aria-expanded="true"] span:last-child {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+@media (max-width: 800px) {
+  .nav {
+    position: relative;
+    flex-wrap: wrap;
+  }
+
+  .menu-toggle {
+    display: flex;
+    margin-left: auto;
+  }
+
+  .nav > nav#primaryNav {
+    display: none;
+    order: 4;
+    flex: 0 0 100%;
+    width: 100%;
+    align-items: stretch;
+    justify-content: flex-start;
+    flex-direction: column;
+    gap: 0;
+    padding: 8px 0 12px;
+    border-top: 1px solid var(--line);
+    font-size: 15px;
+  }
+
+  .nav > nav#primaryNav.is-open {
+    display: flex;
+  }
+
+  .nav > nav#primaryNav a {
+    display: block;
+    width: 100%;
+    padding: 13px 10px;
+    border-bottom: 1px solid var(--line);
+    color: var(--green);
+  }
+
+  .nav > nav#primaryNav a:last-child {
+    border-bottom: 0;
+  }
+
+  .nav > nav#primaryNav a:hover,
+  .nav > nav#primaryNav a:focus-visible {
+    background: var(--cream);
+    color: var(--dark);
+  }
+
+  .nav > .nav-book {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav {
+    gap: 10px;
+  }
+
+  .menu-toggle {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+  }
+}
