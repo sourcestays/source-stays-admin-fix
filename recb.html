@@ -50,10 +50,10 @@ header{border-bottom:1px solid var(--line);background:white}.nav{min-height:76px
   max-width: 680px;
   margin: 36px auto 12px;
   padding: 28px 22px;
-  text-align: center;
+  text-align: left;
   display: flex;
 flex-direction: column;
-align-items: center;
+align-items: flex-start;
   background: #f7f5ee;
   border: 1px solid #d8c58b;
   border-radius: 18px;
@@ -66,17 +66,20 @@ align-items: center;
   font-size: clamp(21px, 3vw, 27px);
 }
 
+
 .recb-whatsapp > p.muted {
   width: 100%;
-  max-width: 500px;
+  max-width: 680px;
   margin: 0 auto 20px;
   line-height: 1.7;
-  text-align: center;
+  text-align: left;
+  align-self: stretch;
 }
 
 .recb-whatsapp-btn {
   display: inline-flex;
   align-items: center;
+  align-self: center;
   justify-content: center;
   gap: 11px;
   max-width: 100%;
