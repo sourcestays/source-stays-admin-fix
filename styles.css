@@ -760,3 +760,167 @@ a:focus-visible {
     flex-basis: 42px;
   }
 }
+
+/* =========================================
+   SOURCE STAYS — PUBLIC REVIEW FORM
+========================================= */
+
+#reviews .head {
+  margin-bottom: 28px;
+}
+
+#reviews .head p {
+  max-width: 680px;
+  line-height: 1.8;
+}
+
+#reviews #publicReviews {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 18px;
+  margin: 24px 0 36px;
+}
+
+#reviews #publicReviews > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 22px;
+  background: #f7f3ea;
+  border: 1px solid #e7dfce;
+  border-radius: 12px;
+  line-height: 1.8;
+}
+
+#reviews #publicReviews .service {
+  margin: 0;
+  background: #fff;
+  border: 1px solid #e7ebe7;
+  border-radius: 14px;
+  padding: 24px;
+  overflow-wrap: anywhere;
+}
+
+#reviews #publicReviews .service > p {
+  line-height: 1.8;
+}
+
+#reviews #publicReviews .service > p:last-child {
+  color: #68736c;
+}
+
+#reviews .wrap > .service {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 30px;
+  background: #fff;
+  border: 1px solid #e7ebe7;
+  border-radius: 18px;
+  box-shadow: 0 8px 28px rgba(18, 63, 50, 0.05);
+}
+
+#reviews .wrap > .service h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 24px;
+  color: #123f32;
+}
+
+#reviews .wrap > .service > p {
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+
+#reviews #publicReviewForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+#reviews #publicReviewForm .field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+}
+
+#reviews #publicReviewForm .field label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #263b32;
+}
+
+#reviews #publicReviewForm input,
+#reviews #publicReviewForm select,
+#reviews #publicReviewForm textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 13px 14px;
+  border: 1px solid #d9e0da;
+  border-radius: 9px;
+  background: #fff;
+  color: #202822;
+  font: inherit;
+  font-size: 15px;
+}
+
+#reviews #publicReviewForm input,
+#reviews #publicReviewForm select {
+  min-height: 48px;
+}
+
+#reviews #publicReviewForm textarea {
+  min-height: 150px;
+  resize: vertical;
+  line-height: 1.7;
+}
+
+#reviews #publicReviewForm .field:last-of-type {
+  grid-column: 1 / -1;
+}
+
+#reviews #publicReviewForm input:focus,
+#reviews #publicReviewForm select:focus,
+#reviews #publicReviewForm textarea:focus {
+  border-color: #c5a35b;
+  outline: 2px solid rgba(197, 163, 91, 0.2);
+  outline-offset: 1px;
+}
+
+#reviews #publicReviewForm button {
+  justify-self: start;
+  min-height: 48px;
+  padding: 13px 24px;
+}
+
+#reviews #publicReviewMessage {
+  align-self: center;
+  margin: 0;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  #reviews .wrap > .service {
+    padding: 22px 18px;
+  }
+
+  #reviews #publicReviewForm {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  #reviews #publicReviewForm .field:last-of-type {
+    grid-column: auto;
+  }
+
+  #reviews #publicReviewForm button {
+    width: 100%;
+    justify-self: stretch;
+  }
+}
