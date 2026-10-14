@@ -222,6 +222,123 @@
   <script src="app.js"></script>
   
 <script>
+(function () {
+  const form = document.getElementById('publicReviewForm');
+  const list = document.getElementById('publicReviews');
+  const message = document.getElementById('publicReviewMessage');
+  const button = document.getElementById('publicReviewSubmit');
+
+  if (!form || !list || !message || !button) return;
+
+  const sb = window.supabase.createClient(
+    window.SUPABASE_URL,
+    window.SUPABASE_PUBLISHABLE_KEY
+  );
+
+  function escapeHTML(value) {
+    return String(value ?? '').replace(/[&<>"']/g, function (c) {
+      return {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[c];
+    });
+  }
+
+  async function loadPublicReviews() {
+    try {
+      const { data, error } = await sb
+        .from('reviews')
+        .select('reviewer_name, reviewer_type, rating, comment, created_at')
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        list.innerHTML =
+          '<p class="muted">No published reviews yet. Be among the first to share your genuine experience with Source Stays.</p>';
+        return;
+      }
+
+      list.innerHTML = data.map(function (review) {
+        const stars = '★'.repeat(Number(review.rating)) +
+          '☆'.repeat(5 - Number(review.rating));
+
+        return `
+          <article class="service">
+            <div style="color:#b08a36;font-size:20px" aria-label="${Number(review.rating)} out of 5 stars">${stars}</div>
+            <p>${escapeHTML(review.comment)}</p>
+            <strong>${escapeHTML(review.reviewer_name)}</strong>
+            <p class="muted" style="font-size:13px">
+              ${review.reviewer_type === 'property_owner' ? 'Property owner' : 'Guest'}
+            </p>
+          </article>
+        `;
+      }).join('');
+    } catch (error) {
+      console.error('Could not load public reviews:', error);
+      list.innerHTML =
+        '<p class="muted">Reviews are temporarily unavailable. Please try again later.</p>';
+    }
+  }
+
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+
+    if (button.disabled) return;
+
+    const values = new FormData(form);
+    const reviewerName = String(values.get('reviewer_name') || '').trim();
+    const comment = String(values.get('comment') || '').trim();
+    const rating = Number(values.get('rating'));
+    const reviewerType = values.get('reviewer_type');
+
+    if (reviewerName.length < 2 || comment.length < 10 ||
+        comment.length > 2000 || !Number.isInteger(rating) ||
+        rating < 1 || rating > 5 ||
+        !['guest', 'property_owner'].includes(reviewerType)) {
+      message.textContent = 'Please check your name, rating and review.';
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Submitting...';
+    message.textContent = '';
+
+    try {
+      const { error } = await sb.from('reviews').insert({
+        reviewer_name: reviewerName,
+        reviewer_type: reviewerType,
+        rating: rating,
+        comment: comment,
+        status: 'pending',
+        source: 'customer'
+      });
+
+      if (error) throw error;
+
+      form.reset();
+      message.textContent =
+        'Thank you! Your review has been submitted for approval.';
+    } catch (error) {
+      console.error('Review submission failed:', error);
+      message.textContent =
+        'We could not submit your review right now. Please try again later.';
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Submit review';
+    }
+  });
+
+  loadPublicReviews();
+})();
+</script>
+
+<script>
   (function () {
     const menuToggle = document.getElementById("menuToggle");
     const primaryNav = document.getElementById("primaryNav");
