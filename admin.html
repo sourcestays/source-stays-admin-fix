@@ -491,6 +491,26 @@ async function loadReviews() {
   }
 }
 
+window.deleteReview = async function(id) {
+  if (!confirm(
+    'Permanently delete this review? This cannot be undone.'
+  )) return;
+
+  try {
+    const { error } = await getClient()
+      .from('reviews')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+
+    alert('Review deleted successfully.');
+    await loadReviews();
+  } catch (err) {
+    alert('Could not delete review: ' + (err.message || err));
+  }
+};
+
 window.setReviewStatus = async function(id, status) {
   const action = status === 'approved' ? 'approve' : 'reject';
 
