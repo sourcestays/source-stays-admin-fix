@@ -45,16 +45,26 @@
       gap: 16px;
     }
 
-    .brand {
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: .3px;
-      color: var(--green);
-      text-decoration: none;
-    }
+.brand {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  flex-shrink: 0;
+}
 
-    .brand span { color: var(--gold); }
+.account-logo {
+  display: block;
+  width: 180px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
 
+@media (max-width: 600px) {
+  .account-logo {
+    width: 140px;
+  }
+}
     .back-link {
       font-size: 14px;
       font-weight: 700;
@@ -242,12 +252,18 @@
   </style>
 </head>
 <body>
-  <header>
-    <nav class="nav">
-      <a class="brand" href="index.html">SOURCE <span>STAYS</span></a>
-      <a class="back-link" href="index.html">← Back to website</a>
-    </nav>
-  </header>
+<header>
+  <nav class="nav">
+    <a class="brand" href="index.html" aria-label="Source Stays home">
+      <img
+        src="source-stays-logo-green-gold.png"
+        alt="Source Stays"
+        class="account-logo"
+      >
+    </a>
+    <a class="back-link" href="index.html">← Back to website</a>
+  </nav>
+</header>
 
   <main>
     <div class="layout">
