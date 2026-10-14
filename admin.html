@@ -79,7 +79,42 @@
     <p class="muted">Availability blocks will appear here.</p>
   </div>
 </section>
-<section class="box"><h3>Bookings & enquiries</h3><div id="bookings"></div><div id="enquiries"></div></section></div></div>
+<section class="box"><h3>Bookings & enquiries</h3><div id="bookings"></div><div id="enquiries"></div></section></div>
+<section class="box" style="margin-top:20px">
+  <h3>Customer Reviews</h3>
+  <p class="muted">Add genuine guest and property-owner feedback. Customer submissions will require approval before publication.</p>
+  <form id="reviewAdminForm">
+    <div class="field">
+      <label>Reviewer name</label>
+      <input name="reviewer_name" required minlength="2" maxlength="100">
+    </div>
+    <div class="field">
+      <label>Reviewer type</label>
+      <select name="reviewer_type" required>
+        <option value="guest">Guest</option>
+        <option value="property_owner">Property owner</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Rating</label>
+      <select name="rating" required>
+        <option value="5">5 stars</option>
+        <option value="4">4 stars</option>
+        <option value="3">3 stars</option>
+        <option value="2">2 stars</option>
+        <option value="1">1 star</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Review</label>
+      <textarea name="comment" required minlength="10" maxlength="2000"></textarea>
+    </div>
+    <button class="btn dark" type="submit">Add Review</button>
+    <p id="reviewAdminMessage" class="muted"></p>
+  </form>
+  <hr>
+  <div id="reviewsList">Reviews will appear here.</div>
+</section></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="supabase-config.js"></script>
 <script>
