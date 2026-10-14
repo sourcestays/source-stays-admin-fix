@@ -142,6 +142,61 @@
         </div>
       </div>
     </section>
+    
+<section class="section" id="reviews">
+  <div class="wrap">
+    <div class="head">
+      <div>
+        <div class="eyebrow">Guest experiences</div>
+        <h2>Reviews from our community</h2>
+        <p>We're building a trusted community of guests and property owners. Have you used Source Stays? Share your experience.</p>
+      </div>
+    </div>
+
+    <div id="publicReviews" class="services">
+      <p>Loading reviews...</p>
+    </div>
+
+    <div class="service" style="margin-top:24px">
+      <h3>Share your experience</h3>
+      <p>Your review will be checked by our team before it appears publicly.</p>
+
+      <form id="publicReviewForm">
+        <div class="field">
+          <label for="publicReviewerName">Your name</label>
+          <input id="publicReviewerName" name="reviewer_name" required minlength="2" maxlength="100" autocomplete="name">
+        </div>
+
+        <div class="field">
+          <label for="publicReviewerType">I am a</label>
+          <select id="publicReviewerType" name="reviewer_type" required>
+            <option value="guest">Guest</option>
+            <option value="property_owner">Property owner</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="publicReviewRating">Your rating</label>
+          <select id="publicReviewRating" name="rating" required>
+            <option value="5">★★★★★ — Excellent</option>
+            <option value="4">★★★★ — Very good</option>
+            <option value="3">★★★ — Good</option>
+            <option value="2">★★ — Fair</option>
+            <option value="1">★ — Poor</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="publicReviewComment">Your review</label>
+          <textarea id="publicReviewComment" name="comment" required minlength="10" maxlength="2000" rows="5" placeholder="Tell us about your genuine experience..."></textarea>
+        </div>
+
+        <button class="btn dark" type="submit" id="publicReviewSubmit">Submit review</button>
+        <p id="publicReviewMessage" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+  </div>
+</section>
     <section class="section cream" id="contact">
       <div class="wrap">
         <div class="cta">
