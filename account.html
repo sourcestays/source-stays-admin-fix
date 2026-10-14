@@ -1,0 +1,493 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#123f32">
+  <title>My Account | Source Stays</title>
+  <meta name="description" content="Create or access your Source Stays customer account.">
+  <style>
+    :root {
+      --green: #123f32;
+      --green-dark: #0c3026;
+      --gold: #c5a35b;
+      --cream: #f7f3ea;
+      --text: #24332b;
+      --muted: #68736c;
+      --border: #e1e6e1;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background: #fafaf8;
+      line-height: 1.6;
+    }
+
+    a { color: var(--green); }
+
+    header {
+      background: white;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav {
+      max-width: 1120px;
+      margin: auto;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: .3px;
+      color: var(--green);
+      text-decoration: none;
+    }
+
+    .brand span { color: var(--gold); }
+
+    .back-link {
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    main {
+      max-width: 1060px;
+      margin: 54px auto;
+      padding: 0 20px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 34px;
+      align-items: stretch;
+    }
+
+    .intro {
+      background: var(--green);
+      color: white;
+      border-radius: 20px;
+      padding: 42px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .eyebrow {
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .intro h1 {
+      font-size: clamp(30px, 4vw, 43px);
+      line-height: 1.15;
+      margin: 16px 0;
+    }
+
+    .intro p { color: #e1e9e4; }
+
+    .benefit {
+      display: flex;
+      gap: 12px;
+      margin-top: 18px;
+      align-items: flex-start;
+    }
+
+    .benefit-mark { color: var(--gold); font-weight: 800; }
+
+    .panel {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      box-shadow: 0 12px 35px rgba(18, 63, 50, .05);
+      min-width: 0;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--cream);
+      padding: 5px;
+      border-radius: 11px;
+      gap: 5px;
+      margin-bottom: 28px;
+    }
+
+    .tab {
+      border: 0;
+      background: transparent;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .tab.active {
+      background: var(--green);
+      color: white;
+    }
+
+    h2 { margin: 0 0 6px; font-size: 27px; }
+
+    .subtext {
+      color: var(--muted);
+      font-size: 14px;
+      margin: 0 0 24px;
+    }
+
+    .field { margin-bottom: 17px; }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 7px;
+    }
+
+    input {
+      width: 100%;
+      min-height: 48px;
+      padding: 12px 14px;
+      border: 1px solid #d6ded7;
+      border-radius: 9px;
+      font: inherit;
+      background: white;
+      color: var(--text);
+    }
+
+    input:focus {
+      outline: 2px solid rgba(197, 163, 91, .35);
+      border-color: var(--gold);
+    }
+
+    .primary {
+      width: 100%;
+      min-height: 49px;
+      border: 0;
+      border-radius: 9px;
+      padding: 13px 18px;
+      background: var(--green);
+      color: white;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .primary:hover { background: var(--green-dark); }
+    .primary:disabled { opacity: .65; cursor: wait; }
+
+    .forgot {
+      display: block;
+      text-align: right;
+      margin: -5px 0 20px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .message {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 9px;
+      font-size: 14px;
+      overflow-wrap: anywhere;
+      display: none;
+    }
+
+    .message.show { display: block; }
+    .message.success { background: #eaf6ee; color: #185c32; }
+    .message.error { background: #fff0ed; color: #9c3025; }
+
+    .fineprint {
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .fineprint a { font-weight: 700; }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    [hidden] { display: none !important; }
+
+    @media (max-width: 760px) {
+      main { margin: 26px auto; }
+      .layout { grid-template-columns: 1fr; gap: 20px; }
+      .intro { padding: 28px; }
+      .intro h1 { font-size: 32px; }
+      .panel { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="nav">
+      <a class="brand" href="index.html">SOURCE <span>STAYS</span></a>
+      <a class="back-link" href="index.html">← Back to website</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="layout">
+      <section class="intro">
+        <div class="eyebrow">Your stay. Your rewards.</div>
+        <h1>Welcome to your Source Stays account.</h1>
+        <p>Create an account to make returning to Source Stays easier and access your eligible loyalty rewards.</p>
+
+        <div class="benefit">
+          <span class="benefit-mark">✓</span>
+          <div><strong>Your bookings</strong><br>Keep track of your stays as account features become available.</div>
+        </div>
+
+        <div class="benefit">
+          <span class="benefit-mark">✓</span>
+          <div><strong>Source Stays Credits</strong><br>Access your eligible rewards and credit history as we connect the rewards system.</div>
+        </div>
+
+        <div class="benefit">
+          <span class="benefit-mark">✓</span>
+          <div><strong>Secure access</strong><br>Confirm your email and manage your account securely.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="tabs" role="tablist" aria-label="Account options">
+          <button class="tab active" id="loginTab" type="button" role="tab" aria-selected="true">Log In</button>
+          <button class="tab" id="signupTab" type="button" role="tab" aria-selected="false">Sign Up</button>
+        </div>
+
+        <section id="loginPanel">
+          <h2>Welcome back</h2>
+          <p class="subtext">Log in to your Source Stays account.</p>
+
+          <form id="loginForm">
+            <div class="field">
+              <label for="loginEmail">Email address</label>
+              <input id="loginEmail" name="email" type="email" autocomplete="email" required>
+            </div>
+            <div class="field">
+              <label for="loginPassword">Password</label>
+              <input id="loginPassword" name="password" type="password" autocomplete="current-password" required minlength="8">
+            </div>
+            <button class="forgot" id="forgotButton" type="button">Forgot password?</button>
+            <button class="primary" type="submit">Log In</button>
+          </form>
+        </section>
+
+        <section id="signupPanel" hidden>
+          <h2>Create your account</h2>
+          <p class="subtext">Join Source Stays in a few simple steps.</p>
+
+          <form id="signupForm">
+            <div class="field">
+              <label for="fullName">Full name</label>
+              <input id="fullName" name="fullName" type="text" autocomplete="name" minlength="2" maxlength="100" required>
+            </div>
+            <div class="field">
+              <label for="signupPhone">Mobile number</label>
+              <input id="signupPhone" name="phone" type="tel" autocomplete="tel" placeholder="+234..." minlength="7" maxlength="25" required>
+            </div>
+            <div class="field">
+              <label for="signupEmail">Email address</label>
+              <input id="signupEmail" name="email" type="email" autocomplete="email" required>
+            </div>
+            <div class="field">
+              <label for="signupPassword">Create password</label>
+              <input id="signupPassword" name="password" type="password" autocomplete="new-password" minlength="8" required>
+            </div>
+            <div class="field">
+              <label for="confirmPassword">Confirm password</label>
+              <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required>
+            </div>
+            <button class="primary" type="submit">Create My Account</button>
+          </form>
+        </section>
+
+        <div id="accountMessage" class="message" role="status" aria-live="polite"></div>
+
+        <p class="fineprint">
+          By creating an account, you agree to use Source Stays responsibly.
+          Please review our <a href="index.html">website information</a>.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer>© <span id="year"></span> Source Stays. Hospitality with a touch of class.</footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase-config.js"></script>
+  <script>
+    (function () {
+      const loginTab = document.getElementById('loginTab');
+      const signupTab = document.getElementById('signupTab');
+      const loginPanel = document.getElementById('loginPanel');
+      const signupPanel = document.getElementById('signupPanel');
+      const message = document.getElementById('accountMessage');
+      const loginForm = document.getElementById('loginForm');
+      const signupForm = document.getElementById('signupForm');
+      const forgotButton = document.getElementById('forgotButton');
+
+      document.getElementById('year').textContent = new Date().getFullYear();
+
+      if (!window.supabase || !window.SUPABASE_URL || !window.SUPABASE_PUBLISHABLE_KEY) {
+        showMessage('Account services are temporarily unavailable. Please try again later.', true);
+        loginForm.querySelector('button[type="submit"]').disabled = true;
+        signupForm.querySelector('button[type="submit"]').disabled = true;
+        return;
+      }
+
+      const client = window.supabase.createClient(
+        window.SUPABASE_URL,
+        window.SUPABASE_PUBLISHABLE_KEY
+      );
+
+      function showMessage(text, isError) {
+        message.textContent = text;
+        message.className = 'message show ' + (isError ? 'error' : 'success');
+      }
+
+      function setTab(mode) {
+        const isSignup = mode === 'signup';
+        loginPanel.hidden = isSignup;
+        signupPanel.hidden = !isSignup;
+        loginTab.classList.toggle('active', !isSignup);
+        signupTab.classList.toggle('active', isSignup);
+        loginTab.setAttribute('aria-selected', String(!isSignup));
+        signupTab.setAttribute('aria-selected', String(isSignup));
+        message.className = 'message';
+      }
+
+      loginTab.addEventListener('click', function () { setTab('login'); });
+      signupTab.addEventListener('click', function () { setTab('signup'); });
+
+      loginForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const button = loginForm.querySelector('button[type="submit"]');
+        button.disabled = true;
+        button.textContent = 'Logging in...';
+
+        try {
+          const email = loginForm.email.value.trim();
+          const password = loginForm.password.value;
+          const { error } = await client.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+
+          showMessage('Login successful. Your customer dashboard is the next step we will connect.', false);
+        } catch (error) {
+          showMessage(error.message || 'Unable to log in. Please check your details.', true);
+        } finally {
+          button.disabled = false;
+          button.textContent = 'Log In';
+        }
+      });
+
+      signupForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const button = signupForm.querySelector('button[type="submit"]');
+        const fullName = signupForm.fullName.value.trim();
+        const phone = signupForm.phone.value.trim();
+        const email = signupForm.email.value.trim();
+        const password = signupForm.password.value;
+        const confirmPassword = signupForm.confirmPassword.value;
+
+        if (password !== confirmPassword) {
+          showMessage('Your passwords do not match.', true);
+          return;
+        }
+
+        if (fullName.length < 2 || phone.length < 7) {
+          showMessage('Please enter your full name and a valid mobile number.', true);
+          return;
+        }
+
+        button.disabled = true;
+        button.textContent = 'Creating account...';
+
+        try {
+          const { data, error } = await client.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: window.location.origin + '/account.html',
+              data: {
+                full_name: fullName,
+                phone: phone
+              }
+            }
+          });
+
+          if (error) throw error;
+
+          if (data.session) {
+            showMessage('Your account has been created. Email confirmation may still be required before you can access all features.', false);
+          } else {
+            showMessage('Account registration received. Please check your email for a confirmation link before logging in.', false);
+          }
+
+          signupForm.reset();
+        } catch (error) {
+          showMessage(error.message || 'Unable to create your account. Please try again.', true);
+        } finally {
+          button.disabled = false;
+          button.textContent = 'Create My Account';
+        }
+      });
+
+      forgotButton.addEventListener('click', async function () {
+        const email = loginForm.email.value.trim();
+
+        if (!email) {
+          showMessage('Enter your email address above first, then choose Forgot password again.', true);
+          document.getElementById('loginEmail').focus();
+          return;
+        }
+
+        try {
+          const { error } = await client.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/account.html'
+          });
+
+          if (error) throw error;
+          showMessage('If an account exists for this email, a password reset link will be sent. Please check your inbox.', false);
+        } catch (error) {
+          showMessage(error.message || 'Unable to request a password reset right now.', true);
+        }
+      });
+
+      client.auth.getSession().then(function (result) {
+        if (result.error) {
+          console.error('Could not check session:', result.error);
+          return;
+        }
+        if (result.data.session) {
+          showMessage('You are already logged in. Your customer dashboard will be connected in the next phase.', false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
