@@ -249,6 +249,72 @@
       .intro h1 { font-size: 32px; }
       .panel { padding: 24px 20px; }
     }
+    
+/* Customer dashboard */
+#customerDashboard {
+  margin-top: 28px;
+  padding: 24px;
+  background: #f7f8f5;
+  border: 1px solid #e1e8e2;
+  border-radius: 16px;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.dashboard-header h2 {
+  margin: 6px 0;
+  color: #123f32;
+  font-size: 28px;
+}
+
+.dashboard-header p {
+  margin: 6px 0;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.dashboard-card {
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e1e8e2;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-card h3 {
+  margin: 0 0 10px;
+  color: #123f32;
+}
+
+.dashboard-card p {
+  line-height: 1.6;
+}
+
+@media (max-width: 650px) {
+  #customerDashboard {
+    padding: 16px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-header h2 {
+    font-size: 24px;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -349,6 +415,36 @@
         </p>
       </section>
     </div>
+      <section id="customerDashboard" hidden>
+      <div class="dashboard-header">
+        <div>
+          <p class="eyebrow">SOURCE STAYS CUSTOMER PORTAL</p>
+          <h2>My Dashboard</h2>
+          <p>Welcome back, <strong id="dashboardCustomerName">Customer</strong>.</p>
+        </div>
+        <button id="logoutButton" class="primary" type="button">Log Out</button>
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="dashboard-card">
+          <h3>My Bookings</h3>
+          <p>View your stays and booking status.</p>
+          <div id="customerBookings">Your bookings will appear here.</div>
+        </article>
+
+        <article class="dashboard-card">
+          <h3>My Source Stays Credits</h3>
+          <p>Your eligible loyalty credits will appear here.</p>
+          <div id="customerCredits">Credits will be displayed after secure account linking.</div>
+        </article>
+
+        <article class="dashboard-card">
+          <h3>My Profile</h3>
+          <p id="customerProfileEmail"></p>
+          <p id="customerProfilePhone"></p>
+        </article>
+      </div>
+    </section>
   </main>
 
   <footer>© <span id="year"></span> Source Stays. Hospitality with a touch of class.</footer>
