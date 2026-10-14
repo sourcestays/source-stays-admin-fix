@@ -158,7 +158,6 @@ nav a:hover {
    HERO SECTION
 ========================================= */
 
-```css
 .hero {
   position: relative;
   isolation: isolate;
@@ -174,7 +173,6 @@ nav a:hover {
     url("https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1800&q=85")
     center / cover no-repeat;
 }
-```
 
 .hero::before,
 .hero::after {
