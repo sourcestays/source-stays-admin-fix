@@ -495,26 +495,53 @@
       loginTab.addEventListener('click', function () { setTab('login'); });
       signupTab.addEventListener('click', function () { setTab('signup'); });
 
-      loginForm.addEventListener('submit', async function (event) {
-        event.preventDefault();
-        const button = loginForm.querySelector('button[type="submit"]');
-        button.disabled = true;
-        button.textContent = 'Logging in...';
+     
+loginForm.addEventListener('submit', async function (event) {
+  event.preventDefault();
 
-        try {
-          const email = loginForm.email.value.trim();
-          const password = loginForm.password.value;
-          const { error } = await client.auth.signInWithPassword({ email, password });
-          if (error) throw error;
+  const button = loginForm.querySelector('button[type="submit"]');
+  button.disabled = true;
+  button.textContent = 'Logging in...';
 
-          showMessage('Login successful. Your customer dashboard is the next step we will connect.', false);
-        } catch (error) {
-          showMessage(error.message || 'Unable to log in. Please check your details.', true);
-        } finally {
-          button.disabled = false;
-          button.textContent = 'Log In';
-        }
-      });
+  try {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    const { data, error } = await client.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) throw error;
+
+    const user = data.user;
+    const dashboard = document.getElementById('customerDashboard');
+
+    document.getElementById('dashboardCustomerName').textContent =
+      user.user_metadata?.full_name || user.email || 'Customer';
+
+    document.getElementById('customerProfileEmail').textContent =
+      'Email: ' + (user.email || 'Not available');
+
+    document.getElementById('customerProfilePhone').textContent =
+      'Phone: ' + (user.user_metadata?.phone || 'Not provided');
+
+    dashboard.hidden = false;
+    loginForm.closest('section').querySelectorAll('form').forEach(function (form) {
+      form.hidden = true;
+    });
+
+    showMessage('Login successful. Welcome to your Source Stays account.', false);
+    dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (error) {
+    showMessage(error.message || 'Unable to log in. Please check your details.', true);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Log In';
+  }
+});
+
 
       signupForm.addEventListener('submit', async function (event) {
         event.preventDefault();
