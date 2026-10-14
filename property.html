@@ -343,6 +343,8 @@
 
             <p><b>Amenities:</b> ${amenities}</p>
 
+
+${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
 <section style="margin-top:24px;padding:20px;border:1px solid #e7ebe7;border-radius:14px;background:#f7f8f5;">
   <h3 style="margin-top:0;">Land &amp; Property Document Status</h3>
   <p style="font-size:13px;color:#68736c;">Review the current document status before making any payment.</p>
@@ -359,6 +361,7 @@
 
   <p style="margin-bottom:0;font-size:13px;color:#68736c;"><b>Important:</b> These statuses are informational and are not a guarantee of ownership or legal title. Before paying for land or property, independently verify the documents and ownership through a qualified Nigerian property solicitor.</p>
 </section>
+` : ""}
 
             <a class="btn dark" href="booking.html?id=${encodeURIComponent(p.id)}">
               Request booking
