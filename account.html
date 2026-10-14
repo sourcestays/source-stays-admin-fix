@@ -494,15 +494,19 @@
         }
       });
 
-      client.auth.getSession().then(function (result) {
-        if (result.error) {
-          console.error('Could not check session:', result.error);
-          return;
-        }
-       if (result.data.session) {
-  showMessage('Login successful! Your customer dashboard will be available here soon.', false);
-}
-      });
+     client.auth.getSession().then(function (result) {
+  if (result.error) {
+    console.error('Could not check session:', result.error);
+    return;
+  }
+
+  if (result.data.session) {
+    showMessage(
+      'You are logged in. Your customer dashboard will be available here soon.',
+      false
+    );
+  }
+});
     })();
   </script>
 </body>
