@@ -617,19 +617,61 @@ loginForm.addEventListener('submit', async function (event) {
         }
       });
 
-     client.auth.getSession().then(function (result) {
+   
+async function showCustomerDashboard(user) {
+  document.getElementById('dashboardCustomerName').textContent =
+    user.user_metadata?.full_name || user.email || 'Customer';
+
+  document.getElementById('customerProfileEmail').textContent =
+    'Email: ' + (user.email || 'Not available');
+
+  document.getElementById('customerProfilePhone').textContent =
+    'Phone: ' + (user.user_metadata?.phone || 'Not provided');
+
+  document.getElementById('customerDashboard').hidden = false;
+
+  document.querySelectorAll('#loginForm, #signupForm').forEach(function (form) {
+    form.hidden = true;
+  });
+}
+
+client.auth.getSession().then(function (result) {
   if (result.error) {
     console.error('Could not check session:', result.error);
     return;
   }
 
   if (result.data.session) {
-    showMessage(
-      'You are logged in. Your customer dashboard will be available here soon.',
-      false
-    );
+    showCustomerDashboard(result.data.session.user);
+    showMessage('You are logged in to your Source Stays account.', false);
   }
 });
+
+document.getElementById('logoutButton').addEventListener('click', async function () {
+  const button = this;
+  button.disabled = true;
+  button.textContent = 'Logging out...';
+
+  try {
+    const { error } = await client.auth.signOut();
+    if (error) throw error;
+
+    document.getElementById('customerDashboard').hidden = true;
+
+    document.querySelectorAll('#loginForm, #signupForm').forEach(function (form) {
+      form.hidden = false;
+    });
+
+    showMessage('You have been logged out successfully.', false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (error) {
+    showMessage(error.message || 'Unable to log out. Please try again.', true);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Log Out';
+  }
+});
+
     })();
   </script>
 </body>
