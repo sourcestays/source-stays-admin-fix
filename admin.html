@@ -453,6 +453,110 @@ alert('Could not save property: '+(err.message||err));
 }});
 window.del=async function(id){if(!confirm('Delete this property?'))return;const {error}=await getClient().from('properties').delete().eq('id',id);if(error)alert(error.message);else load();};
 
+async function loadReviews() {
+  const box = document.getElementById('reviewsList');
+  if (!box) return;
+
+  box.innerHTML = '<p class="muted">Loading reviews…</p>';
+
+  try {
+    const sb = getClient();
+    const { data, error } = await sb
+      .from('reviews')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!data || !data.length) {
+      box.innerHTML = '<p class="muted">No reviews submitted yet.</p>';
+      return;
+    }
+
+    box.innerHTML = data.map(r => `
+      <article style="border-bottom:1px solid #ddd;padding:12px 0">
+        <strong>${esc(r.reviewer_name)}</strong>
+        <span> — ${Number(r.rating)} / 5 stars</span>
+        <p>${esc(r.comment)}</p>
+        <small>${r.reviewer_type === 'property_owner' ? 'Property owner' : 'Guest'} · ${esc(r.status)} · ${esc(r.source)}</small>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+          ${r.status !== 'approved' ? `<button type="button" onclick="setReviewStatus(${Number(r.id)},'approved')">Approve</button>` : ''}
+          ${r.status !== 'rejected' ? `<button type="button" onclick="setReviewStatus(${Number(r.id)},'rejected')">Reject</button>` : ''}
+        </div>
+      </article>
+    `).join('');
+  } catch (err) {
+    console.error('Could not load reviews:', err);
+    box.innerHTML = '<p class="danger">Could not load reviews: ' + esc(err.message || err) + '</p>';
+  }
+}
+
+window.setReviewStatus = async function(id, status) {
+  const action = status === 'approved' ? 'approve' : 'reject';
+
+  if (!confirm('Are you sure you want to ' + action + ' this review?')) return;
+
+  try {
+    const { error } = await getClient()
+      .from('reviews')
+      .update({ status })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    alert('Review ' + (status === 'approved' ? 'approved' : 'rejected') + '.');
+    await loadReviews();
+  } catch (err) {
+    alert('Could not update review: ' + (err.message || err));
+  }
+};
+
+const reviewAdminForm = document.getElementById('reviewAdminForm');
+
+if (reviewAdminForm) {
+  reviewAdminForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const form = e.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    const message = document.getElementById('reviewAdminMessage');
+    const values = new FormData(form);
+
+    const say = (text, isError = false) => {
+      message.textContent = text;
+      message.className = isError ? 'danger' : 'muted';
+    };
+
+    button.disabled = true;
+    say('Saving review…');
+
+    try {
+      const { error } = await getClient()
+        .from('reviews')
+        .insert({
+          reviewer_name: String(values.get('reviewer_name')).trim(),
+          reviewer_type: values.get('reviewer_type'),
+          rating: Number(values.get('rating')),
+          comment: String(values.get('comment')).trim(),
+          status: 'approved',
+          source: 'admin'
+        });
+
+      if (error) throw error;
+
+      form.reset();
+      say('Review added successfully.');
+      await loadReviews();
+    } catch (err) {
+      say('Could not save review: ' + (err.message || err), true);
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+loadReviews();
+
 window.bookingStatus = async function(id, status) {
   const sb = getClient();
 
