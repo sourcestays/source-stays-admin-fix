@@ -481,7 +481,8 @@ async function loadReviews() {
         <small>${r.reviewer_type === 'property_owner' ? 'Property owner' : 'Guest'} · ${esc(r.status)} · ${esc(r.source)}</small>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
           ${r.status !== 'approved' ? `<button type="button" onclick="setReviewStatus(${Number(r.id)},'approved')">Approve</button>` : ''}
-          ${r.status !== 'rejected' ? `<button type="button" onclick="setReviewStatus(${Number(r.id)},'rejected')">Reject</button>` : ''}
+          ${r.status !== 'rejected' ? `<button type="button" onclick="setReviewStatus(${Number(r.id)},'rejected')">Reject</button>` : ''}          
+<button type="button" onclick="deleteReview(${Number(r.id)})">Delete</button>
         </div>
       </article>
     `).join('');
