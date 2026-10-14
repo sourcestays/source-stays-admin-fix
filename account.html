@@ -483,9 +483,9 @@
           console.error('Could not check session:', result.error);
           return;
         }
-        if (result.data.session) {
-          showMessage('You are already logged in. Your customer dashboard will be connected in the next phase.', false);
-        }
+       if (result.data.session) {
+  showMessage('Login successful! Your customer dashboard will be available here soon.', false);
+}
       });
     })();
   </script>
