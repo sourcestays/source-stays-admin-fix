@@ -581,13 +581,40 @@ loginForm.addEventListener('submit', async function (event) {
 
           if (error) throw error;
 
-          if (data.session) {
-            showMessage('Your account has been created. Email confirmation may still be required before you can access all features.', false);
-          } else {
-            showMessage('Account registration received. Please check your email for a confirmation link before logging in.', false);
-          }
+         
+if (data.user) {
+  if (data.session) {
+    const { error: profileError } = await client
+      .from('customer_profiles')
+      .upsert({
+        id: data.user.id,
+        full_name: fullName,
+        phone: phone
+      });
 
-          signupForm.reset();
+    if (profileError) {
+      console.error('Profile creation error:', profileError);
+      showMessage(
+        'Your account was created, but your profile could not be saved. Please contact support before trying to register again.',
+        true
+      );
+      return;
+    }
+
+    showMessage(
+      'Your account and customer profile have been created successfully.',
+      false
+    );
+  } else {
+    showMessage(
+      'Account registration received. Please confirm your email using the link we sent you. Your profile will be connected after confirmation.',
+      false
+    );
+  }
+}
+
+signupForm.reset();
+
         } catch (error) {
           showMessage(error.message || 'Unable to create your account. Please try again.', true);
         } finally {
