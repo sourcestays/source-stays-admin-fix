@@ -388,7 +388,16 @@ try {
 }
 
   const b = Object.fromEntries(new FormData(e.target));
+const { data: { user }, error: authError } =
+  await window.supabaseClient.auth.getUser();
 
+if (authError) {
+  throw authError;
+}
+
+if (user) {
+  b.customer_user_id = user.id;
+}
   b.property_id = id;
   b.customer_name = b.name;
   b.customer_phone = b.phone;
