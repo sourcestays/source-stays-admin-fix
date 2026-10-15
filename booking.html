@@ -414,22 +414,38 @@ if (user) {
   delete b.phone;
   delete b.email;
 
-  try {
-    await SourceStays.submitBooking(b);
-   successModal.style.display = 'flex';   
+  
+try {
+  msg.textContent = 'Submitting your booking request...';
+  msg.style.color = '#555';
 
-    e.target.reset();
-    totalBox.style.display = 'none';
-    bookingTotal = 0;
-    nights = 0;
+  await SourceStays.submitBooking(b);
 
-  } catch (err) {
+  msg.textContent = '';
+  successModal.style.display = 'flex';
 
-    console.error(err);
+  e.target.reset();
+  totalBox.style.display = 'none';
+  bookingTotal = 0;
+  nights = 0;
+  datesAvailable = false;
+  availabilityMsg.textContent = '';
 
-    msg.textContent =
-      'Something went wrong. Please try again or use WhatsApp.';
-  }
+} catch (err) {
+  console.error('Booking submission failed:', err);
+
+  msg.style.color = '#b42318';
+  msg.textContent =
+    err.message ||
+    'Your booking request could not be submitted. Please try again or contact Source Stays on WhatsApp.';
+}
+```
+
+This will display a submission message while the request is processing, show your existing success popup when the booking succeeds, and show an error if submission fails.
+
+**Important:** This assumes `SourceStays.submitBooking(b)` reports database errors by throwing them. We'll verify that next if necessary.
+
+Commit the change and wait for Vercel to deploy. Then we'll test a booking request and confirm that it actually appears in Supabase before proceeding.
 };
 const successModal = document.getElementById('successModal');
 const homeBtn = document.getElementById('homeBtn');
