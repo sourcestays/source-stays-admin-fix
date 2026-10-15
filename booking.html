@@ -329,8 +329,12 @@ checkOut.addEventListener('change', () => {
   checkSelectedDates();
 });
 
+
 form.onsubmit = async e => {
   e.preventDefault();
+
+  msg.style.color = '#b42318';
+  msg.textContent = '';
 
   if (!id) {
     msg.textContent = 'Please select a property before making a booking request.';
@@ -349,104 +353,102 @@ form.onsubmit = async e => {
     return;
   }
 
-if (checkingAvailability) {
-  msg.textContent = 'Please wait while we check availability.';
-  return;
-}
-
-if (!datesAvailable) {
-  await checkSelectedDates();
+  if (checkingAvailability) {
+    msg.textContent = 'Please wait while we check availability.';
+    return;
+  }
 
   if (!datesAvailable) {
-    msg.textContent =
-      'These dates are unavailable or could not be verified. Please select dates again.';
-    return;
+    await checkSelectedDates();
+
+    if (!datesAvailable) {
+      msg.textContent =
+        'These dates are unavailable or could not be verified. Please select dates again.';
+      return;
+    }
   }
-}
 
-// Recheck immediately before submitting the booking request.
-try {
-  const available = await SourceStays.checkAvailability(
-    id,
-    checkIn.value,
-    checkOut.value
-  );
+  const button = form.querySelector('button[type="submit"], button.btn');
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Submitting request...';
+  }
 
-  if (!available) {
+  try {
+    msg.style.color = '#555';
+    msg.textContent = 'Submitting your booking request...';
+
+    // Confirm availability again before saving.
+    const available = await SourceStays.checkAvailability(
+      id,
+      checkIn.value,
+      checkOut.value
+    );
+
+    if (!available) {
+      datesAvailable = false;
+      availabilityMsg.style.color = '#b42318';
+      availabilityMsg.textContent =
+        'Sorry, these dates are no longer available. Please choose other dates.';
+      msg.textContent = 'Please select different dates.';
+      return;
+    }
+
+    const b = Object.fromEntries(new FormData(form));
+
+    // Link the booking to the signed-in customer, if applicable.
+    const { data: { user }, error: authError } =
+      await SourceStays.supabase.auth.getUser();
+
+    if (authError) throw authError;
+
+    if (user) {
+      b.customer_user_id = user.id;
+    }
+
+    b.property_id = id;
+    b.customer_name = b.name;
+    b.customer_phone = b.phone;
+    b.customer_email = b.email || null;
+    b.amount_due = bookingTotal;
+    b.currency = 'NGN';
+    b.payment_status = 'unpaid';
+
+    delete b.name;
+    delete b.phone;
+    delete b.email;
+
+    // Save the request and only show success after Supabase confirms.
+    await SourceStays.submitBooking(b);
+
+    msg.textContent = '';
+    successModal.style.display = 'flex';
+
+    form.reset();
+    totalBox.style.display = 'none';
+    bookingTotal = 0;
+    nights = 0;
     datesAvailable = false;
-    availabilityMsg.textContent =
-      'Sorry, these dates are no longer available. Please choose other dates.';
-    availabilityMsg.style.color = '#b42318';
-    msg.textContent = 'Please select different dates.';
-    return;
+    availabilityMsg.textContent = '';
+
+    checkIn.min = today;
+    checkOut.min = today;
+
+  } catch (err) {
+    console.error('Booking submission failed:', err);
+    msg.style.color = '#b42318';
+    msg.textContent =
+      err.message ||
+      'Your booking request could not be submitted. Please try again or contact Source Stays on WhatsApp.';
+
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Submit booking request';
+    }
   }
-} catch (error) {
-  console.error('Final availability check failed:', error);
-  msg.textContent =
-    'We could not verify availability. Please try again shortly.';
-  return;
-}
-
-  const b = Object.fromEntries(new FormData(e.target));
-  
-
-const { data: { user }, error: authError } =
-  await SourceStays.supabase.auth.getUser();
-
-if (authError) {
-  throw authError;
-}
-
-if (user) {
-  b.customer_user_id = user.id;
-}
-
-  b.property_id = id;
-  b.customer_name = b.name;
-  b.customer_phone = b.phone;
-  b.customer_email = b.email || null;
-
-  b.amount_due = bookingTotal;
-  b.currency = 'NGN';
-  b.payment_status = 'unpaid';
-
-  delete b.name;
-  delete b.phone;
-  delete b.email;
-
-  
-try {
-  msg.textContent = 'Submitting your booking request...';
-  msg.style.color = '#555';
-
-  await SourceStays.submitBooking(b);
-
-  msg.textContent = '';
-  successModal.style.display = 'flex';
-
-  e.target.reset();
-  totalBox.style.display = 'none';
-  bookingTotal = 0;
-  nights = 0;
-  datesAvailable = false;
-  availabilityMsg.textContent = '';
-
-} catch (err) {
-  console.error('Booking submission failed:', err);
-
-  msg.style.color = '#b42318';
-  msg.textContent =
-    err.message ||
-    'Your booking request could not be submitted. Please try again or contact Source Stays on WhatsApp.';
-}
-```
-
-This will display a submission message while the request is processing, show your existing success popup when the booking succeeds, and show an error if submission fails.
-
-**Important:** This assumes `SourceStays.submitBooking(b)` reports database errors by throwing them. We'll verify that next if necessary.
-
-Commit the change and wait for Vercel to deploy. Then we'll test a booking request and confirm that it actually appears in Supabase before proceeding.
 };
+
 const successModal = document.getElementById('successModal');
 const homeBtn = document.getElementById('homeBtn');
 const waitBtn = document.getElementById('waitBtn');
