@@ -559,10 +559,15 @@ loginForm.addEventListener('submit', async function (event) {
     document.getElementById('authLayout').hidden = true;
     document.getElementById('authCard').hidden = true;
     loadCustomerBookings(user.id);
-    loginForm.closest('section').querySelectorAll('form').forEach(function (form) {
+loadCustomerCredits(user.id);
+
+loginForm.closest('section').querySelectorAll('form').forEach(function (form) {
       form.hidden = true;
     });
 
+
+
+    
     showMessage('Login successful. Welcome to your Source Stays account.', false);
     dashboard.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -705,6 +710,7 @@ if (result.data.session) {
   const user = result.data.session.user;
   showCustomerDashboard(user);
   loadCustomerBookings(user.id);
+  loadCustomerCredits(user.id);
   showMessage('You are logged in to your Source Stays account.', false);
 }
 });
@@ -801,7 +807,54 @@ async function loadCustomerBookings(userId) {
   }
 }
 
+async function loadCustomerCredits(userId) {
+  const creditsBox = document.getElementById('customerCredits');
 
+  creditsBox.textContent = 'Loading your Source Stays Credits...';
+
+  try {
+    const { data, error } = await client
+      .from('source_stays_credit_ledger')
+      .select('amount, entry_type, note, created_at')
+      .eq('customer_user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const balance = (data || []).reduce((total, entry) => {
+      const amount = Number(entry.amount);
+
+      if (entry.entry_type === 'earn') return total + amount;
+      if (entry.entry_type === 'redeem') return total - amount;
+      if (entry.entry_type === 'adjustment') return total + amount;
+
+      return total;
+    }, 0);
+
+    creditsBox.replaceChildren();
+
+    const balanceHeading = document.createElement('h3');
+    balanceHeading.textContent =
+      'Available balance: ₦' +
+      balance.toLocaleString('en-NG', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+
+    creditsBox.appendChild(balanceHeading);
+
+    const message = document.createElement('p');
+    message.textContent = data.length
+      ? 'Your balance is based on your recorded credit transactions.'
+      : 'No Source Stays Credits have been recorded for your account yet.';
+
+    creditsBox.appendChild(message);
+  } catch (error) {
+    console.error('Could not load customer credits:', error);
+    creditsBox.textContent =
+      'We could not load your credits right now. Please try again later.';
+  }
+}
     })();
   </script>
 </body>
