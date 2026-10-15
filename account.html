@@ -432,11 +432,14 @@
           <div id="customerBookings">Your bookings will appear here.</div>
         </article>
 
-        <article class="dashboard-card">
-          <h3>My Source Stays Credits</h3>
-          <p>Your eligible loyalty credits will appear here.</p>
-          <div id="customerCredits">Credits will be displayed after secure account linking.</div>
-        </article>
+<article class="dashboard-card">
+  <h3>My Source Stays Credits</h3>
+  <p>Your eligible loyalty credits will appear here.</p>
+  <div id="customerCredits">
+    Credits will be displayed after secure account linking.
+  </div>
+</article>
+
 
         <article class="dashboard-card">
           <h3>My Profile</h3>
@@ -527,6 +530,7 @@ loginForm.addEventListener('submit', async function (event) {
       'Phone: ' + (user.user_metadata?.phone || 'Not provided');
 
     dashboard.hidden = false;
+    loadCustomerBookings(user.id);
     loginForm.closest('section').querySelectorAll('form').forEach(function (form) {
       form.hidden = true;
     });
@@ -668,10 +672,12 @@ client.auth.getSession().then(function (result) {
     return;
   }
 
-  if (result.data.session) {
-    showCustomerDashboard(result.data.session.user);
-    showMessage('You are logged in to your Source Stays account.', false);
-  }
+if (result.data.session) {
+  const user = result.data.session.user;
+  showCustomerDashboard(user);
+  loadCustomerBookings(user.id);
+  showMessage('You are logged in to your Source Stays account.', false);
+}
 });
 
 document.getElementById('logoutButton').addEventListener('click', async function () {
@@ -698,6 +704,73 @@ document.getElementById('logoutButton').addEventListener('click', async function
     button.textContent = 'Log Out';
   }
 });
+
+
+    
+async function loadCustomerBookings(userId) {
+  const bookingsContainer = document.getElementById('customerBookings');
+
+  bookingsContainer.textContent = 'Loading your bookings...';
+
+  try {
+    const { data: bookings, error } = await client
+      .from('bookings')
+      .select('id, check_in, check_out, guests, status, payment_status, amount_due, currency, created_at')
+      .eq('customer_user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!bookings || bookings.length === 0) {
+      bookingsContainer.textContent =
+        'No bookings are linked to your account yet. New bookings made while logged in can appear here.';
+      return;
+    }
+
+    bookingsContainer.replaceChildren();
+
+    bookings.forEach(function (booking) {
+      const card = document.createElement('div');
+      card.style.cssText =
+        'padding:14px 0;border-bottom:1px solid #e1e8e2;';
+
+      const title = document.createElement('h4');
+      title.textContent = 'Booking #' + booking.id;
+      title.style.margin = '0 0 8px';
+
+      const dates = document.createElement('p');
+      dates.textContent =
+        'Check-in: ' + (booking.check_in || 'Not set') +
+        ' | Check-out: ' + (booking.check_out || 'Not set');
+
+      const guests = document.createElement('p');
+      guests.textContent = 'Guests: ' + (booking.guests ?? 'Not set');
+
+      const status = document.createElement('p');
+      status.textContent = 'Booking status: ' + (booking.status || 'Pending');
+
+      const payment = document.createElement('p');
+      payment.textContent = 'Payment status: ' +
+        (booking.payment_status || 'Not available');
+
+      card.append(title, dates, guests, status, payment);
+
+      if (booking.amount_due !== null && booking.amount_due !== undefined) {
+        const amount = document.createElement('p');
+        amount.textContent = 'Amount: ' +
+          (booking.currency || 'NGN') + ' ' + booking.amount_due;
+        card.appendChild(amount);
+      }
+
+      bookingsContainer.appendChild(card);
+    });
+  } catch (error) {
+    console.error('Unable to load customer bookings:', error);
+    bookingsContainer.textContent =
+      'We could not load your bookings right now. Please try again later.';
+  }
+}
+
 
     })();
   </script>
