@@ -332,7 +332,7 @@
 </header>
 
   <main>
-    <div class="layout">
+    <div class="layout" id="authLayout">
       <section class="intro">
         <div class="eyebrow">Your stay. Your rewards.</div>
         <h1>Welcome to your Source Stays account.</h1>
@@ -354,7 +354,7 @@
         </div>
       </section>
 
-      <section class="panel">
+     <section class="panel" id="authCard">
         <div class="tabs" role="tablist" aria-label="Account options">
           <button class="tab active" id="loginTab" type="button" role="tab" aria-selected="true">Log In</button>
           <button class="tab" id="signupTab" type="button" role="tab" aria-selected="false">Sign Up</button>
@@ -530,6 +530,8 @@ loginForm.addEventListener('submit', async function (event) {
       'Phone: ' + (user.user_metadata?.phone || 'Not provided');
 
     dashboard.hidden = false;
+    document.getElementById('authLayout').hidden = true;
+    document.getElementById('authCard').hidden = true;
     loadCustomerBookings(user.id);
     loginForm.closest('section').querySelectorAll('form').forEach(function (form) {
       form.hidden = true;
@@ -660,7 +662,8 @@ async function showCustomerDashboard(user) {
     'Phone: ' + (user.user_metadata?.phone || 'Not provided');
 
   document.getElementById('customerDashboard').hidden = false;
-
+  document.getElementById('authLayout').hidden = true;
+document.getElementById('authCard').hidden = true;
   document.querySelectorAll('#loginForm, #signupForm').forEach(function (form) {
     form.hidden = true;
   });
@@ -690,7 +693,8 @@ document.getElementById('logoutButton').addEventListener('click', async function
     if (error) throw error;
 
     document.getElementById('customerDashboard').hidden = true;
-
+    document.getElementById('authLayout').hidden = false;
+document.getElementById('authCard').hidden = false;
     document.querySelectorAll('#loginForm, #signupForm').forEach(function (form) {
       form.hidden = false;
     });
