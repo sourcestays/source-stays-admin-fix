@@ -79,7 +79,22 @@
     <p class="muted">Availability blocks will appear here.</p>
   </div>
 </section>
-<section class="box"><h3>Bookings & enquiries</h3><div id="bookings"></div><div id="enquiries"></div></section></div>
+<section class="box"><h3>Bookings & enquiries</h3><div id="bookings"></div><div id="enquiries"></div></section>
+
+<section class="box" id="creditRedemptionAdmin">
+  <h3>Source Stays Credit Redemption Requests</h3>
+  <p class="muted">
+    Review customer requests. Approval records the credit deduction;
+    it does not automatically change the Paystack payment amount.
+  </p>
+  <button type="button" class="btn dark" onclick="loadCreditRedemptions()">
+    Refresh Requests
+  </button>
+  <div id="creditRedemptionRequests">
+    Redemption requests will appear here.
+  </div>
+</section>
+</div>
 <section class="box" style="margin-top:20px">
   <h3>Customer Reviews</h3>
   <p class="muted">Add genuine guest and property-owner feedback. Customer submissions will require approval before publication.</p>
@@ -384,7 +399,7 @@ ${x.status==='approved' || x.status==='completed'
 </td></tr>
 `;}).join('')}</table>`:'<p class="muted">No booking requests yet.</p>';
   enquiries.innerHTML=e?.length?`<h4>Enquiries</h4><table class="table"><tr><th>Customer</th><th>Interest</th><th>Property ID</th><th>Status</th></tr>${e.map(x=>`<tr><td>${esc(x.customer_name)}<br>${esc(x.customer_phone||'')}</td><td>${esc(x.subject||'Enquiry')}</td><td>${esc(x.property_id||'')}</td><td><select onchange="enquiryStatus(${x.id},this.value)"><option ${x.status==='new'?'selected':''}>new</option><option ${x.status==='contacted'?'selected':''}>contacted</option><option ${x.status==='closed'?'selected':''}>closed</option></select></td></tr>`).join('')}</table>`:'<p class="muted">No enquiries yet.</p>';
- }catch(err){console.error(err);props.innerHTML='<p class="danger">Could not load dashboard data: '+esc(err.message||err)+'</p>';}
+await loadCreditRedemptions(); }catch(err){console.error(err);props.innerHTML='<p class="danger">Could not load dashboard data: '+esc(err.message||err)+'</p>';}
 }
 window.requestPayment=async function(id){try{const sb=getClient();const result=await sb.functions.invoke('initialize-payment',{body:{booking_id:id}});if(result.error)throw result.error;const data=result.data||{};if(!data.authorization_url)throw new Error(data.error||'Could not create payment link.'); navigator.clipboard?.writeText(data.authorization_url);
 const paymentLink=data.authorization_url;
@@ -741,6 +756,143 @@ if (!notes.trim()) {
 
 window.enquiryStatus=async function(id,status){const {error}=await getClient().from('enquiries').update({status}).eq('id',id);if(error)alert(error.message);};
 window.logout=async function(){try{await getClient().auth.signOut();}finally{showLogin();loginForm.reset();msg('');}};
+  
+window.loadCreditRedemptions = async function() {
+  const box = document.getElementById('creditRedemptionRequests');
+  if (!box) return;
+
+  box.textContent = 'Loading redemption requests...';
+
+  try {
+    const { data, error } = await getClient()
+      .from('source_stays_credit_redemptions')
+      .select('id, customer_user_id, booking_id, amount, status, customer_note, admin_note, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!data || !data.length) {
+      box.textContent = 'No redemption requests found.';
+      return;
+    }
+
+    box.replaceChildren();
+
+    data.forEach(request => {
+      const card = document.createElement('article');
+      card.style.cssText =
+        'padding:14px 0;border-bottom:1px solid #e5e2d9';
+
+      const title = document.createElement('h4');
+      title.textContent =
+        `Request #${request.id} — Booking #${request.booking_id}`;
+
+      const amount = document.createElement('p');
+      amount.textContent =
+        'Amount: ₦' + Number(request.amount).toLocaleString('en-NG');
+
+      const status = document.createElement('p');
+      status.textContent = 'Status: ' + request.status;
+
+      const note = document.createElement('p');
+      note.textContent = 'Customer note: ' +
+        (request.customer_note || 'None');
+
+      card.append(title, amount, status, note);
+
+      if (request.admin_note) {
+        const adminNote = document.createElement('p');
+        adminNote.textContent = 'Admin note: ' + request.admin_note;
+        card.appendChild(adminNote);
+      }
+
+      if (request.status === 'pending') {
+        const noteInput = document.createElement('input');
+        noteInput.type = 'text';
+        noteInput.maxLength = 300;
+        noteInput.placeholder = 'Optional review note';
+        noteInput.style.cssText =
+          'padding:10px;width:100%;max-width:400px;border:1px solid #ddd;border-radius:8px';
+
+        const actions = document.createElement('div');
+        actions.style.cssText =
+          'display:flex;gap:8px;flex-wrap:wrap;margin-top:10px';
+
+        const approve = document.createElement('button');
+        approve.type = 'button';
+        approve.className = 'btn gold';
+        approve.textContent = 'Approve';
+
+        approve.addEventListener('click', () =>
+          reviewCreditRedemption(
+            request.id,
+            true,
+            noteInput.value,
+            approve,
+            reject
+          )
+        );
+
+        const reject = document.createElement('button');
+        reject.type = 'button';
+        reject.className = 'btn dark';
+        reject.textContent = 'Reject';
+
+        reject.addEventListener('click', () =>
+          reviewCreditRedemption(
+            request.id,
+            false,
+            noteInput.value,
+            approve,
+            reject
+          )
+        );
+
+        actions.append(approve, reject);
+        card.append(noteInput, actions);
+      }
+
+      box.appendChild(card);
+    });
+  } catch (error) {
+    console.error('Could not load redemption requests:', error);
+    box.textContent =
+      'Could not load redemption requests: ' + error.message;
+  }
+};
+
+async function reviewCreditRedemption(id, approve, note, approveButton, rejectButton) {
+  const action = approve ? 'approve' : 'reject';
+
+  if (!confirm(`Are you sure you want to ${action} redemption request #${id}?`)) {
+    return;
+  }
+
+  approveButton.disabled = true;
+  rejectButton.disabled = true;
+
+  try {
+    const { error } = await getClient().rpc(
+      'admin_review_source_stays_redemption',
+      {
+        p_request_id: id,
+        p_approve: approve,
+        p_admin_note: note.trim()
+      }
+    );
+
+    if (error) throw error;
+
+    alert(`Redemption request #${id} ${approve ? 'approved' : 'rejected'}.`);
+    await loadCreditRedemptions();
+  } catch (error) {
+    console.error('Redemption review failed:', error);
+    alert('Could not review this request: ' + error.message);
+    approveButton.disabled = false;
+    rejectButton.disabled = false;
+  }
+}
+
 check();
 })();
 </script></body></html>
