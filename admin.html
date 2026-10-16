@@ -203,6 +203,78 @@ function statusLabel(status){return status==='approved'?'Confirmed':status==='de
   return `<button type="button" class="btn dark" onclick="requestPayment(${x.id})">Request Payment</button>`;
   }
 
+window.completeBookingAndAwardCredits = async function(id) {
+  const sb = getClient();
+
+  const ownerAmountInput = prompt(
+    'Enter the agreed amount payable to the property owner (₦):'
+  );
+  if (ownerAmountInput === null) return;
+
+  const directCostsInput = prompt(
+    'Enter total direct booking costs (₦):'
+  );
+  if (directCostsInput === null) return;
+
+  const ownerAmount = Number(ownerAmountInput.trim());
+  const directCosts = Number(directCostsInput.trim());
+
+  if (
+    ownerAmountInput.trim() === '' ||
+    directCostsInput.trim() === '' ||
+    !Number.isFinite(ownerAmount) ||
+    !Number.isFinite(directCosts) ||
+    ownerAmount < 0 ||
+    directCosts < 0
+  ) {
+    alert('Enter valid amounts of zero or greater.');
+    return;
+  }
+
+  if (!confirm(
+    'Complete booking #' + id +
+    ' and award 2% of the eligible booking margin as Source Stays Credits?'
+  )) {
+    return;
+  }
+
+  try {
+    const { data, error } = await sb.rpc(
+      'admin_complete_booking_and_award_credits',
+      {
+        p_booking_id: id,
+        p_owner_amount: ownerAmount,
+        p_direct_costs: directCosts
+      }
+    );
+
+    if (error) throw error;
+
+    const result = Array.isArray(data) ? data[0] : data;
+
+    alert(
+      'Booking completed successfully.\n' +
+      'Eligible margin: ₦' +
+      Number(result.eligible_margin).toLocaleString('en-NG', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }) +
+      '\nCredits awarded: ₦' +
+      Number(result.credits_awarded).toLocaleString('en-NG', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
+    );
+
+    await load();
+  } catch (error) {
+    alert(
+      'Could not complete booking or award credits: ' +
+      (error.message || 'Unknown error')
+    );
+  }
+};
+
   function verificationButtons(x){
  const url=verificationUrl(x.verification_token);
  const wa=phoneForWhatsApp(x.customer_phone);
@@ -324,8 +396,19 @@ async function load(){
 <button type="button" onclick="ownerAvailability(${x.id},'unavailable')">Unavailable</button>
 ${x.owner_availability_checked_at?`<br><small>${esc(new Date(x.owner_availability_checked_at).toLocaleString())}</small>`:''}
 ${x.owner_availability_notes?`<br><small>${esc(x.owner_availability_notes)}</small>`:''}
-</td><td>${verificationButtons(x)}${verificationSummary(v)}</td><td><select onchange="bookingStatus(${x.id},this.value)">
-<option value="pending" ${x.status==='pending'?'selected':''}>Pending</option><option value="approved" ${x.status==='approved'?'selected':''}>Confirmed</option><option value="declined" ${x.status==='declined'?'selected':''}>Cancelled</option><option value="completed" ${x.status==='completed'?'selected':''}>Completed</option></select></td></tr>`;}).join('')}</table>`:'<p class="muted">No booking requests yet.</p>';
+</td><td>${verificationButtons(x)}${verificationSummary(v)}
+</td><td>
+<select onchange="bookingStatus(${x.id},this.value)">
+<option value="pending" ${x.status==='pending'?'selected':''}>Pending</option>
+<option value="approved" ${x.status==='approved'?'selected':''}>Confirmed</option>
+<option value="declined" ${x.status==='declined'?'selected':''}>Cancelled</option>
+<option value="completed" ${x.status==='completed'?'selected':''}>Completed</option>
+</select>
+${x.status==='approved' || x.status==='completed'
+  ? `<br><button type="button" class="btn dark" onclick="completeBookingAndAwardCredits(${x.id})">Complete &amp; Award Credits</button>`
+  : ''}
+</td></tr>
+`;}).join('')}</table>`:'<p class="muted">No booking requests yet.</p>';
   enquiries.innerHTML=e?.length?`<h4>Enquiries</h4><table class="table"><tr><th>Customer</th><th>Interest</th><th>Property ID</th><th>Status</th></tr>${e.map(x=>`<tr><td>${esc(x.customer_name)}<br>${esc(x.customer_phone||'')}</td><td>${esc(x.subject||'Enquiry')}</td><td>${esc(x.property_id||'')}</td><td><select onchange="enquiryStatus(${x.id},this.value)"><option ${x.status==='new'?'selected':''}>new</option><option ${x.status==='contacted'?'selected':''}>contacted</option><option ${x.status==='closed'?'selected':''}>closed</option></select></td></tr>`).join('')}</table>`:'<p class="muted">No enquiries yet.</p>';
  }catch(err){console.error(err);props.innerHTML='<p class="danger">Could not load dashboard data: '+esc(err.message||err)+'</p>';}
 }
@@ -578,8 +661,20 @@ if (reviewAdminForm) {
 
 loadReviews();
 
+
 window.bookingStatus = async function(id, status) {
   const sb = getClient();
+
+  // Completing a booking must go through the secure reward process.
+  if (status === 'completed') {
+    alert(
+      'To complete this booking and award Source Stays Credits, ' +
+      'use the Complete & Award Credits action. This ensures payment ' +
+      'verification and the 2% reward calculation are applied.'
+    );
+    load();
+    return;
+  }
 
   if (status === 'approved') {
     const { data, error } = await sb
@@ -589,15 +684,15 @@ window.bookingStatus = async function(id, status) {
       .single();
 
     if (error) {
-      alert('Could not verify owner availability: ' + error.message);
+      alert('Could not check owner availability: ' + error.message);
       load();
       return;
     }
 
     if (data.owner_availability_status !== 'available') {
       alert(
-        'This booking cannot be confirmed yet. ' +
-        'Contact the property owner and mark availability as Available first.'
+        'This booking cannot be confirmed yet. Contact the property ' +
+        'owner and mark availability as Available first.'
       );
       load();
       return;
@@ -631,6 +726,7 @@ window.bookingStatus = async function(id, status) {
 
   load();
 };
+
 
   
 window.ownerAvailability = async function(id, status) {
