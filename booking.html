@@ -396,15 +396,32 @@ form.onsubmit = async e => {
 
     const b = Object.fromEntries(new FormData(form));
 
-    // Link the booking to the signed-in customer, if applicable.
-    const { data: { user }, error: authError } =
-      await SourceStays.supabase.auth.getUser();
+   
+    // Require the booking to belong to the signed-in customer.
+    const {
+      data: { user },
+      error: authError
+    } = await SourceStays.supabase.auth.getUser();
 
     if (authError) throw authError;
 
-    if (user) {
-      b.customer_user_id = user.id;
+    if (!user) {
+      throw new Error(
+        'Please create a Source Stays customer account or sign in before booking. This ensures your booking and rewards are linked to your account.'
+      );
     }
+
+    const bookingEmail = String(b.email || '').trim().toLowerCase();
+    const accountEmail = String(user.email || '').trim().toLowerCase();
+
+    if (!accountEmail || bookingEmail !== accountEmail) {
+      throw new Error(
+        'The email entered for this booking must match your signed-in Source Stays account. Please check the email or sign in to the correct account.'
+      );
+    }
+
+    b.customer_user_id = user.id;
+
 
     b.property_id = id;
     b.customer_name = b.name;
