@@ -203,48 +203,22 @@ function statusLabel(status){return status==='approved'?'Confirmed':status==='de
   return `<button type="button" class="btn dark" onclick="requestPayment(${x.id})">Request Payment</button>`;
   }
 
+
 window.completeBookingAndAwardCredits = async function(id) {
   const sb = getClient();
 
-  const ownerAmountInput = prompt(
-    'Enter the agreed amount payable to the property owner (₦):'
-  );
-  if (ownerAmountInput === null) return;
-
-  const directCostsInput = prompt(
-    'Enter total direct booking costs (₦):'
-  );
-  if (directCostsInput === null) return;
-
-  const ownerAmount = Number(ownerAmountInput.trim());
-  const directCosts = Number(directCostsInput.trim());
-
-  if (
-    ownerAmountInput.trim() === '' ||
-    directCostsInput.trim() === '' ||
-    !Number.isFinite(ownerAmount) ||
-    !Number.isFinite(directCosts) ||
-    ownerAmount < 0 ||
-    directCosts < 0
-  ) {
-    alert('Enter valid amounts of zero or greater.');
-    return;
-  }
-
   if (!confirm(
     'Complete booking #' + id +
-    ' and award 2% of the eligible booking margin as Source Stays Credits?'
+    ' and award 1% of the eligible booking amount as Source Stays Credits?'
   )) {
     return;
   }
 
   try {
     const { data, error } = await sb.rpc(
-      'admin_complete_booking_and_award_credits',
+      'admin_complete_booking_and_award_credits_v2',
       {
-        p_booking_id: id,
-        p_owner_amount: ownerAmount,
-        p_direct_costs: directCosts
+        p_booking_id: id
       }
     );
 
@@ -254,8 +228,8 @@ window.completeBookingAndAwardCredits = async function(id) {
 
     alert(
       'Booking completed successfully.\n' +
-      'Eligible margin: ₦' +
-      Number(result.eligible_margin).toLocaleString('en-NG', {
+      'Eligible booking amount: ₦' +
+      Number(result.eligible_booking_amount).toLocaleString('en-NG', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
       }) +
