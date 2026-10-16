@@ -458,13 +458,52 @@
           <div id="customerBookings">Your bookings will appear here.</div>
         </article>
 
+
 <article class="dashboard-card">
   <h3>My Source Stays Credits</h3>
   <p>Your eligible loyalty credits will appear here.</p>
+
   <div id="customerCredits">
     Credits will be displayed after secure account linking.
   </div>
+
+  <hr style="margin:20px 0;border:0;border-top:1px solid #e1e8e2">
+
+  <h3>Redeem Your Credits</h3>
+  <p>Use your credits toward an eligible Source Stays booking. Minimum redemption: ₦2,000. All requests require administrator approval.</p>
+
+  <form id="redemptionForm">
+    <div class="field">
+      <label for="redemptionBooking">Choose an eligible booking</label>
+      <select id="redemptionBooking" required
+        style="width:100%;min-height:48px;padding:12px;border:1px solid #d6ded7;border-radius:9px;background:#fff;font:inherit">
+        <option value="">Loading your eligible bookings...</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="redemptionAmount">Amount to redeem (₦)</label>
+      <input id="redemptionAmount" type="number"
+        min="2000" step="0.01" required placeholder="Minimum ₦2,000">
+    </div>
+
+    <div class="field">
+      <label for="redemptionNote">Note (optional)</label>
+      <input id="redemptionNote" type="text" maxlength="300"
+        placeholder="Optional message about your request">
+    </div>
+
+    <button class="primary" id="redemptionSubmit" type="submit">
+      Submit Redemption Request
+    </button>
+  </form>
+
+  <div id="redemptionMessage" class="message" role="status" aria-live="polite"></div>
+
+  <h3 style="margin-top:24px">My Redemption Requests</h3>
+  <div id="redemptionRequests">Your requests will appear here.</div>
 </article>
+
 
 
         <article class="dashboard-card">
