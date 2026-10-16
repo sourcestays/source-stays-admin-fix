@@ -737,6 +737,14 @@ document.getElementById('authCard').hidden = true;
   document.querySelectorAll('#loginForm, #signupForm').forEach(function (form) {
     form.hidden = true;
   });
+  
+  window.currentCustomerUserId = user.id;
+
+  await loadCustomerBookings(user.id);
+  await loadCustomerCredits(user.id);
+  await loadEligibleRedemptionBookings(user.id);
+  await loadRedemptionRequests(user.id);
+
 }
 
 client.auth.getSession().then(function (result) {
@@ -894,6 +902,179 @@ async function loadCustomerCredits(userId) {
       'We could not load your credits right now. Please try again later.';
   }
 }
+      
+async function loadEligibleRedemptionBookings(userId) {
+  const select = document.getElementById('redemptionBooking');
+  if (!select) return;
+
+  select.replaceChildren();
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Loading eligible bookings...';
+  select.appendChild(placeholder);
+
+  try {
+    const { data, error } = await client
+      .from('bookings')
+      .select('id, check_in, check_out, amount_due, status, payment_status')
+      .eq('customer_user_id', userId)
+      .in('status', ['approved', 'confirmed'])
+      .eq('payment_status', 'unpaid')
+      .gt('amount_due', 0)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    select.replaceChildren();
+
+    const firstOption = document.createElement('option');
+    firstOption.value = '';
+    firstOption.textContent = data && data.length
+      ? 'Choose a booking'
+      : 'No eligible unpaid bookings found';
+    select.appendChild(firstOption);
+
+    (data || []).forEach(booking => {
+      const option = document.createElement('option');
+      option.value = booking.id;
+
+      const dates = booking.check_in && booking.check_out
+        ? ` (${booking.check_in} to ${booking.check_out})`
+        : '';
+
+      option.textContent = `Booking #${booking.id}${dates} — ₦${Number(
+        booking.amount_due
+      ).toLocaleString('en-NG')}`;
+
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Could not load eligible bookings:', error);
+    select.replaceChildren();
+
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'Could not load bookings. Please refresh.';
+    select.appendChild(option);
+  }
+}
+
+async function loadRedemptionRequests(userId) {
+  const box = document.getElementById('redemptionRequests');
+  if (!box) return;
+
+  box.textContent = 'Loading your redemption requests...';
+
+  try {
+    const { data, error } = await client
+      .from('source_stays_credit_redemptions')
+      .select('id, booking_id, amount, status, customer_note, created_at')
+      .eq('customer_user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    box.replaceChildren();
+
+    if (!data || !data.length) {
+      box.textContent = 'You have not submitted any redemption requests yet.';
+      return;
+    }
+
+    data.forEach(request => {
+      const item = document.createElement('div');
+      item.style.cssText =
+        'padding:12px 0;border-bottom:1px solid #e1e8e2';
+
+      const heading = document.createElement('p');
+      heading.textContent =
+        `Request #${request.id} — Booking #${request.booking_id}`;
+
+      const details = document.createElement('p');
+      details.textContent =
+        `Amount: ₦${Number(request.amount).toLocaleString('en-NG')} | ` +
+        `Status: ${request.status}`;
+
+      const note = document.createElement('p');
+      note.textContent = request.customer_note || 'No note provided';
+
+      const date = document.createElement('small');
+      date.textContent = new Date(request.created_at).toLocaleDateString(
+        'en-NG'
+      );
+
+      item.append(heading, details, note, date);
+      box.appendChild(item);
+    });
+  } catch (error) {
+    console.error('Could not load redemption requests:', error);
+    box.textContent = 'We could not load your requests. Please try again later.';
+  }
+}
+
+const redemptionForm = document.getElementById('redemptionForm');
+
+if (redemptionForm) {
+  redemptionForm.addEventListener('submit', async event => {
+    event.preventDefault();
+
+    const button = document.getElementById('redemptionSubmit');
+    const message = document.getElementById('redemptionMessage');
+    const bookingId = document.getElementById('redemptionBooking').value;
+    const amount = Number(
+      document.getElementById('redemptionAmount').value
+    );
+    const note = document.getElementById('redemptionNote').value.trim();
+
+    if (!bookingId) {
+      message.textContent = 'Please choose an eligible booking.';
+      return;
+    }
+
+    if (!Number.isFinite(amount) || amount < 2000) {
+      message.textContent = 'The minimum redemption request is ₦2,000.';
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = 'Submitting...';
+    message.textContent = '';
+
+    try {
+      const { error } = await client.rpc(
+        'request_source_stays_credit_redemption',
+        {
+          p_booking_id: Number(bookingId),
+          p_amount: amount,
+          p_customer_note: note
+        }
+      );
+
+      if (error) throw error;
+
+      message.textContent =
+        'Request submitted successfully. It is awaiting administrator review.';
+
+      redemptionForm.reset();
+
+      if (window.currentCustomerUserId) {
+        await loadRedemptionRequests(window.currentCustomerUserId);
+        await loadEligibleRedemptionBookings(window.currentCustomerUserId);
+        await loadCustomerCredits(window.currentCustomerUserId);
+      }
+    } catch (error) {
+      console.error('Redemption request failed:', error);
+      message.textContent =
+        error.message ||
+        'Could not submit your request. Please check your available credits and booking.';
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Submit Redemption Request';
+    }
+  });
+}
+
     })();
   </script>
 </body>
