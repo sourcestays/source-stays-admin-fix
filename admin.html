@@ -424,7 +424,16 @@ modal.innerHTML=`<div style="background:#fff;width:100%;max-width:520px;border-r
 </div>`;
 document.body.appendChild(modal);
 document.getElementById('whatsappPaymentBtn').onclick=()=>{const msg=encodeURIComponent('Hello, please use this secure Source Stays payment link to complete your booking payment: '+paymentLink);window.location.href='https://wa.me/'+whatsappPhone+'?text='+msg;};
-document.getElementById('closePaymentBtn').onclick=()=>modal.remove();}catch(err){console.error(err);alert('Could not create payment link: '+(err.message||err));}};
+document.getElementById('copyPaymentBtn').onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(paymentLink);
+    alert('Payment link copied successfully.');
+  } catch (error) {
+    prompt('Copy this payment link:', paymentLink);
+  }
+};
+
+document.getElementById('closePaymentBtn').onclick = () => modal.remove();}catch(err){console.error(err);alert('Could not create payment link: '+(err.message||err));}};
   window.copyVerificationLink=async function(id){try{const sb=getClient();const {data,error}=await sb.from('bookings').select('verification_token').eq('id',id).single();if(error)throw error;const url=verificationUrl(data.verification_token);if(!url)throw new Error('This booking does not have a verification token.');await navigator.clipboard.writeText(url);alert('Secure verification link copied.');}catch(err){alert('Could not copy link: '+(err.message||err));}};
 window.viewVerification=async function(id){try{const sb=getClient();const {data,error}=await sb.rpc('get_admin_guest_verification',{p_verification_id:id});if(error)throw error;const row=Array.isArray(data)?data[0]:data;if(!row)throw new Error('Verification not found.');alert(`Guest verification\n\nName: ${row.full_name||''}\nAddress: ${row.residential_address||''}\nPhone: ${row.phone||''}\nID type: ${row.id_type||''}\nID number: ${row.id_number||'Not provided'}\nEmergency contact: ${row.emergency_contact_name||''}\nEmergency phone: ${row.emergency_contact_phone||''}\nStatus: ${row.status||'pending'}`);}catch(err){alert('Could not load verification: '+(err.message||err));}};
 window.viewVerificationDocument=async function(id){try{const sb=getClient();const {data,error}=await sb.rpc('get_admin_guest_verification',{p_verification_id:id});if(error)throw error;const row=Array.isArray(data)?data[0]:data;if(!row?.id_document_url)throw new Error('No ID document was uploaded.');const result=await sb.storage.from('guest-verification-documents').createSignedUrl(row.id_document_url,300);if(result.error)throw result.error;if(!result.data?.signedUrl)throw new Error('Could not create secure viewing link.');window.open(result.data.signedUrl,'_blank','noopener');}catch(err){alert('Could not open ID document: '+(err.message||err));}};
