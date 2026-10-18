@@ -451,15 +451,6 @@ document.getElementById('copyPaymentBtn').onclick = async () => {
 };
 
 
-document.getElementById('copyPaymentBtn').onclick = async () => {
-  try {
-    await navigator.clipboard.writeText(paymentLink);
-    alert('Payment link copied successfully.');
-  } catch (error) {
-    prompt('Copy this payment link:', paymentLink);
-  }
-};
-
 document.getElementById('closePaymentBtn').onclick = () => modal.remove();
 }catch(err){console.error(err);alert('Could not create payment link: '+(err.message||err));}};
   window.copyVerificationLink=async function(id){try{const sb=getClient();const {data,error}=await sb.from('bookings').select('verification_token').eq('id',id).single();if(error)throw error;const url=verificationUrl(data.verification_token);if(!url)throw new Error('This booking does not have a verification token.');await navigator.clipboard.writeText(url);alert('Secure verification link copied.');}catch(err){alert('Could not copy link: '+(err.message||err));}};
