@@ -401,7 +401,24 @@ ${x.status==='approved' || x.status==='completed'
   enquiries.innerHTML=e?.length?`<h4>Enquiries</h4><table class="table"><tr><th>Customer</th><th>Interest</th><th>Property ID</th><th>Status</th></tr>${e.map(x=>`<tr><td>${esc(x.customer_name)}<br>${esc(x.customer_phone||'')}</td><td>${esc(x.subject||'Enquiry')}</td><td>${esc(x.property_id||'')}</td><td><select onchange="enquiryStatus(${x.id},this.value)"><option ${x.status==='new'?'selected':''}>new</option><option ${x.status==='contacted'?'selected':''}>contacted</option><option ${x.status==='closed'?'selected':''}>closed</option></select></td></tr>`).join('')}</table>`:'<p class="muted">No enquiries yet.</p>';
 await loadCreditRedemptions(); }catch(err){console.error(err);props.innerHTML='<p class="danger">Could not load dashboard data: '+esc(err.message||err)+'</p>';}
 }
-window.requestPayment=async function(id){try{const sb=getClient();const result=await sb.functions.invoke('initialize-payment',{body:{booking_id:id}});if(result.error)throw result.error;const data=result.data||{};if(!data.authorization_url)throw new Error(data.error||'Could not create payment link.'); navigator.clipboard?.writeText(data.authorization_url);
+window.requestPayment=async function(id){try{const sb=getClient();const result=await sb.functions.invoke('initialize-payment',{body:{booking_id:id}});
+const data = result.data || {};
+
+if (result.error) {
+  const message =
+    data.error ||
+    result.error.message ||
+    'Could not create payment link.';
+
+  throw new Error(message);
+}
+
+if (!data.authorization_url) {
+  throw new Error(
+    data.error || 'Could not create payment link.'
+  );
+}
+navigator.clipboard?.writeText(data.authorization_url);
 const paymentLink=data.authorization_url;
 const {data:booking}=await sb.from('bookings').select('customer_phone').eq('id',id).single();
 const rawPhone=String(booking?.customer_phone||'').replace(/\D/g,'');
