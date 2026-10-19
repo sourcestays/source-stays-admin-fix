@@ -208,16 +208,18 @@ function statusLabel(status){return status==='approved'?'Confirmed':status==='de
 
   function paymentCell(x){
   const status=String(x.payment_status||'unpaid').toLowerCase();
+  const requestStatus=String(x.payment_request_status||'not_requested').toLowerCase();
 
   if(status==='paid'){
     return '<span style="color:#087443;font-weight:800">✓ Paid</span>';
   }
 
-
-    
-  return `<button type="button" class="btn dark" onclick="requestPayment(${x.id})">Request Payment</button>`;
+  if(requestStatus==='requested'){
+    return `<span style="display:inline-block;color:#8a6100;font-weight:800;margin-bottom:6px">Payment Requested</span><br><button type="button" class="btn" onclick="cancelPaymentRequest(${Number(x.id)})">Cancel Request</button>`;
   }
 
+  return `<button type="button" class="btn dark" onclick="requestPayment(${Number(x.id)})">Request Payment</button>`;
+}
 
 window.completeBookingAndAwardCredits = async function(id) {
   const sb = getClient();
@@ -418,6 +420,19 @@ if (!data.authorization_url) {
     data.error || 'Could not create payment link.'
   );
 }
+
+// Persist the request so the dashboard keeps showing it after refresh.
+const { error: requestStatusError } = await sb
+  .from('bookings')
+  .update({ payment_request_status: 'requested' })
+  .eq('id', id);
+if (requestStatusError) {
+  console.error('Payment link created, but request status could not be saved:', requestStatusError);
+  alert('The payment link was created, but the dashboard could not save its requested status. Please do not request payment again; refresh and contact support if the status does not update.');
+} else {
+  load();
+}
+
 navigator.clipboard?.writeText(data.authorization_url);
 const paymentLink=data.authorization_url;
                                              
@@ -461,6 +476,33 @@ document.getElementById('copyPaymentBtn').onclick = async () => {
 
 document.getElementById('closePaymentBtn').onclick = () => modal.remove();
 }catch(err){console.error(err);alert('Could not create payment link: '+(err.message||err));}};
+  window.cancelPaymentRequest = async function(id) {
+  if (!confirm('Cancel the payment request for booking #' + id + '? The customer may already have the payment link.')) return;
+  try {
+    const sb = getClient();
+    // Cancel the pending local transaction first so a stale request is not treated as active.
+    const { error: transactionError } = await sb
+      .from('payment_transactions')
+      .update({ status: 'cancelled' })
+      .eq('booking_id', id)
+      .eq('status', 'pending');
+    if (transactionError) throw transactionError;
+
+    const { error: bookingError } = await sb
+      .from('bookings')
+      .update({ payment_request_status: 'cancelled' })
+      .eq('id', id)
+      .neq('payment_status', 'paid');
+    if (bookingError) throw bookingError;
+
+    alert('Payment request marked as cancelled. If the customer already has the link, contact them not to use it.');
+    await load();
+  } catch (error) {
+    console.error('Could not cancel payment request:', error);
+    alert('Could not cancel payment request: ' + (error.message || error));
+  }
+};
+
   window.copyVerificationLink=async function(id){try{const sb=getClient();const {data,error}=await sb.from('bookings').select('verification_token').eq('id',id).single();if(error)throw error;const url=verificationUrl(data.verification_token);if(!url)throw new Error('This booking does not have a verification token.');await navigator.clipboard.writeText(url);alert('Secure verification link copied.');}catch(err){alert('Could not copy link: '+(err.message||err));}};
 window.viewVerification=async function(id){try{const sb=getClient();const {data,error}=await sb.rpc('get_admin_guest_verification',{p_verification_id:id});if(error)throw error;const row=Array.isArray(data)?data[0]:data;if(!row)throw new Error('Verification not found.');alert(`Guest verification\n\nName: ${row.full_name||''}\nAddress: ${row.residential_address||''}\nPhone: ${row.phone||''}\nID type: ${row.id_type||''}\nID number: ${row.id_number||'Not provided'}\nEmergency contact: ${row.emergency_contact_name||''}\nEmergency phone: ${row.emergency_contact_phone||''}\nStatus: ${row.status||'pending'}`);}catch(err){alert('Could not load verification: '+(err.message||err));}};
 window.viewVerificationDocument=async function(id){try{const sb=getClient();const {data,error}=await sb.rpc('get_admin_guest_verification',{p_verification_id:id});if(error)throw error;const row=Array.isArray(data)?data[0]:data;if(!row?.id_document_url)throw new Error('No ID document was uploaded.');const result=await sb.storage.from('guest-verification-documents').createSignedUrl(row.id_document_url,300);if(result.error)throw result.error;if(!result.data?.signedUrl)throw new Error('Could not create secure viewing link.');window.open(result.data.signedUrl,'_blank','noopener');}catch(err){alert('Could not open ID document: '+(err.message||err));}};
