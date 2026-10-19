@@ -475,9 +475,153 @@
     © <span id="current-year"></span> Source Stays. All rights reserved.
   </footer>
 
-  <script>
-    document.getElementById("current-year").textContent =
-      new Date().getFullYear();
-  </script>
+  
+<script>
+  document.getElementById("current-year").textContent =
+    new Date().getFullYear();
+
+  const CONFIRMATION_FUNCTION =
+    "https://mrvckkzwhuoylxlycaim.supabase.co/functions/v1/get-booking-confirmation";
+
+  const SUPABASE_PUBLIC_KEY =
+    "sb_publishable_uUXmE9iowCIwbbiyZe3Jcw_IJELZpKG";
+
+  const params = new URLSearchParams(window.location.search);
+  const reference = params.get("reference") || params.get("trxref");
+
+  const setText = (id, value) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value ?? "Not available";
+  };
+
+  const money = (value, currency = "NGN") =>
+    new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2
+    }).format(Number(value) || 0);
+
+  function showMessage(title, message) {
+    const notice = document.querySelector(".notice");
+    notice.replaceChildren();
+
+    const content = document.createElement("div");
+    const heading = document.createElement("strong");
+    heading.textContent = title;
+
+    const description = document.createElement("div");
+    description.textContent = message;
+
+    content.append(heading, description);
+    notice.append(content);
+  }
+
+  async function loadConfirmation() {
+    if (!reference) {
+      showMessage(
+        "Payment reference not found",
+        "We could not find a payment reference in this URL. Please check your booking or contact Source Stays."
+      );
+      document.querySelector(".status-icon").textContent = "!";
+      document.querySelector(".card-header h1").textContent =
+        "Booking Confirmation";
+      return;
+    }
+
+    setText("payment-reference", reference);
+    showMessage(
+      "Verifying your payment",
+      "Please wait while we check your payment and booking details."
+    );
+
+    try {
+      const response = await fetch(CONFIRMATION_FUNCTION, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_PUBLIC_KEY,
+          "Authorization": "Bearer " + SUPABASE_PUBLIC_KEY
+        },
+        body: JSON.stringify({ reference })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.error || "We could not verify this payment right now."
+        );
+      }
+
+      if (result.payment_status === "processing" ||
+          result.payment_status === "pending") {
+        document.querySelector(".status-icon").textContent = "…";
+        document.querySelector(".card-header h1").textContent =
+          "Payment Processing";
+        showMessage(
+          "Confirmation in progress",
+          result.message ||
+            "Your payment is being checked. Please refresh this page shortly."
+        );
+        setText("booking-status", "Processing");
+        return;
+      }
+
+      if (result.payment_status !== "paid") {
+        throw new Error("Payment has not been confirmed as successful.");
+      }
+
+      const booking = result.booking;
+      const payment = result.payment;
+      const currency = booking.currency || "NGN";
+      const property = booking.accommodation;
+
+      document.querySelector(".status-icon").textContent = "✓";
+      document.querySelector(".card-header h1").textContent =
+        "Booking Confirmed!";
+      document.querySelector(".card-header p").textContent =
+        "Your payment has been verified by Source Stays.";
+
+      showMessage(
+        "Payment verified successfully",
+        "Your booking and payment details below have been verified."
+      );
+
+      setText("booking-reference", booking.id);
+      setText("property-title", property?.title || "Accommodation");
+      setText("property-type", property?.type || "Not available");
+      setText("property-location", property?.location || "Not available");
+      setText("guest-name", booking.guest_name);
+      setText("check-in", booking.check_in);
+      setText("check-out", booking.check_out);
+      setText("booking-status", booking.booking_status || "Confirmed");
+
+      setText("booking-total", money(booking.booking_total, currency));
+      setText("credits-used", money(payment.credits_applied, currency));
+      setText("cash-paid", money(payment.cash_paid, currency));
+      setText("total-amount", money(booking.booking_total, currency));
+      setText("payment-reference", payment.reference);
+
+      setText(
+        "payment-date",
+        payment.paid_at
+          ? new Date(payment.paid_at).toLocaleString("en-NG")
+          : "Verified; date unavailable"
+      );
+    } catch (error) {
+      console.error("Booking confirmation error:", error);
+      document.querySelector(".status-icon").textContent = "!";
+      document.querySelector(".card-header h1").textContent =
+        "Confirmation Pending";
+      showMessage(
+        "We couldn't complete verification",
+        "Your payment status has not been confirmed on this page. Please refresh shortly or contact Source Stays. Do not pay again while your payment is being checked."
+      );
+    }
+  }
+
+  loadConfirmation();
+</script>
+
 </body>
 </html>
