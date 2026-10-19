@@ -500,7 +500,40 @@
       currency,
       maximumFractionDigits: 2
     }).format(Number(value) || 0);
+function formatBookingDate(value) {
+  if (!value) return "Not available";
 
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  const date = match
+    ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+    : new Date(value);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  }).format(date);
+}
+
+function formatPaymentDate(value) {
+  if (!value) return "Verified; date unavailable";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Africa/Lagos"
+  }).format(date);
+}
   function showMessage(title, message) {
     const notice = document.querySelector(".notice");
     notice.replaceChildren();
@@ -592,8 +625,8 @@
       setText("property-type", property?.type || "Not available");
       setText("property-location", property?.location || "Not available");
       setText("guest-name", booking.guest_name);
-      setText("check-in", booking.check_in);
-      setText("check-out", booking.check_out);
+      setText("check-in", formatBookingDate(booking.check_in));
+setText("check-out", formatBookingDate(booking.check_out));
       setText("booking-status", booking.booking_status || "Confirmed");
 
       setText("booking-total", money(booking.booking_total, currency));
@@ -602,12 +635,7 @@
       setText("total-amount", money(booking.booking_total, currency));
       setText("payment-reference", payment.reference);
 
-      setText(
-        "payment-date",
-        payment.paid_at
-          ? new Date(payment.paid_at).toLocaleString("en-NG")
-          : "Verified; date unavailable"
-      );
+     setText("payment-date", formatPaymentDate(payment.paid_at));
     } catch (error) {
       console.error("Booking confirmation error:", error);
       document.querySelector(".status-icon").textContent = "!";
