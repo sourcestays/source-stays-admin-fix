@@ -420,6 +420,11 @@ if (!data.authorization_url) {
 }
 navigator.clipboard?.writeText(data.authorization_url);
 const paymentLink=data.authorization_url;
+                                             
+const emailStatus = data.email_sent === true
+  ? '✅ Payment link email accepted by Resend.'
+  : '⚠️ Payment link created, but email delivery was not confirmed. Please use Copy Payment Link or WhatsApp.';
+
 const {data:booking}=await sb.from('bookings').select('customer_phone').eq('id',id).single();
 const rawPhone=String(booking?.customer_phone||'').replace(/\D/g,'');
 const whatsappPhone=rawPhone.startsWith('0')?'234'+rawPhone.slice(1):rawPhone;
@@ -431,7 +436,10 @@ modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.65);display:f
 modal.innerHTML=`<div style="background:#fff;width:100%;max-width:520px;border-radius:18px;padding:26px;box-sizing:border-box;box-shadow:0 20px 60px rgba(0,0,0,.3);font-family:Arial,sans-serif;">
 <div style="text-align:center;font-size:42px;margin-bottom:8px;">✓</div>
 <h2 style="margin:0 0 8px;text-align:center;color:#111;">Payment Request Created</h2>
-<p style="text-align:center;color:#666;margin:0 0 20px;">The customer can use the link below to complete payment securely through Paystack.</p>
+
+<p style="text-align:center;color:#666;margin:0 0 12px;">The customer can use the link below to complete payment securely through Paystack.</p>
+<p style="text-align:center;background:#f0f7f1;border-radius:8px;padding:12px;margin:0 0 18px;font-size:14px;">${emailStatus}</p>
+
 <div style="background:#f5f7fa;border:1px solid #ddd;border-radius:10px;padding:12px;margin-bottom:18px;word-break:break-all;font-size:14px;color:#333;">${paymentLink}</div>
 <div style="display:flex;gap:10px;flex-wrap:wrap;">
 <button id="copyPaymentBtn" style="flex:1;min-width:140px;border:0;border-radius:10px;padding:13px;background:#111;color:#fff;font-weight:bold;cursor:pointer;">Copy Payment Link</button>
