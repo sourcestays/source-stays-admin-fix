@@ -447,7 +447,7 @@ form.onsubmit = async e => {
     delete b.email;
 
     // Save the request and only show success after Supabase confirms.
-    await SourceStays.submitBooking(b);
+    const createdBooking = await SourceStays.submitBooking(b);
 
     msg.textContent = '';
     successModal.style.display = 'flex';
