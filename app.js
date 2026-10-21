@@ -30,7 +30,36 @@ box.innerHTML=items.length?items.map(p=>`<article class="card"><div class="photo
 
  catch(e){console.error(e);box.innerHTML='<p>Listings are temporarily unavailable. Please try again or contact Source Stays on WhatsApp.</p>'}
 }
-async function submitBooking(payload){const {data,error}=await supabaseClient.from('bookings').insert(payload).select('id').single();if(error)throw error;return data;}
+
+async function submitBooking(payload) {
+  const verificationToken = crypto.randomUUID();
+
+  const { error: insertError } = await supabaseClient
+    .from('bookings')
+    .insert({
+      ...payload,
+      verification_token: verificationToken
+    });
+
+  if (insertError) throw insertError;
+
+  const { data: bookingId, error: lookupError } =
+    await supabaseClient.rpc(
+      'get_booking_id_by_verification_token',
+      { p_token: verificationToken }
+    );
+
+  if (lookupError) throw lookupError;
+
+  if (!bookingId) {
+    throw new Error(
+      'Booking was submitted, but its ID could not be retrieved. Please contact Source Stays before submitting again.'
+    );
+  }
+
+  return { id: bookingId };
+}
+
 async function submitEnquiry(payload){const {data,error}=await supabaseClient.from('enquiries').insert(payload).select('id').single();if(error)throw error;return data;}
 async function getProperty(id){const {data,error}=await supabaseClient.from('properties').select('*').eq('id',id).eq('published',true).single();if(error)throw error;return data;}async function getPropertyImages(id){
   const {data,error}=await supabaseClient
