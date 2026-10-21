@@ -917,7 +917,7 @@ async function loadEligibleRedemptionBookings(userId) {
       .from('bookings')
       .select('id, check_in, check_out, amount_due, status, payment_status')
       .eq('customer_user_id', userId)
-      .in('status', ['approved', 'confirmed'])
+     .in('status', ['pending', 'approved', 'confirmed'])
       .eq('payment_status', 'unpaid')
       .gt('amount_due', 0)
       .order('created_at', { ascending: false });
