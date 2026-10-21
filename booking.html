@@ -1,512 +1,223 @@
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Booking Request | Source Stays</title>
-<link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
-<header>
-<div class="wrap nav">
-
-<a class="logo" href="index.html" aria-label="Source Stays home">
-  <img src="source-stays-logo-green-gold.png" alt="Source Stays">
-</a>
-
-<a class="btn dark" href="index.html">Back</a>
-</div>
-</header>
-
-<main class="section">
-<div class="wrap" style="max-width:700px">
-
-<div class="eyebrow">Booking request</div>
-<h2>Tell us what you need</h2>
-
-<form id="form" class="service">
-
-<input name="name" required placeholder="Full name" style="width:100%;padding:13px;margin:6px 0">
-
-<input name="phone" required placeholder="Phone / WhatsApp" style="width:100%;padding:13px;margin:6px 0">
-
-<input name="email" type="email" placeholder="Email" style="width:100%;padding:13px;margin:6px 0">
-
-<label for="check_in" style="display:block;font-weight:700;margin:10px 0 4px">Check-in</label>
-<input id="check_in" name="check_in" type="date" required onchange="document.getElementById('check_out').min=this.value" style="width:100%;padding:13px;margin:0 0 8px">
-<label for="check_out" style="display:block;font-weight:700;margin:10px 0 4px">Check-out</label>
-<input id="check_out" name="check_out" type="date" required style="width:100%;padding:13px;margin:0 0 8px">
-
-<label for="guests" style="display:block;font-weight:700;margin:14px 0 8px">Number of guests</label>
-<input id="guests" name="guests" type="number" min="1" value="1" style="width:100%;padding:12px">
-
-<textarea name="message" placeholder="Special request" style="width:100%;padding:13px;margin:6px 0;min-height:120px"></textarea>
-
-<div id="sourceCreditsSection" style="background:#f0f7f1;border:1px solid #c9ddcd;border-radius:12px;padding:16px;margin:18px 0">
-  <h3 style="margin:0 0 8px;color:#123f32">Source Stays Credits</h3>
-  
-<label for="sourceCreditsAmount" style="display:block;font-weight:700;margin:12px 0 6px">
-  Credits to request (₦)
-</label>
-<input
-  id="sourceCreditsAmount"
-  type="number"
-  min="2000"
-  step="1"
-  inputmode="numeric"
-  placeholder="Enter amount, minimum ₦2,000"
-  style="width:100%;padding:12px;border:1px solid #c9ddcd;border-radius:8px;box-sizing:border-box"
-/>
-<p style="font-size:13px;margin:6px 0 0;color:#555">
-  This is a request, not an immediate deduction. Your booking and credit request must be reviewed before credits can be applied.
-</p>
-
-  <p id="sourceCreditsBalance" style="margin:0 0 8px">Sign in to view your available credits.</p>
-  <p style="margin:0;line-height:1.5">
-    You can request to use your credits toward this booking. Credit requests are subject to booking approval and administrator review. Credits are not deducted until the payment process securely confirms their use.
-  </p>
-  <p style="margin:10px 0 0">
-    <a href="account.html" style="color:#123f32;font-weight:700">View your account and request credit redemption</a>
-  </p>
-</div>
-
-<div style="background:#fff3cd;border:2px solid #b45309;border-radius:10px;padding:16px;margin:18px 0">
-  <div style="font-weight:800;font-size:18px;margin-bottom:8px">⚠️ NO REFUND POLICY</div>
-  <div style="line-height:1.5">
-    All payments made to Source Stays are non-refundable once a booking has been confirmed and payment has been received.
-    Please confirm your dates, property selection, and booking details carefully before making payment.
-  </div>
-</div>
-
-<label style="display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-weight:600;line-height:1.45">
-  <input id="no_refund_agree" type="checkbox" required style="margin-top:4px">
-  <span>I have read and agree to the Source Stays No Refund Policy and understand that my payment is non-refundable once my booking is confirmed.</span>
-</label>
-  <button class="btn dark">Submit booking request</button>
-
-</form>
-
-<p id="msg"></p>
-<div id="successModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;padding:20px;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:18px;max-width:520px;width:100%;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center">
-    <div style="font-size:48px;margin-bottom:8px">✓</div>
-    <h3 style="margin:0 0 12px;font-size:26px">Booking Request Received</h3>
-    <p style="margin:0 0 22px;line-height:1.6;color:#555">
-      Thank you. Your booking request has been received successfully. Source Stays will confirm availability and contact you with payment instructions.
-    </p>
-
-    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
-      <button type="button" id="homeBtn" class="btn dark">Go to Homepage</button>
-      <button type="button" id="waitBtn" class="btn">Wait for response</button>
-    </div>
-  </div>
-</div>
-  
-
-</div>
-</main>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
-<script src="app.js"></script>
-
-<script>
-const id = Number(new URLSearchParams(location.search).get('id')) || null;
-
-
-
-const checkIn = document.getElementById('check_in');
-const checkOut = document.getElementById('check_out');
-const form = document.getElementById('form');
-const msg = document.getElementById('msg');
-
-const today = new Date().toISOString().split('T')[0];
-
-checkIn.min = today;
-checkOut.min = today;
-
-let property = null;
-let bookingTotal = 0;
-let nights = 0;
-
-const totalBox = document.createElement('div');
-totalBox.style.cssText =
-'background:#f7f3ea;border:1px solid #e6e2d9;border-radius:10px;padding:15px;margin:15px 0;font-weight:700;display:none;';
-form.insertBefore(totalBox, form.querySelector('button'));
-
-function calculateTotal() {
-  if (!property || !checkIn.value || !checkOut.value) {
-    totalBox.style.display = 'none';
-    bookingTotal = 0;
-    nights = 0;
-    return;
-  }
-
-  const start = new Date(checkIn.value);
-  const end = new Date(checkOut.value);
-
-  nights = Math.round((end - start) / 86400000);
-
-  if (nights <= 0) {
-    totalBox.style.display = 'none';
-    bookingTotal = 0;
-    return;
-  }
-
-  const money = value => Number(value || 0).toLocaleString('en-NG');
-  const price = Number(property.price || 0);
-  const accommodation = price * nights;
-  const guests = Math.max(1, Number(document.getElementById('guests').value || 1));
-  const extraGuest = Math.max(0, guests - 1) * Number(property.extra_guest_fee || 0);
-  const cleaning = Number(property.cleaning_fee || 0);
-  const service = Number(property.service_fee || 0);
-  const other = Number(property.other_fee || 0);
-  const caution = Number(property.caution_fee || 0);
-  bookingTotal = accommodation + extraGuest + cleaning + service + other + caution;
-
-  const lines = [
-    `<div>Accommodation: ₦${money(price)} × ${nights} night${nights === 1 ? '' : 's'} = ₦${money(accommodation)}</div>`,
-    ...(cleaning ? [`<div>Cleaning fee: ₦${money(cleaning)}</div>`] : []),
-    ...(service ? [`<div>Service fee: ₦${money(service)}</div>`] : []),
-    ...(extraGuest ? [`<div>Additional guest fee (${guests - 1}): ₦${money(extraGuest)}</div>`] : []),
-    ...(other ? [`<div>${String(property.other_fee_label || 'Other charge').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}: ₦${money(other)}</div>`] : []),
-    ...(caution ? [`<div style="margin-top:6px">Refundable caution deposit: ₦${money(caution)} <span style="font-weight:400">(refundable subject to property terms and any documented damage or deductions)</span></div>`] : []),
-    `<div style="border-top:1px solid #ddd;margin-top:10px;padding-top:10px"><strong style="font-size:20px">Estimated amount due: ₦${money(bookingTotal)}</strong></div>`
-  ];
-  if (property.fees_due_later) lines.push(`<div style="margin-top:10px;font-weight:400"><strong>Fees payable later / additional notes:</strong><br>${String(property.fees_due_later).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])).replace(/\n/g,'<br>')}</div>`);
-  totalBox.style.display = 'block';
-  totalBox.innerHTML = lines.join('');
-}
-
-async function loadProperty() {
-  if (!id) return;
-
-  try {
-    property = await SourceStays.getProperty(id);
-    calculateTotal();
-  } catch (err) {
-    console.error('Could not load property:', err);
-  }
-}
-
-
-const availabilityMsg = document.createElement('p');
-availabilityMsg.setAttribute('role', 'status');
-availabilityMsg.style.cssText =
-  'font-weight:700;margin:10px 0;padding:10px;border-radius:8px;';
-checkOut.insertAdjacentElement('afterend', availabilityMsg);
-
-let checkingAvailability = false;
-let datesAvailable = false;
-let availabilityRequest = 0;
-let recommendationRequest = 0;
-
-const recommendationModal = document.createElement('div');
-recommendationModal.id = 'similarPropertiesModal';
-recommendationModal.style.cssText = 'display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.68);padding:18px;align-items:center;justify-content:center;';
-recommendationModal.innerHTML = `
-  <section role="dialog" aria-modal="true" aria-labelledby="similarTitle" style="background:#fff;border-radius:18px;max-width:760px;width:100%;max-height:85vh;overflow:auto;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-      <div><h2 id="similarTitle" style="margin:0 0 8px">This property is unavailable</h2><p id="similarIntro" style="margin:0 0 16px;color:#555">Here are similar properties available for your selected dates.</p></div>
-      <button type="button" id="closeSimilarModal" aria-label="Close recommendations" style="font-size:24px;border:0;background:transparent;cursor:pointer">×</button>
-    </div>
-    <div id="similarPropertiesResults" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px"></div>
-    <p style="margin:18px 0 0"><a href="index.html" style="color:#123f32;font-weight:700">Browse all properties</a></p>
-  </section>`;
-document.body.appendChild(recommendationModal);
-document.getElementById('closeSimilarModal').addEventListener('click', () => {
-  recommendationModal.style.display = 'none';
-});
-recommendationModal.addEventListener('click', event => {
-  if (event.target === recommendationModal) recommendationModal.style.display = 'none';
-});
-
-const safeText = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
-  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-}[ch]));
-
-async function showSimilarAvailableProperties(requestId) {
-  const currentRecommendationRequest = ++recommendationRequest;
-  recommendationModal.style.display = 'flex';
-  document.getElementById('similarPropertiesResults').innerHTML =
-    '<p style="color:#555">Finding similar properties available for your dates…</p>';
-  document.getElementById('similarIntro').textContent =
-    'We’re checking other published properties for the same dates.';
-
-  try {
-    const all = await SourceStays.getListings();
-    if (requestId !== availabilityRequest || currentRecommendationRequest !== recommendationRequest) return;
-
-    const currentCategory = String(property?.category || '').trim().toLowerCase();
-    const currentLocation = String(property?.location || '').trim().toLowerCase();
-    const candidates = all.filter(item => Number(item.id) !== Number(id));
-    candidates.sort((a, b) => {
-      const score = item => {
-        let value = 0;
-        if (currentCategory && String(item.category || '').trim().toLowerCase() === currentCategory) value += 2;
-        if (currentLocation && String(item.location || '').trim().toLowerCase() === currentLocation) value += 1;
-        return value;
-      };
-      return score(b) - score(a);
-    });
-
-    const availableAlternatives = [];
-    for (const item of candidates) {
-      if (availableAlternatives.length >= 3) break;
-      try {
-        const available = await SourceStays.checkAvailability(item.id, checkIn.value, checkOut.value);
-        if (available) availableAlternatives.push(item);
-      } catch (availabilityError) {
-        console.warn('Could not check alternative property availability:', item.id, availabilityError);
-      }
-      if (requestId !== availabilityRequest || currentRecommendationRequest !== recommendationRequest) return;
-    }
-
-    const results = document.getElementById('similarPropertiesResults');
-    if (!availableAlternatives.length) {
-      document.getElementById('similarIntro').textContent =
-        'We couldn’t find another published property available for those exact dates. Try changing your dates or browsing all listings.';
-      results.innerHTML = '<p>No matching available alternatives were found for these dates.</p>';
-      return;
-    }
-
-    document.getElementById('similarIntro').textContent =
-      'These alternatives are available for your selected dates.';
-    results.innerHTML = availableAlternatives.map(item => `
-      <article style="border:1px solid #e4e8e4;border-radius:12px;overflow:hidden">
-        ${item.image_url ? `<img src="${safeText(item.image_url)}" alt="" style="display:block;width:100%;height:135px;object-fit:cover;background:#f1f3f0">` : ''}
-        <div style="padding:12px">
-          <div style="font-size:12px;color:#8b7138;font-weight:800;text-transform:uppercase">${safeText(item.category || 'Property')}</div>
-          <h3 style="margin:6px 0;font-size:17px">${safeText(item.title || 'Source Stays property')}</h3>
-          <p style="margin:4px 0;color:#555">${safeText(item.location || 'Location available on request')}</p>
-          <p style="margin:8px 0 12px;font-weight:800">₦${Number(item.price || 0).toLocaleString('en-NG')} / ${safeText(item.price_period || 'stay')}</p>
-          <a href="booking.html?id=${encodeURIComponent(item.id)}" style="display:inline-block;background:#123f32;color:#fff;text-decoration:none;border-radius:8px;padding:10px 13px;font-weight:700">Choose this property</a>
-        </div>
-      </article>`).join('');
-  } catch (error) {
-    console.error('Could not load similar properties:', error);
-    document.getElementById('similarIntro').textContent =
-      'We couldn’t load recommendations right now. Please browse all properties or try different dates.';
-    document.getElementById('similarPropertiesResults').innerHTML =
-      '<p>Recommendations are temporarily unavailable.</p>';
-  }
-}
-
-async function checkSelectedDates() {
-  const requestId = ++availabilityRequest;
-  datesAvailable = false;
-
-  if (!id || !checkIn.value || !checkOut.value) {
-    availabilityMsg.textContent = '';
-    return;
-  }
-
-  if (checkOut.value <= checkIn.value) {
-    availabilityMsg.textContent =
-      'Check-out must be after check-in.';
-    availabilityMsg.style.color = '#b42318';
-    return;
-  }
-
-  checkingAvailability = true;
-  availabilityMsg.style.color = '#555';
-  availabilityMsg.textContent = 'Checking availability...';
-
-  try {
-    const available = await SourceStays.checkAvailability(
-      id,
-      checkIn.value,
-      checkOut.value
-    );
-
-    if (requestId !== availabilityRequest) return;
-
-    datesAvailable = available;
-    availabilityMsg.style.color = available ? '#087443' : '#b42318';
-    availabilityMsg.textContent = available
-      ? '✓ Available for these dates'
-      : 'Sorry, these dates are unavailable. We’ll show similar available properties.';
-    if (!available) {
-      showSimilarAvailableProperties(requestId);
-    } else {
-      recommendationRequest++;
-      recommendationModal.style.display = 'none';
-    }
-  } catch (error) {
-    if (requestId !== availabilityRequest) return;
-    console.error('Availability check failed:', error);
-    availabilityMsg.style.color = '#b45309';
-    availabilityMsg.textContent =
-      'We could not check availability. Please try again.';
-  } finally {
-    if (requestId === availabilityRequest) {
-      checkingAvailability = false;
-    }
-  }
-}
-
-checkIn.addEventListener('change', () => {
-  checkOut.min = checkIn.value || today;
-  calculateTotal();
-  checkSelectedDates();
-});
-
-checkOut.addEventListener('change', () => {
-  calculateTotal();
-  checkSelectedDates();
-});
-
-
-form.onsubmit = async e => {
-  e.preventDefault();
-
-  msg.style.color = '#b42318';
-  msg.textContent = '';
-
-  if (!id) {
-    msg.textContent = 'Please select a property before making a booking request.';
-    return;
-  }
-
-  if (!property) {
-    msg.textContent = 'Property information could not be loaded. Please try again.';
-    return;
-  }
-
-  calculateTotal();
-
-  if (!bookingTotal || nights <= 0) {
-    msg.textContent = 'Please select valid check-in and check-out dates.';
-    return;
-  }
-
-  if (checkingAvailability) {
-    msg.textContent = 'Please wait while we check availability.';
-    return;
-  }
-
-  if (!datesAvailable) {
-    await checkSelectedDates();
-
-    if (!datesAvailable) {
-      msg.textContent =
-        'These dates are unavailable or could not be verified. Please select dates again.';
-      return;
-    }
-  }
-
-  const button = form.querySelector('button[type="submit"], button.btn');
-  if (button) {
-    button.disabled = true;
-    button.textContent = 'Submitting request...';
-  }
-
-  try {
-    msg.style.color = '#555';
-    msg.textContent = 'Submitting your booking request...';
-
-    // Confirm availability again before saving.
-    const available = await SourceStays.checkAvailability(
-      id,
-      checkIn.value,
-      checkOut.value
-    );
-
-    if (!available) {
-      datesAvailable = false;
-      availabilityMsg.style.color = '#b42318';
-      availabilityMsg.textContent =
-        'Sorry, these dates are no longer available. Please choose other dates.';
-      msg.textContent = 'Please select different dates.';
-      return;
-    }
-
-    const b = Object.fromEntries(new FormData(form));
-
-   
-    // Require the booking to belong to the signed-in customer.
-    const {
-      data: { user },
-      error: authError
-    } = await SourceStays.supabase.auth.getUser();
-
-    if (authError) throw authError;
-
-    if (!user) {
-      throw new Error(
-        'Please create a Source Stays customer account or sign in before booking. This ensures your booking and rewards are linked to your account.'
-      );
-    }
-
-    const bookingEmail = String(b.email || '').trim().toLowerCase();
-    const accountEmail = String(user.email || '').trim().toLowerCase();
-
-    if (!accountEmail || bookingEmail !== accountEmail) {
-      throw new Error(
-        'The email entered for this booking must match your signed-in Source Stays account. Please check the email or sign in to the correct account.'
-      );
-    }
-
-    b.customer_user_id = user.id;
-
-
-    b.property_id = id;
-    b.customer_name = b.name;
-    b.customer_phone = b.phone;
-    b.customer_email = b.email || null;
-    b.amount_due = bookingTotal;
-    b.currency = 'NGN';
-    b.payment_status = 'unpaid';
-
-    delete b.name;
-    delete b.phone;
-    delete b.email;
-
-    // Save the request and only show success after Supabase confirms.
-    const createdBooking = await SourceStays.submitBooking(b);
-
-    msg.textContent = '';
-    successModal.style.display = 'flex';
-
-    form.reset();
-    totalBox.style.display = 'none';
-    bookingTotal = 0;
-    nights = 0;
-    datesAvailable = false;
-    availabilityMsg.textContent = '';
-
-    checkIn.min = today;
-    checkOut.min = today;
-
-  } catch (err) {
-    console.error('Booking submission failed:', err);
-    msg.style.color = '#b42318';
-    msg.textContent =
-      err.message ||
-      'Your booking request could not be submitted. Please try again or contact Source Stays on WhatsApp.';
-
-  } finally {
-    if (button) {
-      button.disabled = false;
-      button.textContent = 'Submit booking request';
-    }
-  }
-};
-
-const successModal = document.getElementById('successModal');
-const homeBtn = document.getElementById('homeBtn');
-const waitBtn = document.getElementById('waitBtn');
-
-homeBtn.addEventListener('click', () => {
-  window.location.href = 'index.html';
-});
-
-waitBtn.addEventListener('click', () => {
-  successModal.style.display = 'none';
-});
-loadProperty();
-</script>
-
-</body>
-</html>
+-- Source Stays Credit: secure, admin-managed rewards ledger
+-- Run once in Supabase SQL Editor. Review any existing schema differences before running.
+
+ALTER TABLE public.bookings
+  ADD COLUMN IF NOT EXISTS stay_completed_at timestamptz,
+  ADD COLUMN IF NOT EXISTS source_stays_credit_applied numeric(12,2) NOT NULL DEFAULT 0
+    CHECK (source_stays_credit_applied >= 0);
+
+CREATE TABLE IF NOT EXISTS public.source_stays_credit_ledger (
+  id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+  customer_phone text NOT NULL,
+  amount numeric(12,2) NOT NULL CHECK (amount <> 0),
+  entry_type text NOT NULL CHECK (entry_type IN ('earn', 'redeem', 'adjustment')),
+  booking_id bigint REFERENCES public.bookings(id) ON DELETE RESTRICT,
+  note text NOT NULL DEFAULT '',
+  created_by uuid NOT NULL DEFAULT auth.uid(),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS source_stays_credit_phone_created_idx
+  ON public.source_stays_credit_ledger (customer_phone, created_at DESC);
+
+-- One earning entry per completed booking, and one redemption per booking.
+CREATE UNIQUE INDEX IF NOT EXISTS source_stays_credit_one_earn_per_booking
+  ON public.source_stays_credit_ledger (booking_id)
+  WHERE entry_type = 'earn' AND booking_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS source_stays_credit_one_redemption_per_booking
+  ON public.source_stays_credit_ledger (booking_id)
+  WHERE entry_type = 'redeem' AND booking_id IS NOT NULL;
+
+ALTER TABLE public.source_stays_credit_ledger ENABLE ROW LEVEL SECURITY;
+
+-- No direct table access for anonymous/public users. Admins use the RPC functions below.
+REVOKE ALL ON public.source_stays_credit_ledger FROM anon, authenticated;
+
+DROP POLICY IF EXISTS "Source Stays admins can read rewards ledger" ON public.source_stays_credit_ledger;
+CREATE POLICY "Source Stays admins can read rewards ledger"
+  ON public.source_stays_credit_ledger
+  FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.admin_users au WHERE au.id = auth.uid()));
+
+DROP POLICY IF EXISTS "Source Stays admins can insert rewards ledger" ON public.source_stays_credit_ledger;
+
+CREATE OR REPLACE FUNCTION public.source_stays_credit_balance(p_customer_phone text)
+RETURNS numeric
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_balance numeric(12,2);
+BEGIN
+  IF auth.uid() IS NULL OR NOT EXISTS (
+    SELECT 1 FROM public.admin_users au WHERE au.id = auth.uid()
+  ) THEN
+    RAISE EXCEPTION 'Only Source Stays admins can view rewards balances';
+  END IF;
+
+  SELECT COALESCE(SUM(amount), 0)::numeric(12,2)
+    INTO v_balance
+    FROM public.source_stays_credit_ledger
+   WHERE customer_phone = regexp_replace(COALESCE(p_customer_phone, ''), '[^0-9]', '', 'g');
+
+  RETURN v_balance;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.source_stays_credit_earn(p_booking_id bigint)
+RETURNS numeric
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_booking public.bookings%ROWTYPE;
+  v_price numeric(12,2);
+  v_nights integer;
+  v_eligible numeric(12,2);
+  v_reward numeric(12,2);
+  v_phone text;
+BEGIN
+  IF auth.uid() IS NULL OR NOT EXISTS (
+    SELECT 1 FROM public.admin_users au WHERE au.id = auth.uid()
+  ) THEN
+    RAISE EXCEPTION 'Only Source Stays admins can issue rewards';
+  END IF;
+
+  SELECT * INTO v_booking
+    FROM public.bookings
+   WHERE id = p_booking_id
+   FOR UPDATE;
+
+  IF NOT FOUND THEN RAISE EXCEPTION 'Booking not found'; END IF;
+  IF lower(COALESCE(v_booking.status, '')) <> 'approved' THEN
+    RAISE EXCEPTION 'Booking must be approved before rewards can be issued';
+  END IF;
+  IF lower(COALESCE(v_booking.payment_status, '')) <> 'paid' THEN
+    RAISE EXCEPTION 'Booking must be marked paid before rewards can be issued';
+  END IF;
+  IF v_booking.stay_completed_at IS NULL THEN
+    RAISE EXCEPTION 'Mark the stay completed before issuing rewards';
+  END IF;
+
+  v_phone := regexp_replace(COALESCE(v_booking.customer_phone, ''), '[^0-9]', '', 'g');
+  IF v_phone = '' THEN RAISE EXCEPTION 'Booking has no customer phone number'; END IF;
+
+  SELECT COALESCE(p.price, 0)::numeric(12,2)
+    INTO v_price
+    FROM public.properties p
+   WHERE p.id = v_booking.property_id;
+
+  IF v_price IS NULL OR v_price <= 0 THEN
+    RAISE EXCEPTION 'Property accommodation price is missing or invalid';
+  END IF;
+
+  v_nights := (v_booking.check_out::date - v_booking.check_in::date);
+  IF v_nights <= 0 THEN RAISE EXCEPTION 'Booking dates are invalid'; END IF;
+
+  -- 2% applies only to accommodation price x nights, excluding deposits and fees.
+  v_eligible := v_price * v_nights;
+  v_reward := round(v_eligible * 0.02, 2);
+
+  INSERT INTO public.source_stays_credit_ledger
+    (customer_phone, amount, entry_type, booking_id, note, created_by)
+  VALUES
+    (v_phone, v_reward, 'earn', p_booking_id,
+     '2% Source Stays Credit for completed paid stay; eligible accommodation: NGN ' || v_eligible,
+     auth.uid());
+
+  RETURN v_reward;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.source_stays_credit_redeem(
+  p_booking_id bigint,
+  p_customer_phone text,
+  p_amount numeric
+)
+RETURNS numeric
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_booking public.bookings%ROWTYPE;
+  v_phone text;
+  v_balance numeric(12,2);
+  v_amount numeric(12,2);
+  v_remaining_due numeric(12,2);
+BEGIN
+  IF auth.uid() IS NULL OR NOT EXISTS (
+    SELECT 1 FROM public.admin_users au WHERE au.id = auth.uid()
+  ) THEN
+    RAISE EXCEPTION 'Only Source Stays admins can redeem rewards';
+  END IF;
+
+  v_phone := regexp_replace(COALESCE(p_customer_phone, ''), '[^0-9]', '', 'g');
+  v_amount := round(COALESCE(p_amount, 0), 2);
+
+  IF v_phone = '' THEN RAISE EXCEPTION 'Customer phone is required'; END IF;
+  IF v_amount <= 0 THEN RAISE EXCEPTION 'Redemption amount must be greater than zero'; END IF;
+
+  SELECT * INTO v_booking
+    FROM public.bookings
+   WHERE id = p_booking_id
+   FOR UPDATE;
+
+  IF NOT FOUND THEN RAISE EXCEPTION 'Booking not found'; END IF;
+  IF regexp_replace(COALESCE(v_booking.customer_phone, ''), '[^0-9]', '', 'g') <> v_phone THEN
+    RAISE EXCEPTION 'Customer phone does not match this booking';
+  END IF;
+  IF v_booking.check_in::date <= current_date THEN
+    RAISE EXCEPTION 'Credit can only be applied to a future booking';
+  END IF;
+  IF lower(COALESCE(v_booking.status, '')) = 'declined' THEN
+    RAISE EXCEPTION 'Cannot redeem credit on a cancelled booking';
+  END IF;
+
+  -- Serialize all redemptions for this normalized customer phone, including when no ledger rows exist yet.
+  PERFORM pg_advisory_xact_lock(hashtextextended(v_phone, 0));
+
+  SELECT COALESCE(SUM(amount), 0)::numeric(12,2)
+    INTO v_balance
+    FROM public.source_stays_credit_ledger
+   WHERE customer_phone = v_phone;
+
+  IF v_amount > v_balance THEN
+    RAISE EXCEPTION 'Requested redemption exceeds available credit balance';
+  END IF;
+
+  v_remaining_due := GREATEST(COALESCE(v_booking.amount_due, 0) - COALESCE(v_booking.source_stays_credit_applied, 0), 0);
+  IF v_amount > v_remaining_due THEN
+    RAISE EXCEPTION 'Redemption cannot exceed the remaining booking amount due';
+  END IF;
+
+  INSERT INTO public.source_stays_credit_ledger
+    (customer_phone, amount, entry_type, booking_id, note, created_by)
+  VALUES
+    (v_phone, -v_amount, 'redeem', p_booking_id,
+     'Source Stays Credit applied to future booking', auth.uid());
+
+  UPDATE public.bookings
+     SET source_stays_credit_applied = COALESCE(source_stays_credit_applied, 0) + v_amount
+   WHERE id = p_booking_id;
+
+  RETURN v_balance - v_amount;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.source_stays_credit_balance(text) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.source_stays_credit_earn(bigint) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.source_stays_credit_redeem(bigint, text, numeric) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.source_stays_credit_balance(text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.source_stays_credit_earn(bigint) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.source_stays_credit_redeem(bigint, text, numeric) TO authenticated;
+
+COMMENT ON TABLE public.source_stays_credit_ledger IS
+  'Admin-managed Source Stays Credit ledger. Positive amounts earn credit; negative amounts redeem credit.';
+COMMENT ON COLUMN public.bookings.stay_completed_at IS
+  'Set by Source Stays admin only after the guest stay has actually been completed.';
+COMMENT ON COLUMN public.bookings.source_stays_credit_applied IS
+  'Source Stays Credit applied to this booking; payment flow must subtract this from the amount due.';
