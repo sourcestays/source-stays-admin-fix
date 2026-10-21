@@ -480,11 +480,32 @@ form.onsubmit = async e => {
     delete b.phone;
     delete b.email;
 
-    // Save the request and only show success after Supabase confirms.
-  
-const createdBooking = await SourceStays.submitBooking(b);
+ 
+    // Validate the credit request BEFORE creating the booking.
+    if (requestedCredits > 0) {
+      if (
+        !Number.isFinite(requestedCredits) ||
+        !Number.isInteger(requestedCredits) ||
+        requestedCredits < 2000
+      ) {
+        throw new Error(
+          'The minimum Source Stays Credits redemption is ₦2,000, entered as a whole naira amount.'
+        );
+      }
+
+      if (requestedCredits > bookingTotal) {
+        throw new Error(
+          'The credits requested cannot exceed the booking total.'
+        );
+      }
+    }
+
+    // Save the booking request.
+    const createdBooking = await SourceStays.submitBooking(b);
+
     let successTitleText = 'Booking Request Received';
-    let successMessageText = 'Thank you. Your booking request has been received successfully. Source Stays will confirm availability and contact you with payment instructions.';
+    let successMessageText =
+      'Thank you. Your booking request has been received successfully. Source Stays will confirm availability and contact you with payment instructions.';
 
     if (requestedCredits > 0) {
       try {
@@ -500,15 +521,20 @@ const createdBooking = await SourceStays.submitBooking(b);
         if (creditError) {
           console.error('Credit request failed:', creditError);
           successTitleText = 'Booking Received — Credit Request Not Submitted';
-          successMessageText = 'Your booking request was received, but your credit request could not be saved. No credits have been deducted. Please sign in to your Source Stays account to request redemption separately.';
+          successMessageText =
+            'Your booking request was received, but your credit request could not be saved. No credits have been deducted. Please sign in to your Source Stays account to request redemption separately.';
         } else {
           successTitleText = 'Booking and Credit Request Received';
-          successMessageText = 'Your booking request was received, and your request to use ₦' + requestedCredits.toLocaleString('en-NG') + ' in Source Stays Credits has been submitted for review. Credits are not deducted now; any approved credits are applied through the secure payment process.';
+          successMessageText =
+            'Your booking request was received, and your request to use ₦' +
+            requestedCredits.toLocaleString('en-NG') +
+            ' in Source Stays Credits has been submitted for review. Credits are not deducted now; any approved credits are applied through the secure payment process.';
         }
       } catch (creditRequestError) {
         console.error('Credit request could not be completed:', creditRequestError);
         successTitleText = 'Booking Received — Credit Request Not Submitted';
-        successMessageText = 'Your booking request was received, but we could not confirm your credit request. No credits have been deducted. Please sign in to your Source Stays account to request redemption separately.';
+        successMessageText =
+          'Your booking request was received, but we could not confirm your credit request. No credits have been deducted. Please sign in to your Source Stays account to request redemption separately.';
       }
     }
 
