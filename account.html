@@ -901,6 +901,7 @@ async function loadCustomerCredits(userId) {
   }
 }
       
+
 async function loadEligibleRedemptionBookings(userId) {
   const select = document.getElementById('redemptionBooking');
   if (!select) return;
@@ -913,27 +914,43 @@ async function loadEligibleRedemptionBookings(userId) {
   select.appendChild(placeholder);
 
   try {
-    const { data, error } = await client
+    const { data: bookings, error: bookingsError } = await client
       .from('bookings')
-      .select('id, check_in, check_out, amount_due, status, payment_status')
+      .select('id, check_in, check_out, amount_due, status, payment_status, created_at')
       .eq('customer_user_id', userId)
-     .in('status', ['pending', 'approved', 'confirmed'])
+      .in('status', ['pending', 'approved', 'confirmed'])
       .eq('payment_status', 'unpaid')
       .gt('amount_due', 0)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (bookingsError) throw bookingsError;
+
+    const { data: requests, error: requestsError } = await client
+      .from('source_stays_credit_redemptions')
+      .select('booking_id, status')
+      .eq('customer_user_id', userId)
+      .in('status', ['pending', 'approved']);
+
+    if (requestsError) throw requestsError;
+
+    const reservedBookingIds = new Set(
+      (requests || []).map(request => String(request.booking_id))
+    );
+
+    const eligibleBookings = (bookings || []).filter(
+      booking => !reservedBookingIds.has(String(booking.id))
+    );
 
     select.replaceChildren();
 
     const firstOption = document.createElement('option');
     firstOption.value = '';
-    firstOption.textContent = data && data.length
+    firstOption.textContent = eligibleBookings.length
       ? 'Choose a booking'
       : 'No eligible unpaid bookings found';
     select.appendChild(firstOption);
 
-    (data || []).forEach(booking => {
+    eligibleBookings.forEach(booking => {
       const option = document.createElement('option');
       option.value = booking.id;
 
@@ -941,9 +958,10 @@ async function loadEligibleRedemptionBookings(userId) {
         ? ` (${booking.check_in} to ${booking.check_out})`
         : '';
 
-      option.textContent = `Booking #${booking.id}${dates} — ₦${Number(
-        booking.amount_due
-      ).toLocaleString('en-NG')}`;
+      option.textContent =
+        `Booking #${booking.id}${dates} — ₦${Number(
+          booking.amount_due
+        ).toLocaleString('en-NG')}`;
 
       select.appendChild(option);
     });
@@ -957,6 +975,7 @@ async function loadEligibleRedemptionBookings(userId) {
     select.appendChild(option);
   }
 }
+
 
 async function loadRedemptionRequests(userId) {
   const box = document.getElementById('redemptionRequests');
