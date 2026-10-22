@@ -224,6 +224,56 @@ async function check(){
     showLogin();
   }catch(err){console.error(err);showLogin();msg('Login service error: '+(err.message||String(err)),true);}
 }
+  
+let mfaEnrollFactorId = null;
+
+document.getElementById('mfaEnrollForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const sb = getClient();
+  const code = String(this.elements.code.value || '').trim();
+  const msgEl = document.getElementById('mfaEnrollMsg');
+  const button = this.querySelector('button[type="submit"]');
+
+  if (!/^\d{6}$/.test(code)) {
+    msgEl.textContent = 'Enter the six-digit code from Google Authenticator.';
+    return;
+  }
+
+  button.disabled = true;
+  msgEl.textContent = 'Verifying your authenticator code...';
+
+  try {
+    if (!mfaEnrollFactorId) {
+      throw new Error('Please start authenticator enrollment first.');
+    }
+
+    const challenge = await sb.auth.mfa.challenge({
+      factorId: mfaEnrollFactorId
+    });
+
+    if (challenge.error) throw challenge.error;
+
+    const verified = await sb.auth.mfa.verify({
+      factorId: mfaEnrollFactorId,
+      challengeId: challenge.data.id,
+      code
+    });
+
+    if (verified.error) throw verified.error;
+
+    document.getElementById('mfaEnroll').classList.add('hidden');
+    document.getElementById('mfaVerify').classList.remove('hidden');
+    document.getElementById('mfaMsg').textContent =
+      'Authenticator enrolled successfully. Sign in again to test MFA.';
+  } catch (err) {
+    console.error('MFA enrollment error:', err);
+    msgEl.textContent = err.message || 'Could not verify the code. Please try again.';
+  } finally {
+    button.disabled = false;
+  }
+});
+
 loginForm.addEventListener('submit',async function(e){
   e.preventDefault();
   e.stopPropagation();
