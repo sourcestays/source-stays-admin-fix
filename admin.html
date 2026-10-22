@@ -152,7 +152,12 @@ const money=x=>Number(x||0).toLocaleString('en-NG');
 let client=null;
 function msg(text, error=false){loginMsg.textContent=text||'';loginMsg.className=error?'danger':'';}
 function showLogin(){login.classList.remove('hidden');dash.classList.add('hidden');}
-function showDash(){login.classList.add('hidden');dash.classList.remove('hidden');load();}
+function showDash(){
+  login.classList.add('hidden');
+  dash.classList.remove('hidden');
+  load();
+  loadReviews();
+}
 function getClient(){
   if(client) return client;
   if(!window.supabase || typeof window.supabase.createClient!=='function') throw new Error('Supabase library did not load. Please refresh the page.');
@@ -726,7 +731,6 @@ if (reviewAdminForm) {
   });
 }
 
-loadReviews();
 
 
 window.bookingStatus = async function(id, status) {
