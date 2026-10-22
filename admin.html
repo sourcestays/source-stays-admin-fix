@@ -224,6 +224,51 @@ async function check(){
     showLogin();
   }catch(err){console.error(err);showLogin();msg('Login service error: '+(err.message||String(err)),true);}
 }
+
+async function startMfaEnrollment() {
+  const sb = getClient();
+  const msgEl = document.getElementById('mfaEnrollMsg');
+  msgEl.textContent = 'Preparing your authenticator setup...';
+
+  try {
+    const { data: factors, error: listError } =
+      await sb.auth.mfa.listFactors();
+
+    if (listError) throw listError;
+
+    const existing = (factors?.totp || [])
+      .find(f => f.status === 'verified');
+
+    if (existing) {
+      throw new Error(
+        'An authenticator is already enrolled. We should use it to verify login instead of enrolling another one.'
+      );
+    }
+
+    const { data, error } = await sb.auth.mfa.enroll({
+      factorType: 'totp',
+      friendlyName: 'Source Stays Admin'
+    });
+
+    if (error) throw error;
+
+    mfaEnrollFactorId = data.id;
+
+    document.getElementById('mfaQr').innerHTML =
+      '<img alt="Authenticator QR code" style="max-width:240px;width:100%" src="' +
+      data.totp.qr_code + '">';
+
+    document.getElementById('mfaSecret').textContent =
+      'If you cannot scan the QR code, enter this setup key manually: ' +
+      data.totp.secret;
+
+    msgEl.textContent =
+      'Scan the QR code with Google Authenticator, then enter its six-digit code below.';
+  } catch (err) {
+    console.error('MFA setup error:', err);
+    msgEl.textContent = err.message || 'Could not start authenticator setup.';
+  }
+}
   
 let mfaEnrollFactorId = null;
 
