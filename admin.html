@@ -192,7 +192,12 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&
 const money=x=>Number(x||0).toLocaleString('en-NG');
 let client=null;
 function msg(text, error=false){loginMsg.textContent=text||'';loginMsg.className=error?'danger':'';}
-function showLogin(){login.classList.remove('hidden');dash.classList.add('hidden');}
+function showLogin(){
+  login.classList.remove('hidden');
+  dash.classList.add('hidden');
+  document.getElementById('mfaEnroll').classList.add('hidden');
+  document.getElementById('mfaVerify').classList.add('hidden');
+}
 function showDash(){
   login.classList.add('hidden');
   dash.classList.remove('hidden');
@@ -212,17 +217,83 @@ async function isAdmin(user){
   if(error) throw error;
   return !!data;
 }
+  let mfaLoginFactorId = null;
+let mfaLoginChallengeId = null;
+
+async function requireAuthenticator(user) {
+  const sb = getClient();
+
+  if (!(await isAdmin(user))) {
+    await sb.auth.signOut();
+    showLogin();
+    throw new Error('This account is not authorized as an admin.');
+  }
+
+  const { data, error } = await sb.auth.mfa.listFactors();
+  if (error) throw error;
+
+  const factor = (data?.totp || [])
+    .find(f => f.status === 'verified');
+
+ if (!factor) {
+  login.classList.add('hidden');
+  dash.classList.add('hidden');
+  document.getElementById('mfaVerify').classList.add('hidden');
+  document.getElementById('mfaEnroll').classList.remove('hidden');
+  await startMfaEnrollment();
+  return;
+}
+
+  const { data: challenge, error: challengeError } =
+    await sb.auth.mfa.challenge({
+      factorId: factor.id
+    });
+
+  if (challengeError) throw challengeError;
+
+  mfaLoginFactorId = factor.id;
+  mfaLoginChallengeId = challenge.id;
+
+  login.classList.add('hidden');
+  dash.classList.add('hidden');
+  document.getElementById('mfaEnroll').classList.add('hidden');
+  document.getElementById('mfaVerify').classList.remove('hidden');
+  document.getElementById('mfaMsg').textContent =
+    'Enter the current six-digit code from Google Authenticator.';
+}
+
 async function check(){
   try{
-    const sb=getClient();
-    const {data,error}=await sb.auth.getSession();
+    const sb = getClient();
+    const { data, error } = await sb.auth.getSession();
     if(error) throw error;
+
     if(data.session && data.session.user){
-      if(await isAdmin(data.session.user)) return showDash();
-      await sb.auth.signOut();
+      const { data: assurance, error: assuranceError } =
+        await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+
+      if(assuranceError) throw assuranceError;
+
+      if(
+        assurance.currentLevel === 'aal2' &&
+        assurance.nextLevel === 'aal2'
+      ){
+        if(await isAdmin(data.session.user)){
+          return showDash();
+        }
+        await sb.auth.signOut();
+      } else {
+        await requireAuthenticator(data.session.user);
+        return;
+      }
     }
+
     showLogin();
-  }catch(err){console.error(err);showLogin();msg('Login service error: '+(err.message||String(err)),true);}
+  }catch(err){
+    console.error('Session/MFA check error:', err);
+    showLogin();
+    msg(err.message || 'Please sign in again.', true);
+  }
 }
 
 async function startMfaEnrollment() {
@@ -272,6 +343,7 @@ async function startMfaEnrollment() {
   
 let mfaEnrollFactorId = null;
 
+
 document.getElementById('mfaEnrollForm').addEventListener('submit', async function(e) {
   e.preventDefault();
 
@@ -293,32 +365,140 @@ document.getElementById('mfaEnrollForm').addEventListener('submit', async functi
       throw new Error('Please start authenticator enrollment first.');
     }
 
-    const challenge = await sb.auth.mfa.challenge({
-      factorId: mfaEnrollFactorId
-    });
+    const { data: challengeData, error: challengeError } =
+      await sb.auth.mfa.challenge({
+        factorId: mfaEnrollFactorId
+      });
 
-    if (challenge.error) throw challenge.error;
+    if (challengeError) throw challengeError;
 
-    const verified = await sb.auth.mfa.verify({
+    const { error: verifyError } = await sb.auth.mfa.verify({
       factorId: mfaEnrollFactorId,
-      challengeId: challenge.data.id,
+      challengeId: challengeData.id,
       code
     });
 
-    if (verified.error) throw verified.error;
+    if (verifyError) throw verifyError;
+
+    const { data: sessionData, error: sessionError } =
+      await sb.auth.getSession();
+
+    if (sessionError) throw sessionError;
+
+    if (!sessionData.session?.user) {
+      throw new Error('Setup succeeded. Please sign in again.');
+    }
+
+    if (!(await isAdmin(sessionData.session.user))) {
+      await sb.auth.signOut();
+      throw new Error('This account is not authorized as an admin.');
+    }
 
     document.getElementById('mfaEnroll').classList.add('hidden');
-    document.getElementById('mfaVerify').classList.remove('hidden');
-    document.getElementById('mfaMsg').textContent =
-      'Authenticator enrolled successfully. Sign in again to test MFA.';
+    document.getElementById('mfaVerify').classList.add('hidden');
+
+    mfaEnrollFactorId = null;
+    mfaLoginFactorId = null;
+    mfaLoginChallengeId = null;
+
+    const { data: assurance, error: assuranceError } =
+  await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+
+if (assuranceError) throw assuranceError;
+
+if (
+  assurance.currentLevel !== 'aal2' ||
+  assurance.nextLevel !== 'aal2'
+) {
+  throw new Error(
+    'Authenticator setup was completed, but the session has not reached the required security level. Please sign in again.'
+  );
+}
+
+showDash();
   } catch (err) {
     console.error('MFA enrollment error:', err);
-    msgEl.textContent = err.message || 'Could not verify the code. Please try again.';
+    msgEl.textContent =
+      err.message || 'Could not verify the code. Please try again.';
   } finally {
     button.disabled = false;
   }
 });
 
+document.getElementById('mfaForm').addEventListener(
+  'submit',
+  async function(e) {
+    e.preventDefault();
+
+    const form = e.currentTarget;
+    const button = form.querySelector('button[type="submit"]');
+    const message = document.getElementById('mfaMsg');
+    const code = String(form.elements.code.value || '').trim();
+
+    if (!/^\d{6}$/.test(code)) {
+      message.textContent = 'Enter the six-digit authenticator code.';
+      return;
+    }
+
+    button.disabled = true;
+    message.textContent = 'Verifying code...';
+
+    try {
+      if (!mfaLoginFactorId || !mfaLoginChallengeId) {
+        throw new Error('Verification expired. Please sign in again.');
+      }
+
+      const { error } = await getClient().auth.mfa.verify({
+        factorId: mfaLoginFactorId,
+        challengeId: mfaLoginChallengeId,
+        code
+      });
+
+      if (error) throw error;
+
+      const { data, error: sessionError } =
+        await getClient().auth.getSession();
+
+      if (sessionError) throw sessionError;
+      if (!data.session?.user) {
+        throw new Error('Please sign in again.');
+      }
+
+  
+if (!(await isAdmin(data.session.user))) {
+  await getClient().auth.signOut();
+  throw new Error('This account is not authorized as an admin.');
+}
+
+const { data: assurance, error: assuranceError } =
+  await getClient().auth.mfa.getAuthenticatorAssuranceLevel();
+
+if (assuranceError) throw assuranceError;
+
+if (
+  assurance.currentLevel !== 'aal2' ||
+  assurance.nextLevel !== 'aal2'
+) {
+  throw new Error(
+    'Authenticator verification did not reach the required security level. Please sign in again.'
+  );
+}
+
+form.reset();
+
+      document.getElementById('mfaVerify').classList.add('hidden');
+      mfaLoginFactorId = null;
+      mfaLoginChallengeId = null;
+      showDash();
+    } catch (err) {
+      console.error('Authenticator verification error:', err);
+      message.textContent =
+        err.message || 'Verification failed. Please try again.';
+    } finally {
+      button.disabled = false;
+    }
+  }
+);
 loginForm.addEventListener('submit',async function(e){
   e.preventDefault();
   e.stopPropagation();
@@ -334,12 +514,23 @@ loginForm.addEventListener('submit',async function(e){
     if(!result.data || !result.data.user) throw new Error('Supabase did not return a user.');
     if(!(await isAdmin(result.data.user))){await sb.auth.signOut();throw new Error('This email is not listed in Source Stays admin_users.');}
     loginForm.reset();
-    showDash();
+await requireAuthenticator(result.data.user);
   }catch(err){
     console.error('Source Stays login error:',err);
-    msg(err && err.message ? err.message : 'Sign-in failed. Please try again.',true);
-    loginForm.elements.password.value='';
-    loginForm.elements.password.focus();
+    const errorText = err && err.message ? err.message : 'Sign-in failed. Please try again.';
+    const enrollPanel = document.getElementById('mfaEnroll');
+    const verifyPanel = document.getElementById('mfaVerify');
+
+    // Display the error on the panel the user can actually see.
+    if (!enrollPanel.classList.contains('hidden')) {
+      document.getElementById('mfaEnrollMsg').textContent = errorText;
+    } else if (!verifyPanel.classList.contains('hidden')) {
+      document.getElementById('mfaMsg').textContent = errorText;
+    } else {
+      msg(errorText, true);
+      loginForm.elements.password.value='';
+      loginForm.elements.password.focus();
+    }
   }finally{button.disabled=false;button.textContent='Sign in';}
 });
 
