@@ -27,16 +27,36 @@
       <span></span>
     </button>
 
-    <nav id="primaryNav">
-      <a href="index.html#stays">Shortlets</a>
-      <a href="index.html#hotels">Hotels</a>
-      <a href="index.html#realestate">Real Estate</a>
-      <a href="index.html#rewards">Rewards</a>
+  
+<nav id="primaryNav">
+  <div class="nav-dropdown">
+    <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-controls="staysDropdown">
+      Stays <span aria-hidden="true">▾</span>
+    </button>
+    <div class="dropdown-menu" id="staysDropdown">
+      <a href="index.html?type=shortlet#stays">Shortlets</a>
+      <a href="index.html?type=hotel#stays">Hotels</a>
+    </div>
+  </div>
+
+  <div class="nav-dropdown">
+    <button type="button" class="nav-dropdown-toggle" aria-expanded="false" aria-controls="realEstateDropdown">
+      Real Estate <span aria-hidden="true">▾</span>
+    </button>
+    <div class="dropdown-menu" id="realEstateDropdown">
+      <a href="index.html?type=sale#stays">Properties for Sale</a>
+      <a href="index.html?type=rent#stays">Properties for Rent</a>
+      <a href="index.html#contact">Property Management</a>
       <a href="recb.html">Real Estate Cashback (RECB)</a>
-      <a href="about.html">About Us</a>
-      <a href="index.html#contact">Contact</a>
-     <a href="account.html" id="accountNavLink">Log In / Sign Up</a>
-    </nav>
+    </div>
+  </div>
+
+  <a href="index.html#rewards">Rewards</a>
+  <a href="about.html">About Us</a>
+  <a href="index.html#contact">Contact</a>
+  <a href="account.html" id="accountNavLink">Log In / Sign Up</a>
+</nav>
+
 
     <a class="btn dark nav-book" href="https://wa.me/2347085404814">
       Book / Enquire
