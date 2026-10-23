@@ -924,3 +924,110 @@ a:focus-visible {
     justify-self: stretch;
   }
 }
+
+/* =========================================
+   SOURCE STAYS — STAYS & REAL ESTATE DROPDOWNS
+========================================= */
+
+.nav-dropdown {
+  position: relative;
+}
+
+.nav-dropdown-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.nav-dropdown-toggle:hover,
+.nav-dropdown-toggle[aria-expanded="true"] {
+  color: var(--gold);
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 100;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  min-width: 225px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(11, 45, 36, 0.14);
+}
+
+.nav-dropdown:hover .dropdown-menu,
+.nav-dropdown:focus-within .dropdown-menu,
+.nav-dropdown.is-open .dropdown-menu {
+  display: flex;
+}
+
+nav#primaryNav .dropdown-menu a {
+  display: block;
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 7px;
+  color: var(--green);
+  white-space: nowrap;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+nav#primaryNav .dropdown-menu a:hover,
+nav#primaryNav .dropdown-menu a:focus-visible {
+  background: var(--cream);
+  color: var(--dark);
+}
+
+/* Mobile dropdown layout */
+@media (max-width: 800px) {
+  .nav > nav#primaryNav .nav-dropdown {
+    display: block;
+    width: 100%;
+  }
+
+  .nav > nav#primaryNav .nav-dropdown-toggle {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    padding: 13px 10px;
+    border-bottom: 1px solid var(--line);
+    color: var(--green);
+    text-align: left;
+  }
+
+  .nav > nav#primaryNav .dropdown-menu {
+    position: static;
+    display: none;
+    width: 100%;
+    min-width: 0;
+    padding: 0 0 0 12px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #faf9f5;
+  }
+
+  .nav > nav#primaryNav .nav-dropdown.is-open .dropdown-menu {
+    display: flex;
+  }
+
+  .nav > nav#primaryNav .dropdown-menu a {
+    padding: 11px 14px;
+    white-space: normal;
+  }
+}
