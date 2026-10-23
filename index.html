@@ -239,6 +239,19 @@
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
+  
+<script>
+  (function () {
+    const requestedType = new URLSearchParams(window.location.search).get('type');
+    const allowedTypes = ['all', 'shortlet', 'hotel', 'sale', 'rent'];
+    const typeSelect = document.getElementById('type');
+
+    if (typeSelect && allowedTypes.includes(requestedType)) {
+      typeSelect.value = requestedType;
+    }
+  })();
+</script>
+
   <script src="app.js"></script>
   
 <script>
@@ -392,6 +405,55 @@
       if (window.innerWidth > 800) closeMenu();
     });
   })();
+</script>
+
+<script>
+(function () {
+  const nav = document.getElementById("primaryNav");
+  if (!nav) return;
+
+  const dropdownButtons = nav.querySelectorAll(".nav-dropdown-toggle");
+
+  dropdownButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      const dropdown = button.closest(".nav-dropdown");
+      if (!dropdown) return;
+
+      const willOpen = !dropdown.classList.contains("is-open");
+
+      nav.querySelectorAll(".nav-dropdown").forEach(function (item) {
+        item.classList.remove("is-open");
+        const toggle = item.querySelector(".nav-dropdown-toggle");
+        if (toggle) toggle.setAttribute("aria-expanded", "false");
+      });
+
+      if (willOpen) {
+        dropdown.classList.add("is-open");
+        button.setAttribute("aria-expanded", "true");
+      }
+    });
+  });
+
+  document.addEventListener("click", function (event) {
+    if (!nav.contains(event.target)) {
+      nav.querySelectorAll(".nav-dropdown").forEach(function (item) {
+        item.classList.remove("is-open");
+        const button = item.querySelector(".nav-dropdown-toggle");
+        if (button) button.setAttribute("aria-expanded", "false");
+      });
+    }
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      nav.querySelectorAll(".nav-dropdown").forEach(function (item) {
+        item.classList.remove("is-open");
+        const button = item.querySelector(".nav-dropdown-toggle");
+        if (button) button.setAttribute("aria-expanded", "false");
+      });
+    }
+  });
+})();
 </script>
 
 <script>
