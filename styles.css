@@ -1034,7 +1034,7 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 
 /* RECB Explainer Video */
 #recb-video .recb-video-card {
-  max-width: 340px;
+  max-width: 400px;
   margin: 0 auto;
   overflow: hidden;
   border-radius: 16px;
