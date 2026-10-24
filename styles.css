@@ -1117,3 +1117,12 @@ nav#primaryNav .dropdown-menu a:focus-visible {
   font-size: 14px;
   font-weight: 600;
 }
+/* Official RECB programme logo */
+#recb-video .recb-programme-logo {
+  display: block;
+  width: 150px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 0 16px;
+  object-fit: contain;
+}
