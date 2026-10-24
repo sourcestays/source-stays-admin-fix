@@ -1087,7 +1087,7 @@ nav#primaryNav .dropdown-menu a:focus-visible {
   object-fit: contain;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 660px) {
   #recb-video .recb-video-card {
     max-width: 100%;
     border-radius: 12px;
@@ -1107,14 +1107,14 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 
 #welcome-video .welcome-video-content {
   width: 100%;
-  max-width: 600px;
+  max-width: 660px;
   margin: 0 auto;
   text-align: center;
 }
 
 #welcome-video h2 {
-  margin: 0 0 8px;
-  font-size: 26px;
+  margin: 0 0 10px;
+  font-size: 34px;
   line-height: 1.25;
 }
 
