@@ -1034,7 +1034,7 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 
 /* RECB Explainer Video */
 #recb-video .recb-video-card {
-  max-width: 650px;
+  max-width: 340px;
   margin: 0 auto;
   overflow: hidden;
   border-radius: 16px;
@@ -1044,19 +1044,17 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 }
 
 
+
 #recb-video .recb-video-card video {
   display: block;
   width: 100%;
-  height: 360px;
+  height: auto;
+  aspect-ratio: 9 / 16;
   object-fit: contain;
-  background: #000000;
+  background: #111111;
 }
 
-@media (max-width: 600px) {
-  #recb-video .recb-video-card video {
-    height: 240px;
-  }
-}
+
 
 
 #recb-video .recb-video-caption {
@@ -1068,7 +1066,7 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 
 /* RECB Explainer Video - Final Layout */
 #recb-video .recb-video-card {
-  max-width: 420px;
+  max-width: 340px;
   margin: 0 auto;
   overflow: hidden;
   border-radius: 16px;
