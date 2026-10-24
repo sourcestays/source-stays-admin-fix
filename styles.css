@@ -1126,3 +1126,51 @@ nav#primaryNav .dropdown-menu a:focus-visible {
   margin: 0 0 16px;
   object-fit: contain;
 }
+
+
+/* Source Stays welcome music video */
+#welcome-video {
+  padding: 32px 20px;
+}
+
+#welcome-video .welcome-video-content {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+#welcome-video h2 {
+  margin: 0 0 10px;
+}
+
+#welcome-video p {
+  margin: 0 0 20px;
+}
+
+#welcome-video video {
+  display: block;
+  width: 100%;
+  max-width: 960px;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+  background: #000;
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+}
+
+@media (max-width: 600px) {
+  #welcome-video {
+    padding: 24px 16px;
+  }
+
+  #welcome-video video {
+    border-radius: 10px;
+  }
+
+  #welcome-video p {
+    margin-bottom: 16px;
+  }
+}
