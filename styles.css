@@ -1111,4 +1111,9 @@ nav#primaryNav .dropdown-menu a:focus-visible {
     padding: 16px;
   }
 }
-
+#recb-video .recb-partnership {
+  margin: 10px 0;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 600;
+}
