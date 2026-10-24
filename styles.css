@@ -1065,8 +1065,35 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 
 #recb-video .recb-video-caption strong {
   display: block;
+
+/* RECB Explainer Video - Final Layout */
+#recb-video .recb-video-card {
+  max-width: 420px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+#recb-video .recb-video-card video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 9 / 16;
+  object-fit: contain;
+  background: #111111;
+}
+
+#recb-video .recb-video-caption {
+  padding: 20px;
+}
+
+#recb-video .recb-video-caption strong {
+  display: block;
   color: var(--green);
-  font-size: 20px;
+  font-size: 18px;
   margin-bottom: 8px;
 }
 
@@ -1078,10 +1105,12 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 
 @media (max-width: 600px) {
   #recb-video .recb-video-card {
+    max-width: 100%;
     border-radius: 12px;
   }
 
   #recb-video .recb-video-caption {
-    padding: 18px;
+    padding: 16px;
   }
 }
+
