@@ -1101,7 +1101,7 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 /* Source Stays welcome music video — compact and responsive */
 #welcome-video {
   width: 100%;
-  padding: 20px 16px 8px;
+  padding: 16px 16px 0px;
   overflow: hidden;
 }
 
