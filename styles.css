@@ -1031,3 +1031,48 @@ nav#primaryNav .dropdown-menu a:focus-visible {
     white-space: normal;
   }
 }
+
+/* RECB Explainer Video */
+#recb-video .recb-video-card {
+  max-width: 900px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+#recb-video .recb-video-card video {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #000000;
+}
+
+#recb-video .recb-video-caption {
+  padding: 24px;
+}
+
+#recb-video .recb-video-caption strong {
+  display: block;
+  color: var(--green);
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+#recb-video .recb-video-caption p {
+  margin: 0 0 18px;
+  color: #68736c;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  #recb-video .recb-video-card {
+    border-radius: 12px;
+  }
+
+  #recb-video .recb-video-caption {
+    padding: 18px;
+  }
+}
