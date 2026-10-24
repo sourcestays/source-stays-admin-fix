@@ -1047,14 +1047,14 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 #recb-video .recb-video-card video {
   display: block;
   width: 100%;
-  height: 360px;
+  height: 260px;
   object-fit: contain;
   background: #000000;
 }
 
 @media (max-width: 600px) {
   #recb-video .recb-video-card video {
-    height: 240px;
+    height: 180px;
   }
 }
 
