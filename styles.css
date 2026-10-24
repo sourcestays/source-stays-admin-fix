@@ -1135,7 +1135,7 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 
 #welcome-video .welcome-video-content {
   width: 100%;
-  max-width: 800px;
+  max-width: 700px;
   margin: 0 auto;
   text-align: center;
 }
@@ -1151,7 +1151,7 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 #welcome-video video {
   display: block;
   width: 100%;
-  max-width: 800px;
+  max-width: 700px;
   aspect-ratio: 16 / 9;
   height: auto;
   margin: 0 auto;
