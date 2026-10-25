@@ -735,23 +735,38 @@ ${x.status==='approved' || x.status==='completed'
   enquiries.innerHTML=e?.length?`<h4>Enquiries</h4><table class="table"><tr><th>Customer</th><th>Interest</th><th>Property ID</th><th>Status</th></tr>${e.map(x=>`<tr><td>${esc(x.customer_name)}<br>${esc(x.customer_phone||'')}</td><td>${esc(x.subject||'Enquiry')}</td><td>${esc(x.property_id||'')}</td><td><select onchange="enquiryStatus(${x.id},this.value)"><option ${x.status==='new'?'selected':''}>new</option><option ${x.status==='contacted'?'selected':''}>contacted</option><option ${x.status==='closed'?'selected':''}>closed</option></select></td></tr>`).join('')}</table>`:'<p class="muted">No enquiries yet.</p>';
 await loadCreditRedemptions(); }catch(err){console.error(err);props.innerHTML='<p class="danger">Could not load dashboard data: '+esc(err.message||err)+'</p>';}
 }
-window.requestPayment=async function(id){try{const sb=getClient();const result=await sb.functions.invoke('initialize-payment',{body:{booking_id:id}});
-const data = result.data || {};
 
-if (result.error) {
-  const message =
-    data.error ||
-    result.error.message ||
-    'Could not create payment link.';
+window.requestPayment=async function(id){
+  try {
+    const sb = getClient();
+    const result = await sb.functions.invoke('initialize-payment', {
+      body: { booking_id: id }
+    });
+    const data = result.data || {};
 
-  throw new Error(message);
-}
+    if (result.error) {
+      let serverMessage = '';
 
-if (!data.authorization_url) {
-  throw new Error(
-    data.error || 'Could not create payment link.'
-  );
-}
+      try {
+        const response = result.error.context;
+
+        if (response && typeof response.json === 'function') {
+          const body = await response.json();
+          serverMessage = body?.error || body?.message || '';
+        }
+      } catch (_) {}
+
+      throw new Error(
+        serverMessage ||
+        data.error ||
+        result.error.message ||
+        'Could not create payment link.'
+      );
+    }
+
+    if (!data.authorization_url) {
+      throw new Error(data.error || 'Could not create payment link.');
+    }
 
 // Persist the request so the dashboard keeps showing it after refresh.
 const { error: requestStatusError } = await sb
