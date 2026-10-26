@@ -503,6 +503,28 @@ form.onsubmit = async e => {
     // Save the booking request.
     const createdBooking = await SourceStays.submitBooking(b);
 
+try {
+  const { error: notificationError } =
+    await SourceStays.supabase.functions.invoke(
+      'notify-new-booking',
+      {
+        body: { booking_id: createdBooking.id }
+      }
+    );
+
+  if (notificationError) {
+    console.error(
+      'Admin booking notification failed:',
+      notificationError
+    );
+  }
+} catch (notificationError) {
+  console.error(
+    'Admin booking notification failed:',
+    notificationError
+  );
+}
+
     let successTitleText = 'Booking Request Received';
     let successMessageText =
       'Thank you. Your booking request has been received successfully. Source Stays will confirm availability and contact you with payment instructions.';
