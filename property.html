@@ -222,6 +222,111 @@
       #detail .gallery-property-heading { display: none; }
       #detail .property-info .description-in-info { display: block; }
     }
+
+    /* Desktop polish: consistent rhythm, a richer gallery, and aligned content cards. */
+    @media (min-width: 761px) {
+      .section { padding: 28px 0 56px; }
+      #detail { max-width: 1240px; padding: 0 24px; box-sizing: border-box; }
+      #detail .property-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+      }
+      .main-gallery {
+        height: clamp(390px, 39vw, 540px);
+        border-radius: 22px;
+        background: #e8ebe6;
+      }
+      .main-gallery .image-backdrop {
+        display: block !important;
+        position: absolute;
+        inset: -22px;
+        z-index: 0;
+        background-position: center;
+        background-size: cover;
+        filter: blur(22px) brightness(.72);
+        opacity: .52;
+        transform: scale(1.08);
+      }
+      .main-gallery .main-photo {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 0;
+      }
+      .property-thumbnails { margin-top: 12px; padding-bottom: 8px; gap: 10px; }
+      .property-thumbnails button { flex-basis: 88px; width: 88px; height: 66px; }
+      .gallery-property-heading {
+        margin: 24px 0 0;
+        padding: 0 2px;
+      }
+      .gallery-property-heading .eyebrow { font-size: 11px; }
+      .gallery-property-heading h1 {
+        margin-top: 7px;
+        font-size: clamp(34px, 3.1vw, 44px);
+        line-height: 1.12;
+      }
+      #detail .desktop-video {
+        display: block;
+        width: 100% !important;
+        margin: 22px 0 0 !important;
+        padding: 0;
+      }
+      #detail .desktop-video h2 {
+        margin: 0 0 14px;
+        font-size: clamp(27px, 2.5vw, 34px);
+        line-height: 1.2;
+        color: var(--ss-ink);
+      }
+      #detail .desktop-video video {
+        display: block;
+        width: 100% !important;
+        height: auto;
+        max-height: 560px;
+        aspect-ratio: 16 / 9;
+        object-fit: contain;
+        background: #111;
+        border-radius: 16px !important;
+        box-shadow: 0 10px 28px rgba(23,42,32,.10);
+      }
+      #detail .description-after-video {
+        display: block;
+        margin-top: 22px;
+        padding: 26px 30px;
+        border-radius: 18px;
+        box-shadow: 0 8px 24px rgba(23,42,32,.045);
+      }
+      #detail .description-after-video h2 {
+        margin: 0 0 12px;
+        font-size: clamp(27px, 2.5vw, 34px);
+        line-height: 1.2;
+      }
+      #detail .description-after-video p {
+        font-size: 16px;
+        line-height: 1.8;
+      }
+      #detail .property-info {
+        position: static;
+        margin-top: 22px;
+        padding: 26px 30px;
+        border-radius: 18px;
+        box-shadow: 0 8px 24px rgba(23,42,32,.045);
+      }
+      #detail .property-info > .eyebrow,
+      #detail .property-info > h2 { display: none; }
+      #detail .property-info .description-in-info { display: none; }
+      #detail .property-info .verification-badges { margin-top: 0; }
+      #detail .property-info .muted { margin: 0 0 8px; }
+      #detail .property-info h3 { margin: 12px 0 14px; }
+      #detail .property-info > p:not(.muted):not(.description-in-info) { margin: 12px 0; }
+      #detail .property-info .btn { margin-top: 18px; }
+    }
+    @media (max-width: 760px) {
+      .main-gallery .image-backdrop { display: none !important; }
+    }
+
   </style>
 </head>
 
@@ -340,6 +445,7 @@
         <div class="property-layout">
           <section class="property-gallery" aria-label="Property photos">
             <div class="main-gallery" id="mainGallery">
+              <div class="image-backdrop" id="imageBackdrop" aria-hidden="true"></div>
               <img
                 class="main-photo"
                 id="mainPhoto"
