@@ -176,6 +176,28 @@
       #detail .description-after-video { display: block; }
       #detail .property-video.mobile-video { display: none; }
     }
+    .gallery-property-heading {
+      margin: 20px 0 0;
+      padding: 0 2px;
+    }
+    .gallery-property-heading .eyebrow {
+      color: #9b7b37;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+    .gallery-property-heading h1 {
+      margin: 8px 0 0;
+      color: var(--ss-ink);
+      font-size: clamp(30px, 3.4vw, 46px);
+      line-height: 1.12;
+      letter-spacing: -.035em;
+    }
+    @media (min-width: 761px) {
+      #detail .property-info > .eyebrow,
+      #detail .property-info > h2 { display: none; }
+    }
     .desktop-video,
     .description-after-video { display: none; }
     .description-after-video {
@@ -197,6 +219,7 @@
       #detail .desktop-video,
       #detail .description-after-video { display: none !important; }
       #detail .property-video.mobile-video { display: block; }
+      #detail .gallery-property-heading { display: none; }
       #detail .property-info .description-in-info { display: block; }
     }
   </style>
@@ -346,6 +369,11 @@
               id="propertyThumbnails"
               aria-label="Choose property photo"
             ></div>
+
+            <div class="gallery-property-heading">
+              <div class="eyebrow">${category}</div>
+              <h1>${title}</h1>
+            </div>
 
             ${p.video_url ? `
               <section class="property-video desktop-video" style="margin: 26px 0 0; width: 100%; box-sizing: border-box;">
