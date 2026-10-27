@@ -78,6 +78,12 @@
     .main-gallery.has-two #sidePhotoButton2 { display: none; }
     .main-gallery.has-many #sidePhotoButton1 { grid-column: 2; grid-row: 1; }
     .main-gallery.has-many #sidePhotoButton2 { grid-column: 2; grid-row: 2; }
+    /* Portrait main photos get a narrower column so contain-mode doesn't leave a huge blank area. */
+    .main-gallery.main-portrait { grid-template-columns: minmax(220px, .58fr) minmax(0, 1.7fr); }
+    .main-gallery.main-landscape { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); }
+    .main-gallery.main-portrait.has-two { grid-template-columns: minmax(220px, .75fr) minmax(0, 1.25fr); }
+    .main-gallery.main-portrait.has-one { grid-template-columns: minmax(0, 1fr); }
+
     .gallery-arrow {
       position: absolute; top: 50%; z-index: 10; display: flex; align-items: center; justify-content: center;
       width: 46px; height: 46px; padding: 0; border: 1px solid rgba(255,255,255,.35); border-radius: 50%;
@@ -277,7 +283,17 @@
       const backdrop = document.getElementById("imageBackdrop");
       const modalImage = document.getElementById("modalPhoto");
 
-      if (mainImage) mainImage.src = url;
+      if (mainImage) {
+        mainImage.onload = () => {
+          const galleryEl = document.getElementById("mainGallery");
+          if (galleryEl) {
+            const portrait = mainImage.naturalHeight > mainImage.naturalWidth;
+            galleryEl.classList.toggle("main-portrait", portrait);
+            galleryEl.classList.toggle("main-landscape", !portrait);
+          }
+        };
+        mainImage.src = url;
+      }
       if (backdrop) backdrop.style.backgroundImage = `url("${url}")`;
       if (modalImage) modalImage.src = url;
 
