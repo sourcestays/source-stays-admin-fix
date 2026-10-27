@@ -51,7 +51,7 @@
 
     .main-gallery {
       position: relative; isolation: isolate; display: grid;
-      grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
       grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 8px;
       width: 100%; height: clamp(320px, 34vw, 440px);
       overflow: hidden; border: 1px solid rgba(18,63,50,.06); border-radius: 18px;
@@ -61,15 +61,18 @@
     .main-gallery .main-photo {
       position: relative; z-index: 1; display: block; grid-column: 1; grid-row: 1 / span 2;
       width: 100%; height: 100%; min-width: 0; min-height: 0;
-      object-fit: contain; pointer-events: none; background: #eeefea;
+      object-fit: contain; object-position: center; pointer-events: none; background: #eeefea;
     }
     .gallery-side-tile {
       position: relative; display: block; width: 100%; height: 100%; min-width: 0; min-height: 0;
       padding: 0; overflow: hidden; border: 0; border-radius: 0; background: #e5e8e2; cursor: pointer;
     }
-    .gallery-side-tile img { display: block; width: 100%; height: 100%; object-fit: contain; background: #eeefea; }
+    .gallery-side-tile img {
+      display: block; width: 100%; height: 100%;
+      object-fit: contain; object-position: center; background: #eeefea;
+      transition: filter .2s ease;
+    }
     .gallery-side-tile:hover img { filter: brightness(.98); }
-    .gallery-side-tile img { transition: filter .2s ease; }
     .gallery-side-tile[hidden] { display: none !important; }
     .main-gallery.has-one { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
     .main-gallery.has-one .main-photo { grid-column: 1; grid-row: 1; object-fit: contain; }
@@ -78,11 +81,6 @@
     .main-gallery.has-two #sidePhotoButton2 { display: none; }
     .main-gallery.has-many #sidePhotoButton1 { grid-column: 2; grid-row: 1; }
     .main-gallery.has-many #sidePhotoButton2 { grid-column: 2; grid-row: 2; }
-    /* Portrait main photos get a narrower column so contain-mode doesn't leave a huge blank area. */
-    .main-gallery.main-portrait { grid-template-columns: minmax(220px, .58fr) minmax(0, 1.7fr); }
-    .main-gallery.main-landscape { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); }
-    .main-gallery.main-portrait.has-two { grid-template-columns: minmax(220px, .75fr) minmax(0, 1.25fr); }
-    .main-gallery.main-portrait.has-one { grid-template-columns: minmax(0, 1fr); }
 
     .gallery-arrow {
       position: absolute; top: 50%; z-index: 10; display: flex; align-items: center; justify-content: center;
@@ -95,7 +93,7 @@
     .gallery-arrow:hover { background: var(--ss-green); transform: translateY(-50%) scale(1.05); }
     .gallery-arrow:focus-visible { outline: 3px solid var(--ss-gold); outline-offset: 3px; }
     .gallery-arrow.previous { left: 14px; }
-    .gallery-arrow.next { left: auto; right: auto; }
+    .gallery-arrow.next { left: auto; right: 14px; }
     .main-gallery .gallery-arrow.previous { left: 14px; }
     .main-gallery .gallery-arrow.next { left: auto; right: 14px; }
     .gallery-count {
@@ -116,7 +114,7 @@
     }
     .property-thumbnails button:hover { transform: translateY(-2px); }
     .property-thumbnails button[aria-current="true"] { border-color: var(--ss-green); box-shadow: 0 0 0 2px rgba(18,63,50,.12); }
-    .property-thumbnails img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+    .property-thumbnails img { display: block; width: 100%; height: 100%; object-fit: contain; background: #eeefea; pointer-events: none; }
 
     .property-info {
       position: sticky; top: 22px; padding: clamp(22px, 2.5vw, 32px); border: 1px solid var(--ss-line);
@@ -163,7 +161,7 @@
       .section { padding-top: 22px; padding-bottom: 42px; }
       #detail .property-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; }
       .main-gallery { height: auto; min-height: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 62vw) 100px; gap: 5px; border-radius: 14px; }
-      .main-gallery .main-photo { grid-column: 1 / span 2; grid-row: 1; }
+      .main-gallery .main-photo { grid-column: 1 / span 2; grid-row: 1; object-fit: contain; }
       .main-gallery.has-one { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 62vw); }
       .main-gallery.has-one .main-photo { grid-column: 1; grid-row: 1; }
       .main-gallery.has-two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 62vw) 90px; }
@@ -284,14 +282,6 @@
       const modalImage = document.getElementById("modalPhoto");
 
       if (mainImage) {
-        mainImage.onload = () => {
-          const galleryEl = document.getElementById("mainGallery");
-          if (galleryEl) {
-            const portrait = mainImage.naturalHeight > mainImage.naturalWidth;
-            galleryEl.classList.toggle("main-portrait", portrait);
-            galleryEl.classList.toggle("main-landscape", !portrait);
-          }
-        };
         mainImage.src = url;
       }
       if (backdrop) backdrop.style.backgroundImage = `url("${url}")`;
