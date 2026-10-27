@@ -50,15 +50,34 @@
     .property-gallery { min-width: 0; }
 
     .main-gallery {
-      position: relative; isolation: isolate; width: 100%; height: clamp(360px, 42vw, 520px);
-      overflow: hidden; border: 1px solid rgba(18,63,50,.06); border-radius: 20px;
-      background: #eeefea; box-shadow: 0 14px 36px rgba(23,42,32,.09);
+      position: relative; isolation: isolate; display: grid;
+      grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+      grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 8px;
+      width: 100%; height: clamp(320px, 34vw, 440px);
+      overflow: hidden; border: 1px solid rgba(18,63,50,.06); border-radius: 18px;
+      background: #eeefea; box-shadow: 0 12px 30px rgba(23,42,32,.075);
     }
     .main-gallery .image-backdrop { display: none !important; }
     .main-gallery .main-photo {
-      position: relative; z-index: 1; display: block; width: 100%; height: 100%;
-      object-fit: contain; pointer-events: none;
+      position: relative; z-index: 1; display: block; grid-column: 1; grid-row: 1 / span 2;
+      width: 100%; height: 100%; min-width: 0; min-height: 0;
+      object-fit: cover; pointer-events: none; background: #eeefea;
     }
+    .gallery-side-tile {
+      position: relative; display: block; width: 100%; height: 100%; min-width: 0; min-height: 0;
+      padding: 0; overflow: hidden; border: 0; border-radius: 0; background: #e5e8e2; cursor: pointer;
+    }
+    .gallery-side-tile img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .gallery-side-tile:hover img { transform: scale(1.025); }
+    .gallery-side-tile img { transition: transform .2s ease; }
+    .gallery-side-tile[hidden] { display: none !important; }
+    .main-gallery.has-one { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+    .main-gallery.has-one .main-photo { grid-column: 1; grid-row: 1; object-fit: contain; }
+    .main-gallery.has-two { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+    .main-gallery.has-two .main-photo { grid-column: 1; grid-row: 1; }
+    .main-gallery.has-two #sidePhotoButton2 { display: none; }
+    .main-gallery.has-many #sidePhotoButton1 { grid-column: 2; grid-row: 1; }
+    .main-gallery.has-many #sidePhotoButton2 { grid-column: 2; grid-row: 2; }
     .gallery-arrow {
       position: absolute; top: 50%; z-index: 10; display: flex; align-items: center; justify-content: center;
       width: 46px; height: 46px; padding: 0; border: 1px solid rgba(255,255,255,.35); border-radius: 50%;
@@ -69,8 +88,10 @@
     }
     .gallery-arrow:hover { background: var(--ss-green); transform: translateY(-50%) scale(1.05); }
     .gallery-arrow:focus-visible { outline: 3px solid var(--ss-gold); outline-offset: 3px; }
-    .gallery-arrow.previous { left: 16px; }
-    .gallery-arrow.next { right: 16px; }
+    .gallery-arrow.previous { left: 14px; }
+    .gallery-arrow.next { left: auto; right: auto; }
+    .main-gallery .gallery-arrow.previous { left: 14px; }
+    .main-gallery .gallery-arrow.next { left: auto; right: 14px; }
     .gallery-count {
       position: absolute; z-index: 5; right: 14px; bottom: 14px; padding: 7px 11px;
       border: 1px solid rgba(255,255,255,.2); border-radius: 999px; background: rgba(18,29,24,.72);
@@ -78,7 +99,7 @@
     }
 
     .property-thumbnails {
-      display: flex; gap: 11px; width: 100%; max-width: 100%; margin-top: 9px; padding: 2px 2px 6px;
+      display: flex; gap: 11px; width: 100%; max-width: 100%; margin-top: 15px; padding: 3px 2px 12px;
       overflow-x: auto; overflow-y: hidden; flex-wrap: nowrap; scrollbar-width: thin;
       scrollbar-color: #b9c5bf #edf0ec; scroll-snap-type: x proximity;
     }
@@ -126,7 +147,7 @@
 
     @media (max-width: 900px) {
       #detail .property-layout { grid-template-columns: minmax(0, 1fr) minmax(260px, .85fr); gap: 20px; }
-      .main-gallery { height: 380px; }
+      .main-gallery { height: clamp(300px, 38vw, 380px); }
       .property-info { padding: 22px; }
     }
     @media (max-width: 760px) {
@@ -135,7 +156,16 @@
       header .logo img { max-width: 150px; max-height: 58px; }
       .section { padding-top: 22px; padding-bottom: 42px; }
       #detail .property-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-      .main-gallery { height: min(78vw, 430px); min-height: 260px; border-radius: 16px; }
+      .main-gallery { height: auto; min-height: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 62vw) 100px; gap: 5px; border-radius: 14px; }
+      .main-gallery .main-photo { grid-column: 1 / span 2; grid-row: 1; }
+      .main-gallery.has-one { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 62vw); }
+      .main-gallery.has-one .main-photo { grid-column: 1; grid-row: 1; }
+      .main-gallery.has-two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 62vw) 90px; }
+      .main-gallery.has-two .main-photo { grid-column: 1 / span 2; grid-row: 1; }
+      .main-gallery.has-two #sidePhotoButton1 { grid-column: 1; grid-row: 2; }
+      .main-gallery.has-two #sidePhotoButton2 { display: none; }
+      .main-gallery.has-many #sidePhotoButton1 { grid-column: 1; grid-row: 2; }
+      .main-gallery.has-many #sidePhotoButton2 { grid-column: 2; grid-row: 2; }
       .gallery-arrow { width: 40px; height: 40px; font-size: 26px; }
       .gallery-arrow.previous { left: 10px; }
       .gallery-arrow.next { right: 10px; }
@@ -176,57 +206,11 @@
       #detail .description-after-video { display: block; }
       #detail .property-video.mobile-video { display: none; }
     }
-    .gallery-property-heading {
-      margin: 20px 0 0;
-      padding: 0 2px;
-    }
-    .gallery-property-heading .eyebrow {
-      color: #9b7b37;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .2em;
-      text-transform: uppercase;
-    }
-    .gallery-property-heading h1 {
-      margin: 8px 0 0;
-      color: var(--ss-ink);
-      font-size: clamp(30px, 3.4vw, 46px);
-      line-height: 1.12;
-      letter-spacing: -.035em;
-    }
-    @media (min-width: 761px) {
-      #detail .property-info > .eyebrow { margin-bottom: 8px; }
-      #detail .property-info > h2 {
-        display: block;
-        margin: 0 0 16px;
-        font-size: clamp(30px, 3vw, 42px);
-        line-height: 1.12;
-        letter-spacing: -0.025em;
-      }
-    }
-    .property-video-unified {
-      margin: 18px 0 0;
-      width: 100%;
-      box-sizing: border-box;
-      padding: clamp(18px, 2.5vw, 28px);
-      border: 1px solid var(--ss-line);
-      border-radius: 18px;
-      background: #fff;
-    }
-    .property-video-unified h2 { margin: 0 0 16px; }
-    .property-video-unified video {
-      width: 100%;
-      height: auto;
-      max-height: 68vh;
-      aspect-ratio: 16 / 9;
-      object-fit: contain;
-      background: #101512;
-      border-radius: 12px;
-      display: block;
-    }
+    .desktop-video,
+    .description-after-video { display: none; }
     .description-after-video {
-      margin-top: 16px;
-      padding: clamp(20px, 2.5vw, 30px);
+      margin-top: 22px;
+      padding: clamp(22px, 3vw, 34px);
       border: 1px solid var(--ss-line);
       border-radius: 18px;
       background: #fff;
@@ -240,120 +224,11 @@
     }
     @media (max-width: 760px) {
       #detail .property-layout { grid-template-columns: minmax(0, 1fr); }
-      #detail .property-video-unified { display: block; }
-      #detail .description-after-video { display: block; }
+      #detail .desktop-video,
+      #detail .description-after-video { display: none !important; }
+      #detail .property-video.mobile-video { display: block; }
+      #detail .property-info .description-in-info { display: block; }
     }
-
-    /* Desktop polish: consistent rhythm, a richer gallery, and aligned content cards. */
-    @media (min-width: 761px) {
-      .section { padding: 28px 0 56px; }
-      #detail { max-width: 1240px; padding: 0 24px; box-sizing: border-box; }
-      #detail .property-layout {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 0;
-      }
-      .main-gallery {
-        height: clamp(390px, 39vw, 540px);
-        border-radius: 22px;
-        background: #e8ebe6;
-      }
-      .main-gallery .image-backdrop {
-        display: block !important;
-        position: absolute;
-        inset: -22px;
-        z-index: 0;
-        background-position: center;
-        background-size: cover;
-        filter: blur(22px) brightness(.72);
-        opacity: .52;
-        transform: scale(1.08);
-      }
-      .main-gallery .main-photo {
-        position: relative;
-        z-index: 1;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        padding: 0;
-      }
-      .property-thumbnails { margin-top: 12px; padding-bottom: 8px; gap: 10px; }
-      .property-thumbnails button { flex-basis: 88px; width: 88px; height: 66px; }
-      .gallery-property-heading {
-        margin: 18px 0 0;
-        padding: 0 2px;
-      }
-      .gallery-property-heading .eyebrow { font-size: 11px; }
-      .gallery-property-heading h1 {
-        margin-top: 7px;
-        font-size: clamp(34px, 3.1vw, 44px);
-        line-height: 1.12;
-      }
-      #detail .desktop-video {
-        display: block;
-        width: 100% !important;
-        margin: 22px 0 0 !important;
-        padding: 0;
-      }
-      #detail .desktop-video h2 {
-        margin: 0 0 14px;
-        font-size: clamp(27px, 2.5vw, 34px);
-        line-height: 1.2;
-        color: var(--ss-ink);
-      }
-      #detail .desktop-video video {
-        display: block;
-        width: 100% !important;
-        height: auto;
-        max-height: 560px;
-        aspect-ratio: 16 / 9;
-        object-fit: contain;
-        background: #111;
-        border-radius: 16px !important;
-        box-shadow: 0 10px 28px rgba(23,42,32,.10);
-      }
-      #detail .description-after-video {
-        display: block;
-        margin-top: 22px;
-        padding: 26px 30px;
-        border-radius: 18px;
-        box-shadow: 0 8px 24px rgba(23,42,32,.045);
-      }
-      #detail .description-after-video h2 {
-        margin: 0 0 12px;
-        font-size: clamp(27px, 2.5vw, 34px);
-        line-height: 1.2;
-      }
-      #detail .description-after-video p {
-        font-size: 16px;
-        line-height: 1.8;
-      }
-      #detail .property-info {
-        position: static;
-        margin-top: 22px;
-        padding: 26px 30px;
-        border-radius: 18px;
-        box-shadow: 0 8px 24px rgba(23,42,32,.045);
-      }
-      #detail .property-info > .eyebrow { margin-bottom: 8px; }
-      #detail .property-info > h2 {
-        display: block;
-        margin: 0 0 16px;
-        font-size: clamp(30px, 3vw, 42px);
-        line-height: 1.12;
-        letter-spacing: -0.025em;
-      }
-      #detail .property-info .description-in-info { display: none; }
-      #detail .property-info .verification-badges { margin-top: 0; }
-      #detail .property-info .muted { margin: 0 0 8px; }
-      #detail .property-info h3 { margin: 12px 0 14px; }
-      #detail .property-info > p:not(.muted):not(.description-in-info) { margin: 12px 0; }
-      #detail .property-info .btn { margin-top: 18px; }
-    }
-    @media (max-width: 760px) {
-      .main-gallery .image-backdrop { display: none !important; }
-    }
-
   </style>
 </head>
 
@@ -405,6 +280,29 @@
       if (mainImage) mainImage.src = url;
       if (backdrop) backdrop.style.backgroundImage = `url("${url}")`;
       if (modalImage) modalImage.src = url;
+
+      const gallery = document.getElementById("mainGallery");
+      const sideButton1 = document.getElementById("sidePhotoButton1");
+      const sideButton2 = document.getElementById("sidePhotoButton2");
+      const sideImage1 = document.getElementById("sidePhoto1");
+      const sideImage2 = document.getElementById("sidePhoto2");
+      if (gallery) {
+        gallery.classList.toggle("has-one", galleryImages.length <= 1);
+        gallery.classList.toggle("has-two", galleryImages.length === 2);
+        gallery.classList.toggle("has-many", galleryImages.length >= 3);
+      }
+      const sideIndex1 = (currentImageIndex + 1) % galleryImages.length;
+      const sideIndex2 = (currentImageIndex + 2) % galleryImages.length;
+      if (sideButton1) sideButton1.hidden = galleryImages.length < 2;
+      if (sideButton2) sideButton2.hidden = galleryImages.length < 3;
+      if (sideImage1 && galleryImages.length > 1) {
+        sideImage1.src = safeImageUrl(galleryImages[sideIndex1]);
+        sideImage1.alt = `${document.getElementById("mainPhoto")?.alt || "Property"} photo ${sideIndex1 + 1}`;
+      }
+      if (sideImage2 && galleryImages.length > 2) {
+        sideImage2.src = safeImageUrl(galleryImages[sideIndex2]);
+        sideImage2.alt = `${document.getElementById("mainPhoto")?.alt || "Property"} photo ${sideIndex2 + 1}`;
+      }
 
       document.querySelectorAll(".property-thumbnails button")
         .forEach((button, index) => {
@@ -472,13 +370,19 @@
         <div class="property-layout">
           <section class="property-gallery" aria-label="Property photos">
             <div class="main-gallery" id="mainGallery">
-              <div class="image-backdrop" id="imageBackdrop" aria-hidden="true"></div>
               <img
                 class="main-photo"
                 id="mainPhoto"
                 src=""
                 alt="${title}"
               >
+
+              <button type="button" class="gallery-side-tile" id="sidePhotoButton1" aria-label="View another property photo">
+                <img id="sidePhoto1" src="" alt="${title} additional photo">
+              </button>
+              <button type="button" class="gallery-side-tile" id="sidePhotoButton2" aria-label="View another property photo">
+                <img id="sidePhoto2" src="" alt="${title} additional photo">
+              </button>
 
               <button
                 type="button"
@@ -503,6 +407,23 @@
               aria-label="Choose property photo"
             ></div>
 
+            ${p.video_url ? `
+              <section class="property-video desktop-video" style="margin: 26px 0 0; width: 100%; box-sizing: border-box;">
+                <h2>Property Video Tour</h2>
+                <video controls playsinline preload="metadata" style="width: 100%; height: auto; max-height: 70vh; border-radius: 12px; display: block; margin: 0;" src="${SourceStays.esc(p.video_url)}">
+                  Your browser does not support video playback.
+                </video>
+              </section>
+              <section class="description-after-video">
+                <h2>Property Description</h2>
+                <p>${description}</p>
+              </section>
+            ` : `
+              <section class="description-after-video">
+                <h2>Property Description</h2>
+                <p>${description}</p>
+              </section>
+            `}
           </section>
 
           <section class="property-info">
@@ -524,6 +445,8 @@
             <h3>
               ₦${SourceStays.money(p.price)} / ${period}
             </h3>
+
+            <p class="description-in-info">${description}</p>
 
             <p><b>Amenities:</b> ${amenities}</p>
 
@@ -554,18 +477,24 @@ ${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
         </div>
 
         ${p.video_url ? `
-          <section class="property-video property-video-unified">
-            <h2>Property Video Tour</h2>
-            <video controls playsinline preload="metadata" src="${SourceStays.esc(p.video_url)}">
-              Your browser does not support video playback.
-            </video>
-          </section>
+      <section class="property-video mobile-video" style="margin: 24px 0 0; width: 100%; box-sizing: border-box;">
+          <h2>Property Video Tour</h2>
+        
+<video
+  controls
+  playsinline
+  preload="metadata"
+  
+style="width: auto; height: auto; max-width: 100%; max-height: 70vh; border-radius: 12px; display: block; margin: 0;"
+
+  src="${SourceStays.esc(p.video_url)}"
+>
+  Your browser does not support video playback.
+</video>
+
+        </section>
         ` : ''}
 
-        <section class="description-after-video">
-          <h2>Property Description</h2>
-          <p>${description}</p>
-        </section>
 
         <div
           class="gallery-modal"
@@ -637,6 +566,15 @@ ${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
         event.preventDefault();
         event.stopPropagation();
         nextImage();
+      });
+
+      document.getElementById("sidePhotoButton1").addEventListener("click", (event) => {
+        event.stopPropagation();
+        changeMainImage(currentImageIndex + 1);
+      });
+      document.getElementById("sidePhotoButton2").addEventListener("click", (event) => {
+        event.stopPropagation();
+        changeMainImage(currentImageIndex + 2);
       });
 
       mainGallery.addEventListener("click", (event) => {
