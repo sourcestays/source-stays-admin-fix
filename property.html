@@ -195,11 +195,35 @@
       letter-spacing: -.035em;
     }
     @media (min-width: 761px) {
-      #detail .property-info > .eyebrow,
-      #detail .property-info > h2 { display: none; }
+      #detail .property-info > .eyebrow { margin-bottom: 8px; }
+      #detail .property-info > h2 {
+        display: block;
+        margin: 0 0 16px;
+        font-size: clamp(30px, 3vw, 42px);
+        line-height: 1.12;
+        letter-spacing: -0.025em;
+      }
     }
-    .desktop-video,
-    .description-after-video { display: none; }
+    .property-video-unified {
+      margin: 24px 0 0;
+      width: 100%;
+      box-sizing: border-box;
+      padding: clamp(18px, 2.5vw, 28px);
+      border: 1px solid var(--ss-line);
+      border-radius: 18px;
+      background: #fff;
+    }
+    .property-video-unified h2 { margin: 0 0 16px; }
+    .property-video-unified video {
+      width: 100%;
+      height: auto;
+      max-height: 68vh;
+      aspect-ratio: 16 / 9;
+      object-fit: contain;
+      background: #101512;
+      border-radius: 12px;
+      display: block;
+    }
     .description-after-video {
       margin-top: 22px;
       padding: clamp(22px, 3vw, 34px);
@@ -216,11 +240,8 @@
     }
     @media (max-width: 760px) {
       #detail .property-layout { grid-template-columns: minmax(0, 1fr); }
-      #detail .desktop-video,
-      #detail .description-after-video { display: none !important; }
-      #detail .property-video.mobile-video { display: block; }
-      #detail .gallery-property-heading { display: none; }
-      #detail .property-info .description-in-info { display: block; }
+      #detail .property-video-unified { display: block; }
+      #detail .description-after-video { display: block; }
     }
 
     /* Desktop polish: consistent rhythm, a richer gallery, and aligned content cards. */
@@ -314,8 +335,14 @@
         border-radius: 18px;
         box-shadow: 0 8px 24px rgba(23,42,32,.045);
       }
-      #detail .property-info > .eyebrow,
-      #detail .property-info > h2 { display: none; }
+      #detail .property-info > .eyebrow { margin-bottom: 8px; }
+      #detail .property-info > h2 {
+        display: block;
+        margin: 0 0 16px;
+        font-size: clamp(30px, 3vw, 42px);
+        line-height: 1.12;
+        letter-spacing: -0.025em;
+      }
       #detail .property-info .description-in-info { display: none; }
       #detail .property-info .verification-badges { margin-top: 0; }
       #detail .property-info .muted { margin: 0 0 8px; }
@@ -476,18 +503,7 @@
               aria-label="Choose property photo"
             ></div>
 
-            <div class="gallery-property-heading">
-              <div class="eyebrow">${category}</div>
-              <h1>${title}</h1>
-            </div>
-
-            ${p.video_url ? `
-              <section class="property-video desktop-video" style="margin: 26px 0 0; width: 100%; box-sizing: border-box;">
-                <h2>Property Video Tour</h2>
-                <video controls playsinline preload="metadata" style="width: 100%; height: auto; max-height: 70vh; border-radius: 12px; display: block; margin: 0;" src="${SourceStays.esc(p.video_url)}">
-                  Your browser does not support video playback.
-                </video>
-              </section>
+          </section>
               <section class="description-after-video">
                 <h2>Property Description</h2>
                 <p>${description}</p>
@@ -520,8 +536,6 @@
               ₦${SourceStays.money(p.price)} / ${period}
             </h3>
 
-            <p class="description-in-info">${description}</p>
-
             <p><b>Amenities:</b> ${amenities}</p>
 
 
@@ -551,24 +565,18 @@ ${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
         </div>
 
         ${p.video_url ? `
-      <section class="property-video mobile-video" style="margin: 24px 0 0; width: 100%; box-sizing: border-box;">
-          <h2>Property Video Tour</h2>
-        
-<video
-  controls
-  playsinline
-  preload="metadata"
-  
-style="width: auto; height: auto; max-width: 100%; max-height: 70vh; border-radius: 12px; display: block; margin: 0;"
-
-  src="${SourceStays.esc(p.video_url)}"
->
-  Your browser does not support video playback.
-</video>
-
-        </section>
+          <section class="property-video property-video-unified">
+            <h2>Property Video Tour</h2>
+            <video controls playsinline preload="metadata" src="${SourceStays.esc(p.video_url)}">
+              Your browser does not support video playback.
+            </video>
+          </section>
         ` : ''}
 
+        <section class="description-after-video">
+          <h2>Property Description</h2>
+          <p>${description}</p>
+        </section>
 
         <div
           class="gallery-modal"
