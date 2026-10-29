@@ -372,7 +372,7 @@ if (maxBudget !== null) {
       return;
     }
 
-    if (/shortlet|apartment|hotel|find a place|find accommodation|property for sale|property for rent|real estate enquiry|buy property|rent property|show me properties|listing/.test(q)) {
+   if (/\b(shortlet|apartment|hotel|accommodation|find a place|find accommodation|property for sale|property for rent|real estate enquiry|buy property|rent property|show me properties|bedroom|bedrooms|studio|under\s*₦?\s*[\d,]+|budget)\b/i.test(q)) {
       searchPage(text);
       return;
     }
