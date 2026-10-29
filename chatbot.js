@@ -327,7 +327,7 @@
   }
 
 
-  function handleMessage(raw) {
+  async function handleMessage(raw) {
     const text = String(raw || "").trim();
     if (!text) return;
 
@@ -383,15 +383,41 @@
       return;
     }
 
-    addMessage(
-     "Thanks for contacting Source Stays! 😊 I can help you find shortlet apartments, compare hotel options, explore properties for sale or rent, and understand our booking process. You can tell me your preferred location, budget and dates, or speak directly with our team on WhatsApp.",
-      "bot"
-    );
-    addActions([
-      { label: "Find a shortlet", message: "Find a shortlet" },
-      { label: "Hotel options", message: "Show me hotels" },
-      { label: "Talk on WhatsApp", message: "Talk to a human" }
-    ]);
+       addMessage("Let me think about that for you…", "bot");
+    const replyBubble = messages.lastElementChild;
+
+    try {
+      const response = await fetch(
+        "https://mrvckkzwhuoylxlycaim.supabase.co/functions/v1/source-stays-chat",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": window.SUPABASE_PUBLISHABLE_KEY
+          },
+          body: JSON.stringify({ message: text })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.reply) {
+        throw new Error("AI response unavailable");
+      }
+
+      replyBubble.textContent = data.reply;
+      addActions([
+        { label: "Find a shortlet", message: "Find a shortlet" },
+        { label: "Hotel options", message: "Show me hotels" },
+        { label: "Talk on WhatsApp", message: "Talk to a human" }
+      ]);
+    } catch (error) {
+      replyBubble.textContent =
+        "Sorry, I'm having trouble answering right now. Please try again or contact our team on WhatsApp.";
+      addActions([
+        { label: "Talk on WhatsApp", message: "Talk to a human" }
+      ]);
+    }
   }
 
   launcher.addEventListener("click", function () {
