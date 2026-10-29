@@ -222,30 +222,110 @@
     ]);
   }
 
-  function searchPage(message) {
-    const params = new URLSearchParams();
-    const text = message.toLowerCase();
 
-    if (text.includes("hotel")) params.set("type", "hotel");
-    else if (text.includes("sale") || text.includes("buy") || text.includes("purchase"))
-      params.set("type", "sale");
-    else if (text.includes("rent property") || text.includes("property for rent"))
-      params.set("type", "rent");
-    else params.set("type", "shortlet");
+  async function searchPage(message) {
+    const q = message.toLowerCase();
+    const bubble = addMessage("Let me check our published listings for you…", "bot");
 
-    const match = message.match(/\b(?:in|at|around|near)\s+([a-z][a-z\s-]{1,35})/i);
-    if (match) {
-      const location = match[1].split(/\b(for|under|below|with|from)\b/i)[0].trim();
-      if (location) params.set("location", location);
+    try {
+      if (!window.supabase || !window.SUPABASE_URL ||
+          !window.SUPABASE_PUBLISHABLE_KEY) {
+        throw new Error("Property search is not configured.");
+      }
+
+      const client = window.supabase.createClient(
+        window.SUPABASE_URL,
+        window.SUPABASE_PUBLISHABLE_KEY
+      );
+
+      let query = client
+        .from("properties")
+        .select("id,title,category,location,bedrooms,guests,price,price_period,amenities")
+        .eq("published", true)
+        .order("featured", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(5);
+
+      let type = "";
+      if (q.includes("hotel")) type = "hotel";
+      else if (/\b(sale|buy|purchase|buying)\b/.test(q)) type = "sale";
+      else if (/\b(rent|rental|renting|lease)\b/.test(q) &&
+               /\b(property|house|home|land|real estate)\b/.test(q)) type = "rent";
+      else if (/\b(shortlet|apartment|accommodation)\b/.test(q)) type = "shortlet";
+
+      if (type) query = query.eq("category", type);
+
+      const match = message.match(
+        /\b(?:in|at|around|near)\s+([a-z][a-z\s-]{1,35})/i
+      );
+
+      let location = "";
+      if (match) {
+        location = match[1]
+          .split(/\b(for|under|below|with|from|budget)\b/i)[0]
+          .trim();
+      }
+
+      if (location) {
+        query = query.ilike("location", "%" + location + "%");
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      bubble.textContent = data && data.length
+        ? "Here are published properties matching your request:"
+        : "I couldn't find a published listing matching those details right now. Try another location or contact our team.";
+
+      if (data && data.length) {
+        data.forEach(function (property) {
+          const card = document.createElement("div");
+          card.style.cssText =
+            "padding:10px;margin:8px 0;border:1px solid #e6e2d9;border-radius:10px;background:#fff";
+
+          const title = document.createElement("strong");
+          title.textContent = property.title || "Property listing";
+          card.appendChild(title);
+
+          const details = document.createElement("p");
+          details.style.cssText = "margin:4px 0;font-size:13px;color:#66716c";
+          details.textContent =
+            (property.location || "Location not specified") +
+            (property.bedrooms != null ? " · " + property.bedrooms + " bedroom(s)" : "");
+          card.appendChild(details);
+
+          const price = document.createElement("p");
+          price.style.cssText = "margin:4px 0;font-weight:700;color:#123f32";
+          price.textContent = property.price != null
+            ? "₦" + Number(property.price).toLocaleString("en-NG") +
+              (property.price_period ? " / " + property.price_period : "")
+            : "Contact us for pricing";
+          card.appendChild(price);
+
+          const link = document.createElement("a");
+          link.className = "ss-ai-link";
+          link.href = "property.html?id=" + encodeURIComponent(property.id);
+          link.textContent = "View property";
+          card.appendChild(link);
+
+          messages.appendChild(card);
+        });
+      }
+
+      addActions([
+        { label: "Search another location", message: "Find a shortlet in Lekki" },
+        { label: "Talk to our team", message: "Talk to a human" }
+      ]);
+
+      messages.scrollTop = messages.scrollHeight;
+    } catch (error) {
+      console.error("Source Stays property search failed:", error);
+      bubble.textContent =
+        "I'm unable to retrieve listings right now. Please use the website search or contact our team on WhatsApp.";
+      addLink(bubble, "Contact Source Stays", WHATSAPP);
     }
-
-    const url = "index.html?" + params.toString() + "#stays";
-    const bubble = addMessage(
-      "I'll help you explore matching listings. Open the property search to view published options and their displayed prices. Please confirm availability with our team before making payment.",
-      "bot"
-    );
-    addLink(bubble, "View property listings", url);
   }
+
 
   function handleMessage(raw) {
     const text = String(raw || "").trim();
