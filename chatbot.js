@@ -304,12 +304,85 @@ if (wantsStudio) {
 if (maxBudget !== null) {
   query = query.lte("price", maxBudget);
 }
-      const { data, error } = await query;
-      if (error) throw error;
+      let { data, error } = await query;
+if (error) throw error;
 
-      bubble.textContent = data && data.length
-  ? "Here are published properties matching your request:"
-  : "Sorry, we couldn't find an exact match for your requirements. 😊 You can explore other available apartments in your preferred location, consider a different apartment size, or adjust your budget. The prices shown below are the actual prices of our published listings.";
+// If no exact match, search for cheaper alternatives
+if (!data || data.length === 0) {
+  let alternativesQuery = client
+    .from("properties")
+    .select("id,title,category,location,bedrooms,guests,price,price_period,amenities")
+    .eq("published", true)
+    .order("price", { ascending: true })
+    .limit(5);
+
+  // Keep the requested property category
+  if (type) {
+    alternativesQuery = alternativesQuery.eq("category", type);
+  }
+
+  // Prefer the requested location
+  if (location) {
+    alternativesQuery = alternativesQuery.ilike(
+      "location",
+      "%" + location + "%"
+    );
+  }
+
+  // Prefer smaller apartments if the requested size is unavailable
+  if (requiredBedrooms !== null) {
+    alternativesQuery = alternativesQuery.lte(
+      "bedrooms",
+      requiredBedrooms
+    );
+  }
+
+  // Keep the alternatives within the requested budget
+  if (maxBudget !== null) {
+    alternativesQuery = alternativesQuery.lte("price", maxBudget);
+  }
+
+  const alternativesResult = await alternativesQuery;
+
+  if (alternativesResult.error) {
+    throw alternativesResult.error;
+  }
+
+  data = alternativesResult.data || [];
+
+  // If the requested location has no alternatives, try other locations
+  if (data.length === 0 && location) {
+    let nearbyQuery = client
+      .from("properties")
+      .select("id,title,category,location,bedrooms,guests,price,price_period,amenities")
+      .eq("published", true)
+      .order("price", { ascending: true })
+      .limit(5);
+
+    if (type) {
+      nearbyQuery = nearbyQuery.eq("category", type);
+    }
+
+    if (maxBudget !== null) {
+      nearbyQuery = nearbyQuery.lte("price", maxBudget);
+    }
+
+    if (requiredBedrooms !== null) {
+      nearbyQuery = nearbyQuery.lte("bedrooms", requiredBedrooms);
+    }
+
+    const nearbyResult = await nearbyQuery;
+
+    if (nearbyResult.error) {
+      throw nearbyResult.error;
+    }
+
+    data = nearbyResult.data || [];
+  }
+}
+bubble.textContent = data && data.length
+  ? "I couldn't find an exact match, but I've found some alternatives you may like. 😊 Here are the available options, starting with lower-priced properties where possible:"
+  : "Sorry, I couldn't find a suitable match within your budget. 😊 Try increasing your budget slightly, choosing a smaller apartment, or exploring another location. You can also contact our team for personal assistance.";
       if (data && data.length) {
         data.forEach(function (property) {
           const card = document.createElement("div");
@@ -345,6 +418,7 @@ if (maxBudget !== null) {
         });
       }
 
+      
       addActions([
         { label: "Search another location", message: "Find a shortlet in Lekki" },
         { label: "Talk to our team", message: "Talk to a human" }
