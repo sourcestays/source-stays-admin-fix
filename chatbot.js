@@ -298,7 +298,7 @@ if (maxBudget !== null) {
 
       bubble.textContent = data && data.length
         ? "Here are published properties matching your request:"
-        : "I couldn't find a published listing matching those details right now. Try another location or contact our team.";
+        : "No exact match was found for your request. 😊 You can try a higher budget, explore another location, or choose a different property type. Our team is also happy to help you find a suitable option.";
 
       if (data && data.length) {
         data.forEach(function (property) {
