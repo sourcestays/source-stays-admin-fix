@@ -306,83 +306,132 @@ if (maxBudget !== null) {
 }
       let { data, error } = await query;
 if (error) throw error;
-
-// If no exact match, search for cheaper alternatives
+      
+let usedFallback = false;
 if (!data || data.length === 0) {
-  let alternativesQuery = client
+  usedFallback = true;
+  let allQuery = client
     .from("properties")
     .select("id,title,category,location,bedrooms,guests,price,price_period,amenities")
     .eq("published", true)
     .order("price", { ascending: true })
-    .limit(5);
+    .limit(100);
 
-  // Keep the requested property category
   if (type) {
-    alternativesQuery = alternativesQuery.eq("category", type);
+    allQuery = allQuery.eq("category", type);
   }
 
-  // Prefer the requested location
-  if (location) {
-    alternativesQuery = alternativesQuery.ilike(
-      "location",
-      "%" + location + "%"
+  const allResult = await allQuery;
+
+  if (allResult.error) throw allResult.error;
+
+  const allProperties = allResult.data || [];
+
+  const matchesLocation = (p) =>
+    !location ||
+    String(p.location || "")
+      .toLowerCase()
+      .includes(location.toLowerCase());
+
+  const withinBudget = (p) =>
+    maxBudget === null ||
+    (p.price != null && Number(p.price) <= maxBudget);
+
+  const cheapest = (items) =>
+    items.slice().sort(
+      (a, b) => Number(a.price ?? Infinity) - Number(b.price ?? Infinity)
+    );
+
+  data = [];
+
+  // 1. Same bedroom count, other locations, within budget.
+  if (location && requiredBedrooms !== null && !wantsStudio) {
+    data = cheapest(
+      allProperties.filter(
+        (p) =>
+          !matchesLocation(p) &&
+          withinBudget(p) &&
+          Number(p.bedrooms) === requiredBedrooms
+      )
     );
   }
 
-  // Prefer smaller apartments if the requested size is unavailable
-  if (requiredBedrooms !== null) {
-    alternativesQuery = alternativesQuery.lte(
-      "bedrooms",
-      requiredBedrooms
+  // 2. Smaller apartments in the requested location, within budget.
+  if (
+    data.length === 0 &&
+    requiredBedrooms !== null &&
+    !wantsStudio
+  ) {
+    data = cheapest(
+      allProperties.filter(
+        (p) =>
+          matchesLocation(p) &&
+          withinBudget(p) &&
+          p.bedrooms != null &&
+          Number(p.bedrooms) < requiredBedrooms
+      )
     );
   }
 
-  // Keep the alternatives within the requested budget
-  if (maxBudget !== null) {
-    alternativesQuery = alternativesQuery.lte("price", maxBudget);
+  // 3. Smaller apartments in other locations, within budget.
+  if (
+    data.length === 0 &&
+    location &&
+    requiredBedrooms !== null &&
+    !wantsStudio
+  ) {
+    data = cheapest(
+      allProperties.filter(
+        (p) =>
+          !matchesLocation(p) &&
+          withinBudget(p) &&
+          p.bedrooms != null &&
+          Number(p.bedrooms) < requiredBedrooms
+      )
+    );
   }
 
-  const alternativesResult = await alternativesQuery;
+  // 4. If nothing fits the budget, show lower-priced alternatives honestly.
+  if (data.length === 0 && maxBudget !== null) {
+    const alternatives = allProperties.filter(
+      (p) =>
+        matchesLocation(p) &&
+        p.price != null
+    );
 
-  if (alternativesResult.error) {
-    throw alternativesResult.error;
+    data = cheapest(alternatives).slice(0, 5);
+
+    if (data.length === 0) {
+      data = cheapest(
+        allProperties.filter((p) => p.price != null)
+      ).slice(0, 5);
+    }
   }
 
-  data = alternativesResult.data || [];
-
-  // If the requested location has no alternatives, try other locations
-  if (data.length === 0 && location) {
-    let nearbyQuery = client
-      .from("properties")
-      .select("id,title,category,location,bedrooms,guests,price,price_period,amenities")
-      .eq("published", true)
-      .order("price", { ascending: true })
-      .limit(5);
-
-    if (type) {
-      nearbyQuery = nearbyQuery.eq("category", type);
-    }
-
-    if (maxBudget !== null) {
-      nearbyQuery = nearbyQuery.lte("price", maxBudget);
-    }
-
-    if (requiredBedrooms !== null) {
-      nearbyQuery = nearbyQuery.lte("bedrooms", requiredBedrooms);
-    }
-
-    const nearbyResult = await nearbyQuery;
-
-    if (nearbyResult.error) {
-      throw nearbyResult.error;
-    }
-
-    data = nearbyResult.data || [];
+  // 5. General fallback if no budget was specified.
+  if (data.length === 0) {
+    data = cheapest(
+      allProperties.filter((p) => p.price != null)
+    ).slice(0, 5);
   }
+
+  // Remove duplicate listings.
+  const seenIds = new Set();
+  data = data.filter((p) => {
+    if (seenIds.has(p.id)) return false;
+    seenIds.add(p.id);
+    return true;
+  });
 }
 bubble.textContent = data && data.length
-  ? "I couldn't find an exact match, but I've found some alternatives you may like. 😊 Here are the available options, starting with lower-priced properties where possible:"
-  : "Sorry, I couldn't find a suitable match within your budget. 😊 Try increasing your budget slightly, choosing a smaller apartment, or exploring another location. You can also contact our team for personal assistance.";
+  ? (!usedFallback
+      ? "Good news! 😊 I found matching properties for your search. Here are the available options:"
+      : (maxBudget !== null && data.some(
+          property => property.price != null && Number(property.price) > maxBudget
+        )
+          ? "I couldn't find a suitable match within your budget. 😊 Here are some lower-priced alternatives I found, but some may exceed your budget. Please check each listing's price and location."
+       : "I couldn't find an exact match for all your requirements. 😊 Here are some alternatives to consider. Please check each listing's bedroom count, location and price, as some options may differ from your original request."))
+  : "Sorry, I couldn't find a suitable match. 😊 Try adjusting your budget, choosing a different apartment size, or exploring another location. You can also contact our team for personal assistance.";
       if (data && data.length) {
         data.forEach(function (property) {
           const card = document.createElement("div");
