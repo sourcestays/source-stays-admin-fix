@@ -273,16 +273,22 @@
 const bedroomMatch = q.match(/\b(\d+)\s*[- ]?\s*bed(?:room)?s?\b/i);
 const requiredBedrooms = bedroomMatch ? Number(bedroomMatch[1]) : null;
 
-// Extract an optional maximum budget in naira
-const budgetMatch = q.match(
-  /(?:under|below|within|max(?:imum)?|budget(?:\s+of)?)\s*₦?\s*([\d,]+)\s*(k)?/i
-);
-let maxBudget = null;
 
-if (budgetMatch) {
-  maxBudget = Number(budgetMatch[1].replace(/,/g, ""));
-  if (budgetMatch[2]) maxBudget *= 1000;
-}
+    // Extract an optional maximum budget in naira
+    const budgetMatch = q.match(
+      /(?:under|below|within|max(?:imum)?|budget(?:\s+of)?)\s*₦?\s*([\d,]+(?:\.\d+)?)\s*(k|m|million|thousand)?\b/i
+    );
+
+    let maxBudget = null;
+
+    if (budgetMatch) {
+      maxBudget = Number(budgetMatch[1].replace(/,/g, ""));
+      const unit = (budgetMatch[2] || "").toLowerCase();
+
+      if (unit === "k" || unit === "thousand") maxBudget *= 1000;
+      if (unit === "m" || unit === "million") maxBudget *= 1000000;
+    }
+
 
 // Apply the bedroom filter when requested
 if (requiredBedrooms !== null) {
