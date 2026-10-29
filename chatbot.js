@@ -309,7 +309,7 @@ if (maxBudget !== null) {
 
       bubble.textContent = data && data.length
         ? "Here are published properties matching your request:"
-        : "No exact match was found for your request. 😊 You can try a higher budget, explore another location, or choose a different property type. Our team is also happy to help you find a suitable option.";
+        : "No exact match was found for your request. 😊 Let's explore some alternatives! You can increase your budget, choose a smaller apartment, or explore another location. Our team is happy to help you find a suitable option.";
 
       if (data && data.length) {
         data.forEach(function (property) {
