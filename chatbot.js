@@ -269,6 +269,8 @@
       if (location) {
         query = query.ilike("location", "%" + location + "%");
       }
+      // Detect studio requests separately
+const wantsStudio = /\bstudio\b/i.test(q);
 // Extract an optional bedroom requirement
 const bedroomMatch = q.match(/\b(\d+)\s*[- ]?\s*bed(?:room)?s?\b/i);
 const requiredBedrooms = bedroomMatch ? Number(bedroomMatch[1]) : null;
@@ -294,7 +296,10 @@ const requiredBedrooms = bedroomMatch ? Number(bedroomMatch[1]) : null;
 if (requiredBedrooms !== null) {
   query = query.eq("bedrooms", requiredBedrooms);
 }
-
+// Apply the studio filter when requested
+if (wantsStudio) {
+    query = query.eq("bedrooms", 0);
+}
 // Apply the budget filter when requested
 if (maxBudget !== null) {
   query = query.lte("price", maxBudget);
