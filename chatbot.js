@@ -304,7 +304,7 @@
     }
 
     addMessage(
-      "I’m still learning how to answer that. I can help you explore shortlets, hotels, real estate and booking guidance, or connect you with our team.",
+     "Thanks for contacting Source Stays! 😊 I can help you find shortlet apartments, compare hotel options, explore properties for sale or rent, and understand our booking process. You can tell me your preferred location, budget and dates, or speak directly with our team on WhatsApp.",
       "bot"
     );
     addActions([
