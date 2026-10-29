@@ -117,6 +117,57 @@
 
   document.body.append(launcher, panel);
 
+  const teaser = document.createElement("button");
+  teaser.type = "button";
+  teaser.setAttribute("aria-label", "Chat with Source Stays AI Assistant");
+
+  Object.assign(teaser.style, {
+    position: "fixed",
+    right: "108px",
+    bottom: "32px",
+    zIndex: "9998",
+    maxWidth: "240px",
+    padding: "13px 16px",
+    border: "1px solid #c9a45c",
+    borderRadius: "15px",
+    background: "#ffffff",
+    color: "#123f32",
+    boxShadow: "0 5px 22px #0002",
+    textAlign: "left",
+    font: "14px/1.5 system-ui, sans-serif",
+    cursor: "pointer",
+    display: "none"
+  });
+
+  teaser.textContent =
+    "Hello! 👋 Welcome to Source Stays. How can I assist you today?";
+
+  document.body.appendChild(teaser);
+
+  function openSourceStaysChat() {
+    panel.classList.add("ss-open");
+    launcher.setAttribute("aria-expanded", "true");
+    panel.setAttribute("aria-hidden", "false");
+    teaser.style.display = "none";
+
+    if (!messages.children.length) showWelcome();
+
+    input.focus();
+  }
+
+  teaser.addEventListener("click", openSourceStaysChat);
+  launcher.addEventListener("click", function () {
+    teaser.style.display = "none";
+  });
+
+  if (window.innerWidth > 480) {
+    setTimeout(function () {
+      if (!panel.classList.contains("ss-open")) {
+        teaser.style.display = "block";
+      }
+    }, 1500);
+  }
+
   const messages = panel.querySelector("#ss-ai-messages");
   const input = panel.querySelector("#ss-ai-input");
 
