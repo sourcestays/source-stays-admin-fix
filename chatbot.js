@@ -308,9 +308,8 @@ if (maxBudget !== null) {
       if (error) throw error;
 
       bubble.textContent = data && data.length
-        ? "Here are published properties matching your request:"
-        : "No exact match was found for your request. 😊 Let's explore some alternatives! You can increase your budget, choose a smaller apartment, or explore another location. Our team is happy to help you find a suitable option.";
-
+  ? "Here are published properties matching your request:"
+  : "Sorry, we couldn't find an exact match for your requirements. 😊 You can explore other available apartments in your preferred location, consider a different apartment size, or adjust your budget. The prices shown below are the actual prices of our published listings.";
       if (data && data.length) {
         data.forEach(function (property) {
           const card = document.createElement("div");
