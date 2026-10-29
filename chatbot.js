@@ -308,8 +308,10 @@ if (maxBudget !== null) {
 if (error) throw error;
       
 let usedFallback = false;
+
 if (!data || data.length === 0) {
   usedFallback = true;
+
   let allQuery = client
     .from("properties")
     .select("id,title,category,location,bedrooms,guests,price,price_period,amenities")
@@ -342,86 +344,105 @@ if (!data || data.length === 0) {
       (a, b) => Number(a.price ?? Infinity) - Number(b.price ?? Infinity)
     );
 
+  const sameBedroomCount = (p) =>
+    requiredBedrooms !== null &&
+    Number(p.bedrooms) === requiredBedrooms;
+
+  const smallerApartment = (p) =>
+    requiredBedrooms !== null &&
+    p.bedrooms != null &&
+    Number(p.bedrooms) < requiredBedrooms;
+
   data = [];
 
-  // 1. Same bedroom count, other locations, within budget.
+  // 1. Requested bedroom count in the requested location,
+  // regardless of budget.
   if (location && requiredBedrooms !== null && !wantsStudio) {
     data = cheapest(
       allProperties.filter(
-        (p) =>
-          !matchesLocation(p) &&
-          withinBudget(p) &&
-          Number(p.bedrooms) === requiredBedrooms
+        (p) => matchesLocation(p) && sameBedroomCount(p)
       )
     );
   }
 
-  // 2. Smaller apartments in the requested location, within budget.
-  if (
-    data.length === 0 &&
-    requiredBedrooms !== null &&
-    !wantsStudio
-  ) {
-    data = cheapest(
-      allProperties.filter(
-        (p) =>
-          matchesLocation(p) &&
-          withinBudget(p) &&
-          p.bedrooms != null &&
-          Number(p.bedrooms) < requiredBedrooms
-      )
-    );
-  }
-
-  // 3. Smaller apartments in other locations, within budget.
-  if (
-    data.length === 0 &&
-    location &&
-    requiredBedrooms !== null &&
-    !wantsStudio
-  ) {
+  // 2. Requested bedroom count elsewhere, within budget.
+  if (data.length === 0 && requiredBedrooms !== null && !wantsStudio) {
     data = cheapest(
       allProperties.filter(
         (p) =>
           !matchesLocation(p) &&
-          withinBudget(p) &&
-          p.bedrooms != null &&
-          Number(p.bedrooms) < requiredBedrooms
+          sameBedroomCount(p) &&
+          withinBudget(p)
       )
     );
   }
 
-  // 4. If nothing fits the budget, show lower-priced alternatives honestly.
-  if (data.length === 0 && maxBudget !== null) {
-    const alternatives = allProperties.filter(
-      (p) =>
-        matchesLocation(p) &&
-        p.price != null
+  // 3. Requested bedroom count elsewhere, even above budget.
+  if (data.length === 0 && requiredBedrooms !== null && !wantsStudio) {
+    data = cheapest(
+      allProperties.filter(
+        (p) =>
+          !matchesLocation(p) &&
+          sameBedroomCount(p)
+      )
     );
-
-    data = cheapest(alternatives).slice(0, 5);
-
-    if (data.length === 0) {
-      data = cheapest(
-        allProperties.filter((p) => p.price != null)
-      ).slice(0, 5);
-    }
   }
 
-  // 5. General fallback if no budget was specified.
+  // 4. Smaller apartments in the requested location.
+  if (data.length === 0 && requiredBedrooms !== null && !wantsStudio) {
+    data = cheapest(
+      allProperties.filter(
+        (p) => matchesLocation(p) && smallerApartment(p)
+      )
+    );
+  }
+
+  // 5. Smaller apartments elsewhere, within budget first.
+  if (data.length === 0 && requiredBedrooms !== null && !wantsStudio) {
+    data = cheapest(
+      allProperties.filter(
+        (p) =>
+          !matchesLocation(p) &&
+          smallerApartment(p) &&
+          withinBudget(p)
+      )
+    );
+  }
+
+  // 6. Smaller apartments elsewhere, regardless of budget.
+  if (data.length === 0 && requiredBedrooms !== null && !wantsStudio) {
+    data = cheapest(
+      allProperties.filter(
+        (p) =>
+          !matchesLocation(p) &&
+          smallerApartment(p)
+      )
+    );
+  }
+
+  // 7. Studio requests: show studios first, without changing
+  // the user's explicit studio preference.
+  if (data.length === 0 && wantsStudio) {
+    data = cheapest(
+      allProperties.filter((p) => Number(p.bedrooms) === 0)
+    );
+  }
+
+  // 8. Final fallback: other available listings.
   if (data.length === 0) {
     data = cheapest(
       allProperties.filter((p) => p.price != null)
-    ).slice(0, 5);
+    );
   }
 
-  // Remove duplicate listings.
+  // Remove duplicate listings and limit displayed alternatives.
   const seenIds = new Set();
+
   data = data.filter((p) => {
     if (seenIds.has(p.id)) return false;
     seenIds.add(p.id);
     return true;
-  });
+  }).slice(0, 5);
 }
 bubble.textContent = data && data.length
   ? (!usedFallback
