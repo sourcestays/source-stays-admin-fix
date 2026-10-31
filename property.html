@@ -674,8 +674,97 @@ if (inspectionButton && inspectionPanel && inspectionForm) {
         throw new Error(data?.error || "Could not submit your request.");
       }
 
-      status.textContent =
-        "Thank you! Your inspection request has been received. Our team will contact you to confirm the appointment.";
+      
+const successPopup = document.createElement("div");
+
+successPopup.id = "inspectionSuccessPopup";
+successPopup.style.cssText = `
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+`;
+
+successPopup.innerHTML = `
+  <div style="
+    background: #fff;
+    width: 100%;
+    max-width: 440px;
+    padding: 35px 25px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    font-family: Arial, sans-serif;
+  ">
+    <div style="
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: #e6f4ec;
+      color: #167447;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 43px;
+      font-weight: bold;
+      margin: 0 auto 20px;
+    ">✓</div>
+
+    <h2 style="
+      color: #123f32;
+      font-size: 25px;
+      font-weight: 800;
+      margin: 0 0 14px;
+    ">Inspection Request Received!</h2>
+
+    <p style="
+      color: #333;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.6;
+      margin: 0 0 12px;
+    ">Thank you for choosing Source Stays.</p>
+
+    <p style="
+      color: #68736c;
+      font-size: 14px;
+      line-height: 1.7;
+      margin: 0 0 25px;
+    ">
+      Your inspection request has been submitted successfully.
+      Our team will contact you to confirm your preferred date and time.
+    </p>
+
+    <button type="button" id="closeInspectionSuccess"
+      style="
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        padding: 15px;
+        background: #123f32;
+        color: white;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+      ">
+      Done
+    </button>
+  </div>
+`;
+
+document.body.appendChild(successPopup);
+
+document.getElementById("closeInspectionSuccess").addEventListener("click", () => {
+  successPopup.remove();
+});
+
+inspectionForm.reset();
+dateInput.min = localToday;
 
       inspectionForm.reset();
       dateInput.min = localToday;
