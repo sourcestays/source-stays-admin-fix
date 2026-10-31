@@ -476,9 +476,71 @@ ${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
 </section>
 ` : ""}
 
-            <a class="btn dark" href="booking.html?id=${encodeURIComponent(p.id)}">
-              Request booking
-            </a>
+<a class="btn dark" href="booking.html?id=${encodeURIComponent(p.id)}">
+  Request booking
+</a>
+
+${["shortlet", "hotel"].includes(String(p.category || "").toLowerCase()) ? `
+  <button type="button" class="btn dark" id="openInspectionForm">
+    Request Property Inspection
+  </button>
+
+  <section id="inspectionRequestPanel" hidden
+    style="margin-top:18px;padding:20px;border:1px solid #e7ebe7;border-radius:14px;background:#f9faf7;">
+
+    <h3 style="margin-top:0;">Request a Property Inspection</h3>
+    <p class="muted">Send us your preferred inspection date and time. Our team will contact you to confirm the appointment.</p>
+
+    <form id="customerInspectionForm">
+      <label>Full name</label>
+      <input name="customer_name" type="text" required maxlength="100"
+        placeholder="Enter your full name">
+
+      <label>Email address</label>
+      <input name="customer_email" type="email" required maxlength="254"
+        placeholder="Enter your email">
+
+      <label>Phone number</label>
+      <input name="customer_phone" type="tel" required maxlength="30"
+        placeholder="Enter your phone number">
+
+      <label>Preferred inspection date</label>
+      <input name="preferred_date" id="inspectionDate"
+        type="date" required>
+
+      ${p.is_zylus_group ? `
+        <p style="color:#9b7b37;font-size:13px;">
+          Zylus Group properties are available for inspection on Tuesdays only.
+        </p>
+      ` : ""}
+
+      <label>Preferred time</label>
+      <select name="preferred_time" required>
+        <option value="">Choose a preferred time</option>
+        <option>9:00 AM</option>
+        <option>10:00 AM</option>
+        <option>11:00 AM</option>
+        <option>12:00 PM</option>
+        <option>1:00 PM</option>
+        <option>2:00 PM</option>
+        <option>3:00 PM</option>
+        <option>4:00 PM</option>
+      </select>
+
+      <label>Additional message (optional)</label>
+      <textarea name="message" rows="3" maxlength="1000"
+        placeholder="Any additional information?"></textarea>
+
+      <button type="submit" class="btn dark" id="submitInspectionRequest">
+        Submit Inspection Request
+      </button>
+
+      <p id="inspectionRequestMessage" class="muted"
+        style="white-space:pre-wrap;"></p>
+    </form>
+  </section>
+` : ""}
+
           </section>
         </div>
 
@@ -533,6 +595,101 @@ style="width: auto; height: auto; max-width: 100%; max-height: 70vh; border-radi
           <span class="modal-count" id="modalGalleryCount"></span>
         </div>
       `;
+
+const inspectionButton = document.getElementById("openInspectionForm");
+const inspectionPanel = document.getElementById("inspectionRequestPanel");
+const inspectionForm = document.getElementById("customerInspectionForm");
+
+if (inspectionButton && inspectionPanel && inspectionForm) {
+  const dateInput = document.getElementById("inspectionDate");
+  const today = new Date();
+  const localToday = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, "0"),
+    String(today.getDate()).padStart(2, "0")
+  ].join("-");
+
+  dateInput.min = localToday;
+
+  inspectionButton.addEventListener("click", () => {
+    inspectionPanel.hidden = !inspectionPanel.hidden;
+    if (!inspectionPanel.hidden) {
+      inspectionPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  });
+
+  inspectionForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const submitButton = document.getElementById("submitInspectionRequest");
+    const status = document.getElementById("inspectionRequestMessage");
+    const formData = new FormData(inspectionForm);
+    const preferredDate = String(formData.get("preferred_date") || "");
+
+    const [year, month, day] = preferredDate.split("-").map(Number);
+    const selectedDate = new Date(year, month - 1, day);
+
+    if (
+      !preferredDate ||
+      selectedDate.getFullYear() !== year ||
+      selectedDate.getMonth() !== month - 1 ||
+      selectedDate.getDate() !== day
+    ) {
+      status.textContent = "Please choose a valid inspection date.";
+      return;
+    }
+
+    if (selectedDate < new Date(today.getFullYear(), today.getMonth(), today.getDate())) {
+      status.textContent = "Inspection date cannot be in the past.";
+      return;
+    }
+
+    if (p.is_zylus_group && selectedDate.getDay() !== 2) {
+      status.textContent = "Zylus Group properties are available for inspection on Tuesdays only.";
+      return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.textContent = "Submitting...";
+    status.textContent = "Please wait while we submit your request.";
+
+    try {
+      const { data, error } = await SourceStays.supabase.functions.invoke(
+        "submit-inspection-request",
+        {
+          body: {
+            property_id: Number(p.id),
+            customer_name: formData.get("customer_name"),
+            customer_email: formData.get("customer_email"),
+            customer_phone: formData.get("customer_phone"),
+            preferred_date: preferredDate,
+            preferred_time: formData.get("preferred_time"),
+            message: formData.get("message")
+          }
+        }
+      );
+
+      if (error) throw error;
+      if (!data?.success) {
+        throw new Error(data?.error || "Could not submit your request.");
+      }
+
+      status.textContent =
+        "Thank you! Your inspection request has been received. Our team will contact you to confirm the appointment.";
+
+      inspectionForm.reset();
+      dateInput.min = localToday;
+
+    } catch (error) {
+      console.error("Inspection request failed:", error);
+      status.textContent =
+        error.message || "Something went wrong. Please try again.";
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = "Submit Inspection Request";
+    }
+  });
+}
 
       const thumbnailContainer =
         document.getElementById("propertyThumbnails");
