@@ -50,7 +50,14 @@
 <section class="box" style="margin:20px 0;">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
     <div>
-      <h3 style="margin-bottom:5px;">Customer Inspection Requests</h3>
+     <h3 style="margin-bottom:5px;">
+  Customer Inspection Requests
+  <span id="pendingInspectionCount"
+    style="display:inline-block;background:#fff0d6;color:#936000;
+    padding:4px 10px;border-radius:20px;font-size:13px;">
+    0 Pending
+  </span>
+</h3>
       <p class="muted">Review customer requests and manage inspection appointments.</p>
     </div>
     <button class="btn gold" type="button" id="refreshCustomerInspections">
@@ -711,8 +718,10 @@ window.removeDateBlock=async function(id){
   }catch(err){alert('Could not remove date block: '+(err.message||err));}
 };
 
+
 async function loadCustomerInspectionRequests() {
   const box = document.getElementById("customerInspectionRequests");
+  const counter = document.getElementById("pendingInspectionCount");
   if (!box) return;
 
   box.textContent = "Loading customer inspection requests...";
@@ -726,6 +735,14 @@ async function loadCustomerInspectionRequests() {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
+
+    const pendingCount = (requests || []).filter(
+      r => r.status === "pending"
+    ).length;
+
+    if (counter) {
+      counter.textContent = `${pendingCount} Pending`;
+    }
 
     if (!requests || !requests.length) {
       box.innerHTML = '<p class="muted">No customer inspection requests yet.</p>';
@@ -745,6 +762,26 @@ async function loadCustomerInspectionRequests() {
       (properties || []).map(p => [Number(p.id), p])
     );
 
+    const statusColors = {
+      pending: "#fff0d6",
+      contacted: "#e5f0ff",
+      confirmed: "#e2f5e9",
+      completed: "#e8e8f5",
+      cancelled: "#fde8e8"
+    };
+
+    const statusTextColors = {
+      pending: "#936000",
+      contacted: "#245c9c",
+      confirmed: "#187443",
+      completed: "#514b8b",
+      cancelled: "#a32d2d"
+    };
+
+    const statusOptions = [
+      "pending", "contacted", "confirmed", "completed", "cancelled"
+    ];
+
     box.innerHTML = `
       <div style="overflow-x:auto;">
         <table class="table" style="width:100%;">
@@ -760,9 +797,14 @@ async function loadCustomerInspectionRequests() {
           <tbody>
             ${requests.map(r => {
               const p = propertyMap.get(Number(r.property_id));
-              const statusOptions = [
-                "pending", "contacted", "confirmed", "completed", "cancelled"
-              ];
+              const status = statusOptions.includes(r.status)
+                ? r.status : "pending";
+
+              let whatsappPhone = String(r.customer_phone || "").replace(/\D/g, "");
+
+              if (whatsappPhone.startsWith("0")) {
+                whatsappPhone = "234" + whatsappPhone.slice(1);
+              }
 
               return `
                 <tr>
@@ -770,24 +812,48 @@ async function loadCustomerInspectionRequests() {
                     <b>#${esc(r.id)} — ${esc(p?.title || "Property #" + r.property_id)}</b>
                     <br><span class="muted">${esc(p?.category || "")} · ${esc(p?.location || "")}</span>
                   </td>
+
                   <td>
                     <b>${esc(r.customer_name)}</b>
                     <br><a href="mailto:${encodeURIComponent(r.customer_email)}">${esc(r.customer_email)}</a>
                     <br><a href="tel:${encodeURIComponent(r.customer_phone)}">${esc(r.customer_phone)}</a>
+                    <br>
+                    <a href="https://wa.me/${whatsappPhone}"
+                      target="_blank" rel="noopener noreferrer"
+                      style="display:inline-block;margin-top:5px;color:#16834a;font-weight:700;">
+                      WhatsApp customer
+                    </a>
                   </td>
+
                   <td>
                     <b>${esc(r.preferred_date)}</b>
                     <br>${esc(r.preferred_time)}
                   </td>
+
                   <td>${esc(r.message || "No message")}</td>
+
                   <td>
+                    <span style="
+                      display:inline-block;
+                      padding:5px 10px;
+                      border-radius:20px;
+                      margin-bottom:8px;
+                      font-size:12px;
+                      font-weight:700;
+                      background:${statusColors[status]};
+                      color:${statusTextColors[status]};
+                    ">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
+
+                    <br>
+
                     <select data-inspection-status="${Number(r.id)}">
-                      ${statusOptions.map(status => `
-                        <option value="${status}" ${r.status === status ? "selected" : ""}>
-                          ${status.charAt(0).toUpperCase() + status.slice(1)}
+                      ${statusOptions.map(option => `
+                        <option value="${option}" ${status === option ? "selected" : ""}>
+                          ${option.charAt(0).toUpperCase() + option.slice(1)}
                         </option>
                       `).join("")}
                     </select>
+
                     <button type="button" data-save-inspection="${Number(r.id)}">
                       Save status
                     </button>
@@ -808,6 +874,7 @@ async function loadCustomerInspectionRequests() {
 document.getElementById("refreshCustomerInspections")
   ?.addEventListener("click", loadCustomerInspectionRequests);
 
+
 document.getElementById("customerInspectionRequests")
   ?.addEventListener("click", async event => {
     const button = event.target.closest("[data-save-inspection]");
@@ -824,17 +891,39 @@ document.getElementById("customerInspectionRequests")
     button.textContent = "Saving...";
 
     try {
+      const newStatus = select.value;
+
       const { error } = await getClient()
         .from("inspection_requests")
         .update({
-          status: select.value,
+          status: newStatus,
           updated_at: new Date().toISOString()
         })
         .eq("id", id);
 
       if (error) throw error;
 
-      button.textContent = "Saved";
+      if (newStatus === "confirmed") {
+        button.textContent = "Sending email...";
+
+        const { data, error: emailError } =
+          await getClient().functions.invoke(
+            "notify-inspection-status",
+            { body: { request_id: id } }
+          );
+
+        if (emailError || !data?.success) {
+          console.error("Confirmation email issue:", emailError || data);
+          alert("Status saved as Confirmed, but the customer email could not be confirmed. Please check the function logs.");
+        } else {
+          alert("Inspection confirmed. Customer notification email sent.");
+        }
+      } else {
+        button.textContent = "Saved";
+      }
+
+      await loadCustomerInspectionRequests();
+
     } catch (error) {
       alert("Could not update inspection request: " + error.message);
       button.disabled = false;
