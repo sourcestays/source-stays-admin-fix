@@ -129,6 +129,142 @@
     .property-info .btn { display: block; margin-top: 26px; padding: 15px 18px; border-radius: 10px; text-align: center; font-weight: 700; box-shadow: 0 7px 18px rgba(18,63,50,.12); }
     .property-info .btn:hover { background: var(--ss-green-deep); }
 
+/* Property booking and inspection actions */
+.property-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.property-actions > .btn {
+  width: 100%;
+  min-height: 54px;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.property-actions .inspection-trigger {
+  background: #fff;
+  color: var(--ss-green);
+  border: 1.5px solid var(--ss-green);
+  box-shadow: none;
+}
+
+.property-actions .inspection-trigger:hover {
+  background: #f1f6f2;
+  color: var(--ss-green-deep);
+}
+
+/* Inspection form panel */
+#inspectionRequestPanel {
+  margin-top: 18px;
+  padding: clamp(18px, 2.5vw, 26px);
+  border: 1px solid var(--ss-line);
+  border-radius: 16px;
+  background: #f9faf7;
+}
+
+#inspectionRequestPanel[hidden] {
+  display: none !important;
+}
+
+#inspectionRequestPanel h3 {
+  margin: 0 0 8px;
+}
+
+#inspectionRequestPanel .inspection-intro {
+  margin: 0 0 20px;
+  color: var(--ss-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+/* Responsive inspection form */
+#customerInspectionForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+#customerInspectionForm .inspection-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+#customerInspectionForm .inspection-field.full-width {
+  grid-column: 1 / -1;
+}
+
+#customerInspectionForm label {
+  display: block;
+  color: var(--ss-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#customerInspectionForm input,
+#customerInspectionForm select,
+#customerInspectionForm textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 48px;
+  padding: 12px 13px;
+  border: 1px solid #d9e0da;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ss-ink);
+  font: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+#customerInspectionForm textarea {
+  min-height: 105px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+#customerInspectionForm .inspection-submit {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 50px;
+  margin: 2px 0 0;
+}
+
+#inspectionRequestMessage {
+  grid-column: 1 / -1;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Mobile layout */
+@media (max-width: 760px) {
+  .property-actions {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  #customerInspectionForm {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  #customerInspectionForm .inspection-field.full-width,
+  #customerInspectionForm .inspection-submit,
+  #inspectionRequestMessage {
+    grid-column: 1;
+  }
+}
+
     .gallery-modal {
       position: fixed; inset: 0; z-index: 99999; display: none; align-items: center; justify-content: center;
       padding: 24px; background: rgba(8,15,12,.96); backdrop-filter: blur(5px);
