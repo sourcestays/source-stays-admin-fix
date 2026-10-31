@@ -46,6 +46,22 @@
 <div id="dash" class="hidden"><div class="top"><div><a class="brand-logo" href="index.html"><img src="source-stays-logo-green-gold.png" alt="Source Stays"></a><div class="eyebrow">Management dashboard</div><h2>Source Stays Admin</h2></div><div><button class="btn gold" onclick="newProperty()">+ Add property</button>
 <button class="btn" onclick="location.href='inspections.html'">Property Inspections</button> <button class="btn" onclick="location.href='index.html'">View website</button> <button class="btn" onclick="logout()">Log out</button></div></div>
 <div class="stats"><div class="stat"><span>Properties</span><b id="statProps">0</b></div><div class="stat"><span>Published</span><b id="statPublished">0</b></div><div class="stat"><span>Enquiries</span><b id="statEnq">0</b></div></div>
+  
+<section class="box" style="margin:20px 0;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div>
+      <h3 style="margin-bottom:5px;">Customer Inspection Requests</h3>
+      <p class="muted">Review customer requests and manage inspection appointments.</p>
+    </div>
+    <button class="btn gold" type="button" id="refreshCustomerInspections">
+      Refresh Requests
+    </button>
+  </div>
+  <div id="customerInspectionRequests">
+    Loading customer inspection requests...
+  </div>
+</section>
+
 <div class="grid"><section class="box"><h3>Properties</h3><div id="props"></div></section><section class="box"><h3 id="formTitle">Add property</h3><form id="propertyForm"><input type="hidden" name="id"><div class="field"><label>Title</label><input name="title" required></div><div class="field"><label>Category</label><select name="type"><option value="shortlet">Shortlet</option><option value="hotel">Hotel</option><option value="sale">For sale</option><option value="rent">For rent</option><option value="land">Land</option></select></div><div class="field"><label>Location</label><input name="location" placeholder="Lekki Phase 1, Lagos"></div><div class="field"><label>Price</label><input name="price" type="number"></div><div class="field"><label>Price unit</label><input name="price_period" value="per night" placeholder="per night / per month / total"></div><details style="border:1px solid #e5e2d9;border-radius:10px;padding:12px;margin:14px 0"><summary style="font-weight:700;cursor:pointer">Fees & charges (enter 0 if not applicable)</summary><p class="muted">Set clear amounts for this property. The caution deposit is shown as refundable. Fees marked due later are displayed separately to guests.</p><h4>Accommodation fees</h4><div class="field"><label>Refundable caution deposit (₦)</label><input name="caution_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Cleaning fee per booking (₦)</label><input name="cleaning_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Service fee per booking (₦)</label><input name="service_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Extra guest fee per additional guest, per stay (₦)</label><input name="extra_guest_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Other accommodation charge (₦)</label><input name="other_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Other charge label</label><input name="other_fee_label" placeholder="e.g. Generator contribution"></div><h4>Rental / land / property transaction fees</h4><div class="field"><label>Agency fee (₦)</label><input name="agency_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Legal fee (₦)</label><input name="legal_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Agreement fee (₦)</label><input name="agreement_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Service charge (₦)</label><input name="service_charge" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Title search fee (₦)</label><input name="title_search_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Survey fee (₦)</label><input name="survey_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Documentation fee (₦)</label><input name="documentation_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Transfer fee (₦)</label><input name="transfer_fee" type="number" min="0" step="0.01" value="0"></div><p class="muted">Use the “Other accommodation charge” amount and label above for any additional property-specific fee; use the notes below for transaction fees not payable now.</p><div class="field"><label>Fees payable later / additional fee notes</label><textarea name="fees_due_later" placeholder="Explain any fee not payable now, who collects it, and when it is due."></textarea></div></details><details id="landDocumentChecklist" style="border:1px solid #e5e2d9;border-radius:10px;padding:12px;margin:14px 0"><summary style="font-weight:700;cursor:pointer">Land & property document checklist</summary><p class="muted">Choose the status based on what Source Stays has actually received and checked. “Verified” means a responsible person has completed the relevant checks; it is not a guarantee of legal title.</p><div class="field"><label>Survey plan</label><select name="survey_plan_status"><option value="not_supplied">Not supplied</option><option value="supplied">Supplied — not verified</option><option value="verified">Checked / verified</option></select></div><div class="field"><label>Title document (e.g. C of O or applicable title)</label><select name="title_document_status"><option value="not_supplied">Not supplied</option><option value="supplied">Supplied — not verified</option><option value="verified">Checked / verified</option></select></div><div class="field"><label>Deed of Assignment</label><select name="deed_assignment_status"><option value="not_supplied">Not supplied</option><option value="supplied">Supplied — not verified</option><option value="verified">Checked / verified</option></select></div><div class="field"><label>Legal / title search</label><select name="title_search_status"><option value="not_checked">Not checked</option><option value="in_progress">In progress</option><option value="clear">Completed — no issue reported</option><option value="issue_found">Issue found — follow-up required</option></select></div><div class="field"><label>Additional document notes</label><textarea name="supporting_documents_notes" placeholder="List other documents supplied, who checked them, and any limitations or follow-up needed."></textarea></div></details><div class="field"><label>Bedrooms</label><input name="bedrooms" type="number"></div><div class="field"><label>Guests</label><input name="guests" type="number"></div><div class="field"><label>Amenities</label><input name="amenities" placeholder="Pool, Wi-Fi, Generator"></div><div class="field"><label>Description</label><textarea name="description"></textarea></div><div class="field"><label>Photo</label><input name="imageFile" type="file" accept="image/*" multiple><small class="muted">Photos are uploaded to Source Stays secure storage.</small></div><div class="field"><label>Or image URL</label><input name="image_url" placeholder="https://..."></div>
 <div class="field">
   <label>Property video (MP4 or WebM)</label>
@@ -209,6 +225,7 @@ function showDash(){
   dash.classList.remove('hidden');
   load();
   loadReviews();
+  loadCustomerInspectionRequests();
 }
 function getClient(){
   if(client) return client;
@@ -693,6 +710,137 @@ window.removeDateBlock=async function(id){
     await loadDateBlocks();
   }catch(err){alert('Could not remove date block: '+(err.message||err));}
 };
+
+async function loadCustomerInspectionRequests() {
+  const box = document.getElementById("customerInspectionRequests");
+  if (!box) return;
+
+  box.textContent = "Loading customer inspection requests...";
+
+  try {
+    const sb = getClient();
+
+    const { data: requests, error } = await sb
+      .from("inspection_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    if (!requests || !requests.length) {
+      box.innerHTML = '<p class="muted">No customer inspection requests yet.</p>';
+      return;
+    }
+
+    const propertyIds = [...new Set(requests.map(r => r.property_id))];
+
+    const { data: properties, error: propertyError } = await sb
+      .from("properties")
+      .select("id,title,location,category")
+      .in("id", propertyIds);
+
+    if (propertyError) throw propertyError;
+
+    const propertyMap = new Map(
+      (properties || []).map(p => [Number(p.id), p])
+    );
+
+    box.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table class="table" style="width:100%;">
+          <thead>
+            <tr>
+              <th>Request / Property</th>
+              <th>Customer</th>
+              <th>Preferred inspection</th>
+              <th>Message</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${requests.map(r => {
+              const p = propertyMap.get(Number(r.property_id));
+              const statusOptions = [
+                "pending", "contacted", "confirmed", "completed", "cancelled"
+              ];
+
+              return `
+                <tr>
+                  <td>
+                    <b>#${esc(r.id)} — ${esc(p?.title || "Property #" + r.property_id)}</b>
+                    <br><span class="muted">${esc(p?.category || "")} · ${esc(p?.location || "")}</span>
+                  </td>
+                  <td>
+                    <b>${esc(r.customer_name)}</b>
+                    <br><a href="mailto:${encodeURIComponent(r.customer_email)}">${esc(r.customer_email)}</a>
+                    <br><a href="tel:${encodeURIComponent(r.customer_phone)}">${esc(r.customer_phone)}</a>
+                  </td>
+                  <td>
+                    <b>${esc(r.preferred_date)}</b>
+                    <br>${esc(r.preferred_time)}
+                  </td>
+                  <td>${esc(r.message || "No message")}</td>
+                  <td>
+                    <select data-inspection-status="${Number(r.id)}">
+                      ${statusOptions.map(status => `
+                        <option value="${status}" ${r.status === status ? "selected" : ""}>
+                          ${status.charAt(0).toUpperCase() + status.slice(1)}
+                        </option>
+                      `).join("")}
+                    </select>
+                    <button type="button" data-save-inspection="${Number(r.id)}">
+                      Save status
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (error) {
+    console.error("Inspection requests loading failed:", error);
+    box.textContent = "Could not load inspection requests: " + error.message;
+  }
+}
+
+document.getElementById("refreshCustomerInspections")
+  ?.addEventListener("click", loadCustomerInspectionRequests);
+
+document.getElementById("customerInspectionRequests")
+  ?.addEventListener("click", async event => {
+    const button = event.target.closest("[data-save-inspection]");
+    if (!button) return;
+
+    const id = Number(button.dataset.saveInspection);
+    const select = document.querySelector(
+      `[data-inspection-status="${id}"]`
+    );
+
+    if (!select) return;
+
+    button.disabled = true;
+    button.textContent = "Saving...";
+
+    try {
+      const { error } = await getClient()
+        .from("inspection_requests")
+        .update({
+          status: select.value,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      button.textContent = "Saved";
+    } catch (error) {
+      alert("Could not update inspection request: " + error.message);
+      button.disabled = false;
+      button.textContent = "Save status";
+    }
+  });
 
 async function load(){
  try{
