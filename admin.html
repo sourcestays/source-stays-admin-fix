@@ -1067,25 +1067,33 @@ async function loadZylusSales() {
 
     if (salesError) throw salesError;
 
-    salesList.innerHTML = sales?.length
-      ? `<table class="table">
-          <tr>
-            <th>Reference</th>
-            <th>Buyer</th>
-            <th>Amount</th>
-            <th>Status</th>
-          </tr>
-          ${sales.map(s => `
-            <tr>
-              <td>${esc(s.transaction_ref)}</td>
-              <td>${esc(s.buyer_name)}</td>
-              <td>₦${money(s.purchase_amount)}</td>
-              <td>${esc(s.payment_status)}</td>
-            </tr>
-          `).join('')}
-        </table>`
-      : '<p class="muted">No Zylus sales transactions yet.</p>';
-
+  salesList.innerHTML = sales?.length
+  ? `<table class="table">
+      <tr>
+        <th>Reference</th>
+        <th>Buyer</th>
+        <th>Amount</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+      ${sales.map(s => `
+        <tr>
+          <td>${esc(s.transaction_ref)}</td>
+          <td>${esc(s.buyer_name)}</td>
+          <td>${money(s.purchase_amount)}</td>
+          <td>${esc(s.payment_status)}</td>
+          <td>
+            <button
+              type="button"
+              class="btn gold issue-zylus-payment"
+              data-sale-id="${esc(s.id)}">
+              Issue payment instructions
+            </button>
+          </td>
+        </tr>
+      `).join('')}
+    </table>`
+  : '<p class="muted">No Zylus sales transactions yet.</p>';
   } catch (error) {
     console.error('Zylus sales loading error:', error);
     propertySelect.innerHTML =
@@ -1094,7 +1102,69 @@ async function loadZylusSales() {
       'Could not load sales: ' + (error.message || error);
   }
 }
+document.getElementById('zylusSalesList').addEventListener('click', async function(e) {
+  const button = e.target.closest('.issue-zylus-payment');
+  if (!button) return;
 
+  const saleId = button.dataset.saleId;
+
+  const bankName = prompt('Enter verified Zylus bank name:');
+  if (!bankName) return;
+
+  const accountName = prompt('Enter verified account name:');
+  if (!accountName) return;
+
+  const accountNumber = prompt('Enter verified account number:');
+  if (!accountNumber) return;
+
+  const paymentReference = prompt('Enter payment reference:') || '';
+
+  const additionalInstructions =
+    prompt('Additional payment instructions (optional):') || '';
+
+  if (!confirm('Have you verified these bank details against the current Zylus internal instructions?')) {
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = 'Issuing instructions...';
+
+  try {
+    const sb = getClient();
+
+    const { data, error } = await sb.functions.invoke(
+      'zylus-sales-workflow',
+      {
+        body: {
+          action: 'issue_payment_instructions',
+          sale_id: saleId,
+          bank_name: bankName,
+          account_name: accountName,
+          account_number: accountNumber,
+          payment_reference: paymentReference,
+          additional_instructions: additionalInstructions
+        }
+      }
+    );
+
+    if (error) throw error;
+    if (!data?.success) throw new Error(data?.error || 'Could not issue payment instructions.');
+
+    alert(data.message);
+
+    if (data.whatsapp_link) {
+      window.open(data.whatsapp_link, '_blank');
+    }
+
+    await loadZylusSales();
+
+  } catch (error) {
+    console.error('Zylus payment instruction error:', error);
+    alert(error.message || 'Could not issue payment instructions.');
+    button.disabled = false;
+    button.textContent = 'Issue payment instructions';
+  }
+});
 document.getElementById('zylusSaleForm').addEventListener('submit', async function(e) {
   e.preventDefault();
 
