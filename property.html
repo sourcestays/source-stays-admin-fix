@@ -767,12 +767,25 @@ if (inspectionButton && inspectionPanel && inspectionForm) {
 
   dateInput.min = localToday;
 
-  inspectionButton.addEventListener("click", () => {
-    inspectionPanel.hidden = !inspectionPanel.hidden;
-    if (!inspectionPanel.hidden) {
-      inspectionPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
-  });
+inspectionButton.addEventListener("click", () => {
+  inspectionPanel.hidden = !inspectionPanel.hidden;
+
+  const isOpen = !inspectionPanel.hidden;
+
+  inspectionButton.setAttribute("aria-expanded", String(isOpen));
+  inspectionButton.textContent = isOpen
+    ? "Close Inspection Form"
+    : "Request Property Inspection";
+
+  if (isOpen) {
+    inspectionPanel.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest"
+    });
+
+    dateInput.focus({ preventScroll: true });
+  }
+});
 
   inspectionForm.addEventListener("submit", async (event) => {
     event.preventDefault();
