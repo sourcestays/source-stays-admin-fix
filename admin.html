@@ -291,6 +291,7 @@ function showDash(){
   load();
   loadReviews();
   loadCustomerInspectionRequests();
+  loadZylusSales();
 }
 function getClient(){
   if(client) return client;
@@ -1036,6 +1037,147 @@ ${x.status==='approved' || x.status==='completed'
   enquiries.innerHTML=e?.length?`<h4>Enquiries</h4><table class="table"><tr><th>Customer</th><th>Interest</th><th>Property ID</th><th>Status</th></tr>${e.map(x=>`<tr><td>${esc(x.customer_name)}<br>${esc(x.customer_phone||'')}</td><td>${esc(x.subject||'Enquiry')}</td><td>${esc(x.property_id||'')}</td><td><select onchange="enquiryStatus(${x.id},this.value)"><option ${x.status==='new'?'selected':''}>new</option><option ${x.status==='contacted'?'selected':''}>contacted</option><option ${x.status==='closed'?'selected':''}>closed</option></select></td></tr>`).join('')}</table>`:'<p class="muted">No enquiries yet.</p>';
 await loadCreditRedemptions(); }catch(err){console.error(err);props.innerHTML='<p class="danger">Could not load dashboard data: '+esc(err.message||err)+'</p>';}
 }
+
+async function loadZylusSales() {
+  const sb = getClient();
+  const propertySelect = document.getElementById('zylusProperty');
+  const salesList = document.getElementById('zylusSalesList');
+
+  try {
+    const { data: properties, error: propertyError } = await sb
+      .from('properties')
+      .select('id,title,location,category')
+      .eq('is_zylus_group', true)
+      .in('category', ['sale', 'land'])
+      .order('title');
+
+    if (propertyError) throw propertyError;
+
+    propertySelect.innerHTML =
+      '<option value="">Select a Zylus property</option>' +
+      (properties || []).map(p =>
+        `<option value="${p.id}">${esc(p.title)} — ${esc(p.location || '')}</option>`
+      ).join('');
+
+    const { data: sales, error: salesError } = await sb
+      .from('zylus_sales')
+      .select('id,transaction_ref,property_id,buyer_name,purchase_amount,payment_status,created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (salesError) throw salesError;
+
+    salesList.innerHTML = sales?.length
+      ? `<table class="table">
+          <tr>
+            <th>Reference</th>
+            <th>Buyer</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+          ${sales.map(s => `
+            <tr>
+              <td>${esc(s.transaction_ref)}</td>
+              <td>${esc(s.buyer_name)}</td>
+              <td>₦${money(s.purchase_amount)}</td>
+              <td>${esc(s.payment_status)}</td>
+            </tr>
+          `).join('')}
+        </table>`
+      : '<p class="muted">No Zylus sales transactions yet.</p>';
+
+  } catch (error) {
+    console.error('Zylus sales loading error:', error);
+    propertySelect.innerHTML =
+      '<option value="">Could not load Zylus properties</option>';
+    salesList.textContent =
+      'Could not load sales: ' + (error.message || error);
+  }
+}
+
+document.getElementById('zylusSaleForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const form = this;
+  const button = document.getElementById('createZylusSale');
+  const message = document.getElementById('zylusSaleMessage');
+
+  if (button.disabled) return;
+
+  button.disabled = true;
+  button.textContent = 'Creating transaction...';
+  message.textContent = '';
+
+  try {
+    const sb = getClient();
+
+    const payload = {
+      action: 'create_sale',
+      property_id: Number(form.elements.property_id.value),
+      buyer_name: form.elements.buyer_name.value.trim(),
+      buyer_email: form.elements.buyer_email.value.trim(),
+      buyer_phone: form.elements.buyer_phone.value.trim(),
+      purchase_amount: Number(form.elements.purchase_amount.value)
+    };
+
+    const { data, error } = await sb.functions.invoke(
+      'zylus-sales-workflow',
+      { body: payload }
+    );
+
+    if (error) {
+      let detail = '';
+      try {
+        const body = await error.context?.json();
+        detail = body?.error || '';
+      } catch (_) {}
+      throw new Error(detail || data?.error || error.message);
+    }
+
+    if (!data?.success || !data?.customer_access_token) {
+      throw new Error(data?.error || 'Transaction creation was not confirmed.');
+    }
+
+    const customerLink =
+      `${window.location.origin}/payment-proof.html?ref=${encodeURIComponent(data.sale.transaction_ref)}&token=${encodeURIComponent(data.customer_access_token)}`;
+
+    message.textContent =
+      'Transaction created. Save the secure customer link below; the token is shown only once.';
+
+    const linkBox = document.createElement('div');
+    linkBox.style.cssText =
+      'padding:14px;margin-top:12px;background:#f4f7f4;border-radius:10px;word-break:break-all;';
+
+    const link = document.createElement('a');
+    link.href = customerLink;
+    link.textContent = customerLink;
+    link.target = '_blank';
+    link.rel = 'noopener';
+
+    const copyButton = document.createElement('button');
+    copyButton.type = 'button';
+    copyButton.className = 'btn dark';
+    copyButton.textContent = 'Copy secure customer link';
+    copyButton.onclick = async () => {
+      await navigator.clipboard.writeText(customerLink);
+      copyButton.textContent = 'Copied';
+    };
+
+    linkBox.append(link, document.createElement('br'), copyButton);
+    message.appendChild(linkBox);
+
+    form.reset();
+    await loadZylusSales();
+
+  } catch (error) {
+    console.error('Zylus transaction error:', error);
+    message.textContent =
+      'Could not create transaction: ' + (error.message || error);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Create sales transaction';
+  }
+});
 
 window.requestPayment=async function(id){
   try {
