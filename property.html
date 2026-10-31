@@ -674,7 +674,7 @@ if (inspectionButton && inspectionPanel && inspectionForm) {
         throw new Error(data?.error || "Could not submit your request.");
       }
 
-      
+   status.textContent = "";   
 const successPopup = document.createElement("div");
 
 successPopup.id = "inspectionSuccessPopup";
@@ -765,10 +765,6 @@ document.getElementById("closeInspectionSuccess").addEventListener("click", () =
 
 inspectionForm.reset();
 dateInput.min = localToday;
-
-      inspectionForm.reset();
-      dateInput.min = localToday;
-
     } catch (error) {
       console.error("Inspection request failed:", error);
       status.textContent =
