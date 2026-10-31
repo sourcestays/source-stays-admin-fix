@@ -612,62 +612,82 @@ ${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
 </section>
 ` : ""}
 
-<a class="btn dark" href="booking.html?id=${encodeURIComponent(p.id)}">
-  Request booking
-</a>
+<div class="property-actions">
+  <a class="btn dark" href="booking.html?id=${encodeURIComponent(p.id)}">
+    Request booking
+  </a>
+
+  ${["shortlet", "hotel"].includes(String(p.category || "").toLowerCase()) ? `
+    <button type="button" class="btn inspection-trigger"
+      id="openInspectionForm"
+      aria-expanded="false"
+      aria-controls="inspectionRequestPanel">
+      Request Property Inspection
+    </button>
+  ` : ""}
+</div>
 
 ${["shortlet", "hotel"].includes(String(p.category || "").toLowerCase()) ? `
-  <button type="button" class="btn dark" id="openInspectionForm">
-    Request Property Inspection
-  </button>
-
-  <section id="inspectionRequestPanel" hidden
-    style="margin-top:18px;padding:20px;border:1px solid #e7ebe7;border-radius:14px;background:#f9faf7;">
-
-    <h3 style="margin-top:0;">Request a Property Inspection</h3>
-    <p class="muted">Send us your preferred inspection date and time. Our team will contact you to confirm the appointment.</p>
+  <section id="inspectionRequestPanel" hidden>
+    <h3>Request a Property Inspection</h3>
+    <p class="inspection-intro">
+      Send us your preferred inspection date and time. Our team will contact you to confirm the appointment.
+    </p>
 
     <form id="customerInspectionForm">
-      <label>Full name</label>
-      <input name="customer_name" type="text" required maxlength="100"
-        placeholder="Enter your full name">
+      <div class="inspection-field">
+        <label>Full name</label>
+        <input name="customer_name" type="text" required maxlength="100"
+          placeholder="Enter your full name">
+      </div>
 
-      <label>Email address</label>
-      <input name="customer_email" type="email" required maxlength="254"
-        placeholder="Enter your email">
+      <div class="inspection-field">
+        <label>Email address</label>
+        <input name="customer_email" type="email" required maxlength="254"
+          placeholder="Enter your email">
+      </div>
 
-      <label>Phone number</label>
-      <input name="customer_phone" type="tel" required maxlength="30"
-        placeholder="Enter your phone number">
+      <div class="inspection-field">
+        <label>Phone number</label>
+        <input name="customer_phone" type="tel" required maxlength="30"
+          placeholder="Enter your phone number">
+      </div>
 
-      <label>Preferred inspection date</label>
-      <input name="preferred_date" id="inspectionDate"
-        type="date" required>
+      <div class="inspection-field">
+        <label>Preferred inspection date</label>
+        <input name="preferred_date" id="inspectionDate"
+          type="date" required>
+      </div>
 
       ${p.is_zylus_group ? `
-        <p style="color:#9b7b37;font-size:13px;">
+        <p class="inspection-intro">
           Zylus Group properties are available for inspection on Tuesdays only.
         </p>
       ` : ""}
 
-      <label>Preferred time</label>
-      <select name="preferred_time" required>
-        <option value="">Choose a preferred time</option>
-        <option>9:00 AM</option>
-        <option>10:00 AM</option>
-        <option>11:00 AM</option>
-        <option>12:00 PM</option>
-        <option>1:00 PM</option>
-        <option>2:00 PM</option>
-        <option>3:00 PM</option>
-        <option>4:00 PM</option>
-      </select>
+      <div class="inspection-field">
+        <label>Preferred time</label>
+        <select name="preferred_time" required>
+          <option value="">Choose a preferred time</option>
+          <option>9:00 AM</option>
+          <option>10:00 AM</option>
+          <option>11:00 AM</option>
+          <option>12:00 PM</option>
+          <option>1:00 PM</option>
+          <option>2:00 PM</option>
+          <option>3:00 PM</option>
+          <option>4:00 PM</option>
+        </select>
+      </div>
 
-      <label>Additional message (optional)</label>
-      <textarea name="message" rows="3" maxlength="1000"
-        placeholder="Any additional information?"></textarea>
+      <div class="inspection-field">
+        <label>Additional message (optional)</label>
+        <textarea name="message" rows="3" maxlength="1000"
+          placeholder="Any additional information?"></textarea>
+      </div>
 
-      <button type="submit" class="btn dark" id="submitInspectionRequest">
+      <button type="submit" class="btn dark inspection-submit"
+        id="submitInspectionRequest">
         Submit Inspection Request
       </button>
 
