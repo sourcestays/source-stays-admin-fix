@@ -1,5 +1,64 @@
 <!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Source Stays Admin Dashboard</title><link rel="stylesheet" href="styles.css"><style>
-.admin{width:min(1180px,94%);margin:auto;padding:28px 0}.top{display:flex;justify-content:space-between;align-items:center;gap:15px}.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}.box{background:#fff;border:1px solid #e5e2d9;border-radius:16px;padding:22px;margin-top:18px}.field{display:grid;gap:6px;margin:10px 0}.field input,.field select,.field textarea{padding:11px;border:1px solid #ddd;border-radius:8px;font:inherit}.field textarea{min-height:90px}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:13px}.pill{padding:4px 8px;border-radius:20px;background:#edf4f0}.verify-box{margin-top:8px;padding:10px;border:1px solid #eee;border-radius:10px;background:#fafafa}.verify-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.verify-actions button,.verify-actions a{font-size:12px;padding:6px 9px}.brand-logo{display:inline-flex;align-items:center;width:80px;height:auto;overflow:hidden;border-radius:8px}.brand-logo img{width:100%;height:100%;object-fit:cover;object-position:center}.login{max-width:430px;margin:8vh auto}.hidden{display:none}.thumb{width:70px;height:50px;object-fit:cover;border-radius:7px}.notice{background:#fff7df;border:1px solid #ead49a;padding:12px;border-radius:10px;font-size:13px}.danger{color:#9b2c2c}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{padding:16px;border:1px solid #eee;border-radius:12px}.stat b{display:block;font-size:25px;color:#123f32}@media(max-width:800px){.grid{grid-template-columns:1fr}.table{display:block;overflow:auto;white-space:nowrap}.stats{grid-template-columns:1fr}}
+.admin{width:min(1180px,94%);margin:auto;padding:28px 0}.top{display:flex;justify-content:space-between;align-items:center;gap:15px}.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}.box{background:#fff;border:1px solid #e5e2d9;border-radius:16px;padding:22px;margin-top:18px}.field{display:grid;gap:6px;margin:10px 0}.field input,.field select,.field textarea{padding:11px;border:1px solid #ddd;border-radius:8px;font:inherit}.field textarea{min-height:90px}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:10px;border-bottom:1px solid #eee;text-align:left;font-size:13px}.pill{padding:4px 8px;border-radius:20px;background:#edf4f0}.verify-box{margin-top:8px;padding:10px;border:1px solid #eee;border-radius:10px;background:#fafafa}.verify-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.verify-actions button,.verify-actions a{font-size:12px;padding:6px 9px}.brand-logo{display:inline-flex;align-items:center;width:80px;height:auto;overflow:hidden;border-radius:8px}.brand-logo img{width:100%;height:100%;object-fit:cover;object-position:center}.login{max-width:430px;margin:8vh auto}.hidden{display:none} /* Zylus notification popup */
+.zylus-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 99999;
+}
+
+.zylus-modal-overlay.hidden {
+  display: none;
+}
+
+.zylus-modal {
+  background: #fff;
+  width: min(460px, 100%);
+  padding: 28px;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  text-align: center;
+}
+
+.zylus-modal-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 15px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #e7f6ed;
+  color: #16834a;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.zylus-modal-icon.error {
+  background: #fdeaea;
+  color: #b42318;
+}
+
+.zylus-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.zylus-modal-actions a {
+  text-decoration: none;
+}
+
+.zylus-modal-message {
+  color: #555;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}.thumb{width:70px;height:50px;object-fit:cover;border-radius:7px}.notice{background:#fff7df;border:1px solid #ead49a;padding:12px;border-radius:10px;font-size:13px}.danger{color:#9b2c2c}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{padding:16px;border:1px solid #eee;border-radius:12px}.stat b{display:block;font-size:25px;color:#123f32}@media(max-width:800px){.grid{grid-template-columns:1fr}.table{display:block;overflow:auto;white-space:nowrap}.stats{grid-template-columns:1fr}}
 @media(max-width:700px){.top{flex-wrap:wrap;gap:12px}.top>div:last-child{width:100%;display:flex;flex-wrap:wrap;gap:8px}}@media(max-width:700px){h2{font-size:32px;line-height:1.15}}@media(max-width:700px){.table{font-size:13px}.table th,.table td{padding:6px}.table img{width:70px;height:50px;object-fit:cover}}</style></head><body><div class="admin">
 <div id="login" class="box login"><a class="brand-logo" href="index.html"><img src="source-stays-logo-green-gold.png" alt="Source Stays"></a><div class="eyebrow" style="margin-top:12px">Source Stays</div><h2>Admin dashboard</h2><p class="muted">Manage apartments, hotels and real-estate listings from one place.</p><div id="modeNotice" class="notice">Live Supabase login — demo login has been disabled.</div><form id="loginForm"><div class="field"><label>Email</label><input name="email" type="email" value="" required></div><div class="field"><label>Password</label><input name="password" type="password" placeholder="Enter admin password" required></div><button class="btn dark">Sign in</button><p id="loginMsg" class="muted"></p></form></div>
 
@@ -189,7 +248,25 @@
 </div>
 
 </section>
+<div id="zylusNotificationModal" class="zylus-modal-overlay hidden">
+  <div class="zylus-modal" role="dialog" aria-modal="true"
+       aria-labelledby="zylusModalTitle">
 
+    <div id="zylusModalIcon" class="zylus-modal-icon">✓</div>
+
+    <h3 id="zylusModalTitle">Payment Instructions Issued</h3>
+
+    <p id="zylusModalMessage" class="zylus-modal-message"></p>
+
+    <div id="zylusModalActions" class="zylus-modal-actions"></div>
+
+    <button type="button" class="btn dark"
+      id="closeZylusNotification">
+      Close
+    </button>
+
+  </div>
+</div>
 <div class="grid"><section class="box"><h3>Properties</h3><div id="props"></div></section><section class="box"><h3 id="formTitle">Add property</h3><form id="propertyForm"><input type="hidden" name="id"><div class="field"><label>Title</label><input name="title" required></div><div class="field"><label>Category</label><select name="type"><option value="shortlet">Shortlet</option><option value="hotel">Hotel</option><option value="sale">For sale</option><option value="rent">For rent</option><option value="land">Land</option></select></div><div class="field"><label>Location</label><input name="location" placeholder="Lekki Phase 1, Lagos"></div><div class="field"><label>Price</label><input name="price" type="number"></div><div class="field"><label>Price unit</label><input name="price_period" value="per night" placeholder="per night / per month / total"></div><details style="border:1px solid #e5e2d9;border-radius:10px;padding:12px;margin:14px 0"><summary style="font-weight:700;cursor:pointer">Fees & charges (enter 0 if not applicable)</summary><p class="muted">Set clear amounts for this property. The caution deposit is shown as refundable. Fees marked due later are displayed separately to guests.</p><h4>Accommodation fees</h4><div class="field"><label>Refundable caution deposit (₦)</label><input name="caution_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Cleaning fee per booking (₦)</label><input name="cleaning_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Service fee per booking (₦)</label><input name="service_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Extra guest fee per additional guest, per stay (₦)</label><input name="extra_guest_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Other accommodation charge (₦)</label><input name="other_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Other charge label</label><input name="other_fee_label" placeholder="e.g. Generator contribution"></div><h4>Rental / land / property transaction fees</h4><div class="field"><label>Agency fee (₦)</label><input name="agency_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Legal fee (₦)</label><input name="legal_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Agreement fee (₦)</label><input name="agreement_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Service charge (₦)</label><input name="service_charge" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Title search fee (₦)</label><input name="title_search_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Survey fee (₦)</label><input name="survey_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Documentation fee (₦)</label><input name="documentation_fee" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Transfer fee (₦)</label><input name="transfer_fee" type="number" min="0" step="0.01" value="0"></div><p class="muted">Use the “Other accommodation charge” amount and label above for any additional property-specific fee; use the notes below for transaction fees not payable now.</p><div class="field"><label>Fees payable later / additional fee notes</label><textarea name="fees_due_later" placeholder="Explain any fee not payable now, who collects it, and when it is due."></textarea></div></details><details id="landDocumentChecklist" style="border:1px solid #e5e2d9;border-radius:10px;padding:12px;margin:14px 0"><summary style="font-weight:700;cursor:pointer">Land & property document checklist</summary><p class="muted">Choose the status based on what Source Stays has actually received and checked. “Verified” means a responsible person has completed the relevant checks; it is not a guarantee of legal title.</p><div class="field"><label>Survey plan</label><select name="survey_plan_status"><option value="not_supplied">Not supplied</option><option value="supplied">Supplied — not verified</option><option value="verified">Checked / verified</option></select></div><div class="field"><label>Title document (e.g. C of O or applicable title)</label><select name="title_document_status"><option value="not_supplied">Not supplied</option><option value="supplied">Supplied — not verified</option><option value="verified">Checked / verified</option></select></div><div class="field"><label>Deed of Assignment</label><select name="deed_assignment_status"><option value="not_supplied">Not supplied</option><option value="supplied">Supplied — not verified</option><option value="verified">Checked / verified</option></select></div><div class="field"><label>Legal / title search</label><select name="title_search_status"><option value="not_checked">Not checked</option><option value="in_progress">In progress</option><option value="clear">Completed — no issue reported</option><option value="issue_found">Issue found — follow-up required</option></select></div><div class="field"><label>Additional document notes</label><textarea name="supporting_documents_notes" placeholder="List other documents supplied, who checked them, and any limitations or follow-up needed."></textarea></div></details><div class="field"><label>Bedrooms</label><input name="bedrooms" type="number"></div><div class="field"><label>Guests</label><input name="guests" type="number"></div><div class="field"><label>Amenities</label><input name="amenities" placeholder="Pool, Wi-Fi, Generator"></div><div class="field"><label>Description</label><textarea name="description"></textarea></div><div class="field"><label>Photo</label><input name="imageFile" type="file" accept="image/*" multiple><small class="muted">Photos are uploaded to Source Stays secure storage.</small></div><div class="field"><label>Or image URL</label><input name="image_url" placeholder="https://..."></div>
 <div class="field">
   <label>Property video (MP4 or WebM)</label>
@@ -1197,6 +1274,50 @@ document.getElementById('cancelZylusPayment').addEventListener('click', function
   zylusPaymentResult.innerHTML = '';
 });
 
+function showZylusNotification(title, message, isError = false, links = []) {
+  const modal = document.getElementById('zylusNotificationModal');
+  const icon = document.getElementById('zylusModalIcon');
+  const modalTitle = document.getElementById('zylusModalTitle');
+  const modalMessage = document.getElementById('zylusModalMessage');
+  const actions = document.getElementById('zylusModalActions');
+
+  modalTitle.textContent = title;
+  modalMessage.textContent = message;
+
+  icon.textContent = isError ? '!' : '✓';
+  icon.classList.toggle('error', isError);
+
+  actions.innerHTML = '';
+
+  links.forEach(item => {
+    if (!item.url) return;
+
+    const link = document.createElement('a');
+    link.href = item.url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.className = 'btn ' + (item.primary ? 'gold' : 'dark');
+    link.textContent = item.label;
+
+    actions.appendChild(link);
+  });
+
+  modal.classList.remove('hidden');
+}
+
+function closeZylusNotification() {
+  document.getElementById('zylusNotificationModal')
+    .classList.add('hidden');
+}
+
+document.getElementById('closeZylusNotification')
+  .addEventListener('click', closeZylusNotification);
+
+document.getElementById('zylusNotificationModal')
+  .addEventListener('click', function(e) {
+    if (e.target === this) closeZylusNotification();
+  });
+
 zylusPaymentForm.addEventListener('submit', async function(e) {
   e.preventDefault();
 
@@ -1205,15 +1326,21 @@ zylusPaymentForm.addEventListener('submit', async function(e) {
   const accountName = zylusPaymentForm.elements.account_name.value.trim();
   const accountNumber = zylusPaymentForm.elements.account_number.value.trim();
   const paymentReference = zylusPaymentForm.elements.payment_reference.value.trim();
-  const additionalInstructions = zylusPaymentForm.elements.additional_instructions.value.trim();
+  const additionalInstructions =
+    zylusPaymentForm.elements.additional_instructions.value.trim();
 
   if (!zylusPaymentForm.elements.bank_details_verified.checked) {
-    zylusPaymentMessage.textContent = 'Please confirm that you have verified the bank details.';
+    showZylusNotification(
+      'Verification required',
+      'Please confirm that you have verified the bank details.',
+      true
+    );
     return;
   }
 
   issueZylusPaymentButton.disabled = true;
   issueZylusPaymentButton.textContent = 'Issuing instructions...';
+
   zylusPaymentMessage.textContent = 'Submitting payment instructions...';
   zylusPaymentResult.innerHTML = '';
 
@@ -1236,39 +1363,52 @@ zylusPaymentForm.addEventListener('submit', async function(e) {
     );
 
     if (error) throw error;
+
     if (!data?.success) {
-      throw new Error(data?.error || 'Could not issue payment instructions.');
+      throw new Error(
+        data?.error || 'Could not issue payment instructions.'
+      );
     }
+
+    const emailMessage = data.email_sent
+      ? 'Email notification: Sent successfully.'
+      : 'Email notification: Sending was not confirmed. Please check.';
+
+    showZylusNotification(
+      'Payment Instructions Issued!',
+      (data.message || 'Payment instructions were issued successfully.') +
+      '\n\n' + emailMessage,
+      false,
+      [
+        {
+          label: 'Open WhatsApp Message',
+          url: data.whatsapp_link,
+          primary: true
+        },
+        {
+          label: 'Open Customer Payment Page',
+          url: data.customer_link
+        }
+      ]
+    );
 
     zylusPaymentMessage.textContent =
-      data.message || 'Payment instructions issued successfully.';
-
-    if (data.whatsapp_link) {
-      const whatsappLink = document.createElement('a');
-      whatsappLink.href = data.whatsapp_link;
-      whatsappLink.target = '_blank';
-      whatsappLink.rel = 'noopener noreferrer';
-      whatsappLink.textContent = 'Open WhatsApp message';
-      whatsappLink.className = 'btn gold';
-      zylusPaymentResult.appendChild(whatsappLink);
-    }
-
-    if (data.customer_link) {
-      const customerLink = document.createElement('a');
-      customerLink.href = data.customer_link;
-      customerLink.target = '_blank';
-      customerLink.rel = 'noopener noreferrer';
-      customerLink.textContent = 'Open customer payment page';
-      customerLink.className = 'btn';
-      zylusPaymentResult.appendChild(customerLink);
-    }
+      'Payment instructions issued.';
 
     await loadZylusSales();
 
   } catch (error) {
     console.error('Zylus payment instruction error:', error);
+
+    showZylusNotification(
+      'Payment Instructions Failed',
+      error.message || 'Could not issue payment instructions.',
+      true
+    );
+
     zylusPaymentMessage.textContent =
       error.message || 'Could not issue payment instructions.';
+
   } finally {
     issueZylusPaymentButton.disabled = false;
     issueZylusPaymentButton.textContent = 'Issue Payment Instructions';
