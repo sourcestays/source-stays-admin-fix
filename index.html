@@ -80,6 +80,7 @@
             <option value="shortlet">Shortlets</option>
             <option value="hotel">Hotels</option>
             <option value="sale">Property for sale</option>
+            <option value="land">Land for sale</option>
             <option value="rent">Property for rent</option>
           </select>
           <input id="location" placeholder="Location e.g. Lekki, Ikeja">
@@ -294,7 +295,7 @@
 <script>
   (function () {
     const requestedType = new URLSearchParams(window.location.search).get('type');
-    const allowedTypes = ['all', 'shortlet', 'hotel', 'sale', 'rent'];
+ const allowedTypes = ['all', 'shortlet', 'hotel', 'sale', 'land', 'rent'];
     const typeSelect = document.getElementById('type');
 
     if (typeSelect && allowedTypes.includes(requestedType)) {
