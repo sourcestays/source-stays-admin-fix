@@ -622,12 +622,12 @@ ${hasPricingBreakdown || hasPaymentPlan ? `
 
   ${sixMonthPayment > 0 ? `
   <p><b>6-month plan:</b> ₦${SourceStays.money(sixMonthPayment)} monthly</p>
-  <p><b>Total over 6 months:</b> ₦${SourceStays.money(initialDeposit + (sixMonthPayment * 6))}</p>
+  <p><b>Total over 6 months:</b> ₦${SourceStays.money(Math.round(initialDeposit + (sixMonthPayment * 6)))}</p>
   ` : ""}
 
   ${twelveMonthPayment > 0 ? `
   <p><b>12-month plan:</b> ₦${SourceStays.money(twelveMonthPayment)} monthly</p>
-  <p><b>Total over 12 months:</b> ₦${SourceStays.money(initialDeposit + (twelveMonthPayment * 12))}</p>
+  <p><b>Total over 12 months:</b> ₦${SourceStays.money(Math.round(initialDeposit + (twelveMonthPayment * 12)))}</p>
   ` : ""}
   ` : ""}
 
