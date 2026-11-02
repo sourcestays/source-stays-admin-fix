@@ -596,9 +596,25 @@ const hasPaymentPlan =
               • ${p.guests || 0} guests
             </p>
 
-            <h3>
-              ₦${SourceStays.money(p.price)} / ${period}
-            </h3>
+          ${p.event_enabled ? `
+<section style="margin:20px 0;padding:20px;border:1px solid #e7ebe7;border-radius:14px;background:#f7f8f5;">
+  <h3 style="margin-top:0;">Available Booking Options</h3>
+
+  <div style="padding:14px;margin-bottom:12px;background:#fff;border-radius:10px;">
+    <h4>Entire 4-Bedroom Duplex</h4>
+    <h3>₦${SourceStays.money(p.price)} / night</h3>
+    <p>Refundable caution deposit: ₦${SourceStays.money(p.caution_fee || 0)}</p>
+  </div>
+
+  <div style="padding:14px;background:#fff;border-radius:10px;">
+    <h4>Private Indoor Event</h4>
+    <h3>₦${SourceStays.money(p.event_price)} / event</h3>
+    <p>Refundable caution deposit: ₦${SourceStays.money(p.event_caution_fee || 0)}</p>
+  </div>
+</section>
+` : `
+<h3>₦${SourceStays.money(p.price)} / ${period}</h3>
+`}
 ${hasPricingBreakdown || hasPaymentPlan ? `
 <section style="margin-top:20px;padding:20px;border:1px solid #e7ebe7;border-radius:14px;background:#f7f8f5;">
 
