@@ -507,7 +507,19 @@
       const description = SourceStays.esc(p.description || "");
       const amenities = SourceStays.esc(p.amenities || "—");
       const period = SourceStays.esc(p.price_period || "per night");
+const landPrice = Number(p.land_price) || 0;
+const surveyFee = Number(p.survey_fee) || 0;
+const legalFee = Number(p.legal_fee) || 0;
+const developmentFee = Number(p.preliminary_development_fee) || 0;
+const initialDeposit = Number(p.initial_deposit) || 0;
+const sixMonthPayment = Number(p.payment_0_6_months) || 0;
+const twelveMonthPayment = Number(p.payment_7_12_months) || 0;
 
+const hasPricingBreakdown =
+  landPrice > 0 || surveyFee > 0 || legalFee > 0 || developmentFee > 0;
+
+const hasPaymentPlan =
+  initialDeposit > 0 || sixMonthPayment > 0 || twelveMonthPayment > 0;
       detail.innerHTML = `
         <div class="property-layout">
           <section class="property-gallery" aria-label="Property photos">
@@ -587,7 +599,40 @@
             <h3>
               ₦${SourceStays.money(p.price)} / ${period}
             </h3>
+${hasPricingBreakdown || hasPaymentPlan ? `
+<section style="margin-top:20px;padding:20px;border:1px solid #e7ebe7;border-radius:14px;background:#f7f8f5;">
 
+  ${hasPricingBreakdown ? `
+  <h3 style="margin-top:0;">Price Breakdown</h3>
+
+  ${landPrice > 0 ? `<p><b>Land price:</b> ₦${SourceStays.money(landPrice)}</p>` : ""}
+  ${surveyFee > 0 ? `<p><b>Survey fee:</b> ₦${SourceStays.money(surveyFee)}</p>` : ""}
+  ${legalFee > 0 ? `<p><b>Legal fee:</b> ₦${SourceStays.money(legalFee)}</p>` : ""}
+  ${developmentFee > 0 ? `<p><b>Preliminary development fee:</b> ₦${SourceStays.money(developmentFee)}</p>` : ""}
+
+  <p style="font-weight:800;border-top:1px solid #dce3dc;padding-top:12px;">
+    Total price: ₦${SourceStays.money(p.price)}
+  </p>
+  ` : ""}
+
+  ${hasPaymentPlan ? `
+  <h3>Available Payment Plans</h3>
+
+  ${initialDeposit > 0 ? `<p><b>Initial deposit:</b> ₦${SourceStays.money(initialDeposit)}</p>` : ""}
+
+  ${sixMonthPayment > 0 ? `
+  <p><b>6-month plan:</b> ₦${SourceStays.money(sixMonthPayment)} monthly</p>
+  <p><b>Total over 6 months:</b> ₦${SourceStays.money(initialDeposit + (sixMonthPayment * 6))}</p>
+  ` : ""}
+
+  ${twelveMonthPayment > 0 ? `
+  <p><b>12-month plan:</b> ₦${SourceStays.money(twelveMonthPayment)} monthly</p>
+  <p><b>Total over 12 months:</b> ₦${SourceStays.money(initialDeposit + (twelveMonthPayment * 12))}</p>
+  ` : ""}
+  ` : ""}
+
+</section>
+` : ""}
             <p class="description-in-info">${description}</p>
 
             <p><b>Amenities:</b> ${amenities}</p>
