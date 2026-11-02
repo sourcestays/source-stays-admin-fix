@@ -32,7 +32,16 @@
 <input name="phone" required placeholder="Phone / WhatsApp" style="width:100%;padding:13px;margin:6px 0">
 
 <input name="email" type="email" placeholder="Email" style="width:100%;padding:13px;margin:6px 0">
+<div id="bookingOptionSection" style="display:none;margin:15px 0;padding:16px;border:1px solid #ddd;border-radius:12px;background:#f7f8f5;">
+  <label for="booking_option" style="display:block;font-weight:700;margin-bottom:8px;">
+    Select Booking Option
+  </label>
 
+  <select id="booking_option" name="booking_option" style="width:100%;padding:13px;border:1px solid #ccc;border-radius:8px;">
+    <option value="accommodation">Entire 4-Bedroom Duplex — ₦220,000/night</option>
+    <option value="event">Private Indoor Event — ₦300,000/event</option>
+  </select>
+</div>
 <label for="check_in" style="display:block;font-weight:700;margin:10px 0 4px">Check-in</label>
 <input id="check_in" name="check_in" type="date" required onchange="document.getElementById('check_out').min=this.value" style="width:100%;padding:13px;margin:0 0 8px">
 <label for="check_out" style="display:block;font-weight:700;margin:10px 0 4px">Check-out</label>
@@ -127,6 +136,8 @@ checkIn.min = today;
 checkOut.min = today;
 
 let property = null;
+  const bookingOptionSection = document.getElementById('bookingOptionSection');
+const bookingOption = document.getElementById('booking_option');
 let bookingTotal = 0;
 let nights = 0;
 
@@ -145,7 +156,6 @@ function calculateTotal() {
 
   const start = new Date(checkIn.value);
   const end = new Date(checkOut.value);
-
   nights = Math.round((end - start) / 86400000);
 
   if (nights <= 0) {
@@ -155,6 +165,26 @@ function calculateTotal() {
   }
 
   const money = value => Number(value || 0).toLocaleString('en-NG');
+  const isEvent = property.event_enabled && bookingOption.value === 'event';
+
+  if (isEvent) {
+    const eventPrice = Number(property.event_price || 0);
+    const eventCaution = Number(property.event_caution_fee || 0);
+
+    bookingTotal = eventPrice + eventCaution;
+
+    totalBox.style.display = 'block';
+    totalBox.innerHTML = `
+      <div>Private Indoor Event: ₦${money(eventPrice)}</div>
+      <div>Refundable caution deposit: ₦${money(eventCaution)}</div>
+      <div style="border-top:1px solid #ddd;margin-top:10px;padding-top:10px">
+        <strong style="font-size:20px">Estimated amount due: ₦${money(bookingTotal)}</strong>
+      </div>
+      <p style="font-weight:400">Event pricing is charged once per booking, not per night.</p>
+    `;
+    return;
+  }
+
   const price = Number(property.price || 0);
   const accommodation = price * nights;
   const guests = Math.max(1, Number(document.getElementById('guests').value || 1));
@@ -163,6 +193,7 @@ function calculateTotal() {
   const service = Number(property.service_fee || 0);
   const other = Number(property.other_fee || 0);
   const caution = Number(property.caution_fee || 0);
+
   bookingTotal = accommodation + extraGuest + cleaning + service + other + caution;
 
   const lines = [
@@ -170,21 +201,30 @@ function calculateTotal() {
     ...(cleaning ? [`<div>Cleaning fee: ₦${money(cleaning)}</div>`] : []),
     ...(service ? [`<div>Service fee: ₦${money(service)}</div>`] : []),
     ...(extraGuest ? [`<div>Additional guest fee (${guests - 1}): ₦${money(extraGuest)}</div>`] : []),
-    ...(other ? [`<div>${String(property.other_fee_label || 'Other charge').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}: ₦${money(other)}</div>`] : []),
-    ...(caution ? [`<div style="margin-top:6px">Refundable caution deposit: ₦${money(caution)} <span style="font-weight:400">(refundable subject to property terms and any documented damage or deductions)</span></div>`] : []),
+    ...(other ? [`<div>Other charge: ₦${money(other)}</div>`] : []),
+    ...(caution ? [`<div>Refundable caution deposit: ₦${money(caution)}</div>`] : []),
     `<div style="border-top:1px solid #ddd;margin-top:10px;padding-top:10px"><strong style="font-size:20px">Estimated amount due: ₦${money(bookingTotal)}</strong></div>`
   ];
-  if (property.fees_due_later) lines.push(`<div style="margin-top:10px;font-weight:400"><strong>Fees payable later / additional notes:</strong><br>${String(property.fees_due_later).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])).replace(/\n/g,'<br>')}</div>`);
+
   totalBox.style.display = 'block';
   totalBox.innerHTML = lines.join('');
 }
-
 async function loadProperty() {
   if (!id) return;
 
   try {
-    property = await SourceStays.getProperty(id);
-    calculateTotal();
+  property = await SourceStays.getProperty(id);
+
+if (property && property.event_enabled) {
+  bookingOption.options[0].textContent =
+  `Entire 4-Bedroom Duplex — ₦${Number(property.price || 0).toLocaleString('en-NG')}/night`;
+
+bookingOption.options[1].textContent =
+  `Private Indoor Event — ₦${Number(property.event_price || 0).toLocaleString('en-NG')}/event`;
+  bookingOptionSection.style.display = 'block';
+}
+
+calculateTotal();
   } catch (err) {
     console.error('Could not load property:', err);
   }
@@ -345,7 +385,9 @@ async function checkSelectedDates() {
     }
   }
 }
+bookingOption.addEventListener('change', calculateTotal);
 
+document.getElementById('guests').addEventListener('change', calculateTotal);
 checkIn.addEventListener('change', () => {
   checkOut.min = checkIn.value || today;
   calculateTotal();
@@ -473,6 +515,16 @@ form.onsubmit = async e => {
     b.customer_phone = b.phone;
     b.customer_email = b.email || null;
     b.amount_due = bookingTotal;
+    const isEvent = property.event_enabled && bookingOption.value === 'event';
+
+b.booking_option = isEvent ? 'event' : 'accommodation';
+b.booking_option_label = isEvent ? 'Private Indoor Event' : 'Entire 4-Bedroom Duplex';
+b.booking_base_price = isEvent
+  ? Number(property.event_price || 0)
+  : Number(property.price || 0);
+b.booking_caution_fee = isEvent
+  ? Number(property.event_caution_fee || 0)
+  : Number(property.caution_fee || 0);
     b.currency = 'NGN';
     b.payment_status = 'unpaid';
 
