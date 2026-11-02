@@ -195,21 +195,35 @@
     <input type="hidden" name="sale_id">
 
     <div class="field">
-      <label>Bank name</label>
-      <input name="bank_name" required maxlength="120"
-        placeholder="e.g. Keystone Bank">
-    </div>
+  <label for="zylusBankName">Bank name</label>
+  <select name="bank_name" id="zylusBankName" required>
+    <option value="">Loading banks...</option>
+  </select>
+</div>
 
-    <div class="field">
-      <label>Account name</label>
-      <input name="account_name" required maxlength="150">
-    </div>
+<div class="field">
+  <label for="zylusAccountNumber">Account number</label>
+  <input
+    name="account_number"
+    id="zylusAccountNumber"
+    required
+    inputmode="numeric"
+    maxlength="10"
+    pattern="[0-9]{10}"
+    placeholder="Enter 10-digit account number">
+</div>
 
-    <div class="field">
-      <label>Account number</label>
-      <input name="account_number" required
-        inputmode="numeric" maxlength="20">
-    </div>
+<div class="field">
+  <label for="zylusAccountName">Verified account name</label>
+  <input
+    name="account_name"
+    id="zylusAccountName"
+    required
+    maxlength="150"
+    readonly
+    placeholder="Account name will appear automatically">
+  <p id="zylusAccountLookupMessage" class="muted"></p>
+</div>
 
     <div class="field">
       <label>Payment reference</label>
@@ -1247,7 +1261,132 @@ const zylusPaymentForm = document.getElementById('zylusPaymentForm');
 const zylusPaymentMessage = document.getElementById('zylusPaymentMessage');
 const zylusPaymentResult = document.getElementById('zylusPaymentResult');
 const issueZylusPaymentButton = document.getElementById('issueZylusPaymentButton');
+// Load Nigerian banks from Paystack
+async function loadZylusBanks() {
+  const bankSelect = document.getElementById('zylusBankName');
+  const message = document.getElementById('zylusAccountLookupMessage');
 
+  try {
+    const sb = getClient();
+
+    const { data, error } = await sb.functions.invoke(
+      'resolve-bank-account',
+      {
+        body: { action: 'list_banks' }
+      }
+    );
+
+    if (error) throw error;
+    if (!data?.success || !Array.isArray(data.banks)) {
+      throw new Error(data?.error || 'Could not load banks.');
+    }
+
+    bankSelect.innerHTML = '<option value="">Select bank</option>';
+
+    data.banks.forEach(bank => {
+      const option = document.createElement('option');
+      option.value = bank.name;
+      option.textContent = bank.name;
+      option.dataset.code = bank.code;
+      bankSelect.appendChild(option);
+    });
+
+    message.textContent = 'Select a bank and enter the account number.';
+
+  } catch (error) {
+    console.error('Bank list error:', error);
+    bankSelect.innerHTML = '<option value="">Could not load banks</option>';
+    message.textContent = 'Could not load banks. Please refresh the dashboard.';
+  }
+}
+
+// Automatically retrieve the registered account name
+let zylusResolvedAccount = null;
+
+const zylusBankSelect = document.getElementById('zylusBankName');
+const zylusAccountNumber = document.getElementById('zylusAccountNumber');
+const zylusAccountName = document.getElementById('zylusAccountName');
+const zylusLookupMessage = document.getElementById('zylusAccountLookupMessage');
+
+function clearZylusAccountResolution() {
+  zylusResolvedAccount = null;
+  zylusAccountName.value = '';
+}
+
+zylusBankSelect.addEventListener('change', function() {
+  clearZylusAccountResolution();
+  zylusLookupMessage.textContent =
+    'Enter the account number to verify the beneficiary.';
+});
+
+zylusAccountNumber.addEventListener('input', function() {
+  clearZylusAccountResolution();
+  zylusLookupMessage.textContent = '';
+});
+
+zylusAccountNumber.addEventListener('blur', async function() {
+  const accountNumber = zylusAccountNumber.value.trim();
+  const selectedBank = zylusBankSelect.selectedOptions[0];
+  const bankCode = selectedBank?.dataset.code;
+
+  clearZylusAccountResolution();
+
+  if (!bankCode || !/^\d{10}$/.test(accountNumber)) {
+    zylusLookupMessage.textContent =
+      'Select a bank and enter a valid 10-digit account number.';
+    return;
+  }
+
+  zylusLookupMessage.textContent = 'Verifying account with Paystack...';
+
+  try {
+    const sb = getClient();
+
+    const { data, error } = await sb.functions.invoke(
+      'resolve-bank-account',
+      {
+        body: {
+          action: 'resolve_account',
+          account_number: accountNumber,
+          bank_code: bankCode
+        }
+      }
+    );
+
+    if (error) throw error;
+
+    if (
+      !data?.success ||
+      !data.account_name ||
+      data.account_number !== accountNumber
+    ) {
+      throw new Error(
+        data?.error || 'The account details could not be verified.'
+      );
+    }
+
+    zylusAccountName.value = data.account_name;
+
+    zylusResolvedAccount = {
+      bankCode,
+      bankName: selectedBank.value,
+      accountNumber,
+      accountName: data.account_name
+    };
+
+    zylusLookupMessage.textContent =
+      'Account name retrieved successfully. Please compare it with the official Zylus beneficiary details.';
+
+  } catch (error) {
+    console.error('Account resolution error:', error);
+    clearZylusAccountResolution();
+    zylusLookupMessage.textContent =
+      error.message || 'Account verification failed. Check the details and try again.';
+  }
+});
+
+// Start loading banks
+loadZylusBanks();
 document.getElementById('zylusSalesList').addEventListener('click', function(e) {
   const button = e.target.closest('.issue-zylus-payment');
   if (!button) return;
@@ -1328,7 +1467,19 @@ zylusPaymentForm.addEventListener('submit', async function(e) {
   const paymentReference = zylusPaymentForm.elements.payment_reference.value.trim();
   const additionalInstructions =
     zylusPaymentForm.elements.additional_instructions.value.trim();
-
+if (
+  !zylusResolvedAccount ||
+  zylusResolvedAccount.bankName !== bankName ||
+  zylusResolvedAccount.accountNumber !== accountNumber ||
+  zylusResolvedAccount.accountName !== accountName
+) {
+  showZylusNotification(
+    'Account verification required',
+    'Please select the bank, enter the account number and successfully retrieve the registered account name before issuing payment instructions.',
+    true
+  );
+  return;
+}
   if (!zylusPaymentForm.elements.bank_details_verified.checked) {
     showZylusNotification(
       'Verification required',
