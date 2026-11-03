@@ -886,7 +886,24 @@ if (enquiryButton && enquiryPanel && enquiryForm) {
     button.textContent = "Submitting...";
     status.textContent = "Submitting your enquiry...";
     try {
-      await SourceStays.submitEnquiry({ customer_name: customerName, customer_phone: customerPhone, subject, message: customerMessage || "Customer submitted a property enquiry.", property_id: Number(p.id), status: "new" });
+      const savedEnquiry = await SourceStays.submitEnquiry({ customer_name: customerName, customer_phone: customerPhone, subject, message: customerMessage || "Customer submitted a property enquiry.", property_id: Number(p.id), status: "new" });
+
+      let adminEmailSent = false;
+      try {
+        const { data: notificationData, error: notificationError } =
+          await SourceStays.supabase.functions.invoke(
+            "notify-new-property-enquiry",
+            { body: { enquiry_id: savedEnquiry.id } }
+          );
+        if (notificationError) throw notificationError;
+        adminEmailSent = notificationData?.success === true;
+        if (!adminEmailSent) {
+          console.error("Property enquiry admin email was not confirmed:", notificationData);
+        }
+      } catch (notificationError) {
+        console.error("Property enquiry admin email failed:", notificationError);
+      }
+
       status.textContent = "";
       const successPopup = document.createElement("div");
       successPopup.id = "propertyEnquirySuccessPopup";
