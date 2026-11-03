@@ -625,7 +625,7 @@ const hasPaymentPlan = isSaleListing &&
   </div>
 </section>
 ` : `
-<h3>₦${SourceStays.money(p.price)} / ${period}</h3>
+${isSaleListing ? `<h3>Base property price: ₦${SourceStays.money(basePropertyPrice)}</h3>` : `<h3>₦${SourceStays.money(p.price)} / ${period}</h3>`}
 `}
 ${hasPricingBreakdown || hasPaymentPlan || (isSaleListing && feesDueLater) ? `
 <section style="margin-top:20px;padding:20px;border:1px solid #e7ebe7;border-radius:14px;background:#f7f8f5;">
