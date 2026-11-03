@@ -887,7 +887,19 @@ if (enquiryButton && enquiryPanel && enquiryForm) {
     status.textContent = "Submitting your enquiry...";
     try {
       await SourceStays.submitEnquiry({ customer_name: customerName, customer_phone: customerPhone, subject, message: customerMessage || "Customer submitted a property enquiry.", property_id: Number(p.id), status: "new" });
-      status.textContent = "Your enquiry has been received. Source Stays will contact you shortly.";
+      status.textContent = "";
+      const successPopup = document.createElement("div");
+      successPopup.id = "propertyEnquirySuccessPopup";
+      successPopup.style.cssText = "position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;";
+      successPopup.innerHTML = `
+        <div role="dialog" aria-modal="true" aria-labelledby="propertyEnquirySuccessTitle" style="background:#fff;width:100%;max-width:440px;padding:32px 24px;border-radius:18px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);font-family:Arial,sans-serif;">
+          <div style="width:68px;height:68px;border-radius:50%;background:#e6f4ec;color:#167447;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:bold;margin:0 auto 18px;">✓</div>
+          <h2 id="propertyEnquirySuccessTitle" style="color:#123f32;font-size:24px;margin:0 0 12px;">Enquiry Received!</h2>
+          <p style="color:#68736c;font-size:15px;line-height:1.7;margin:0 0 22px;">Thank you for your interest. Source Stays has received your enquiry and our team will contact you shortly.</p>
+          <button type="button" id="closePropertyEnquirySuccess" style="width:100%;border:0;border-radius:10px;padding:14px;background:#123f32;color:#fff;font-size:16px;font-weight:700;cursor:pointer;">Done</button>
+        </div>`;
+      document.body.appendChild(successPopup);
+      document.getElementById("closePropertyEnquirySuccess").addEventListener("click", () => successPopup.remove());
       enquiryForm.reset();
     } catch (error) {
       console.error("Property enquiry submission failed:", error);
