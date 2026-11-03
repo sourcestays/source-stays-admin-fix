@@ -696,17 +696,15 @@ ${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
   </p>
 </section>
 <div class="property-actions">
- ${["sale", "land"].includes(String(p.category || "").toLowerCase()) ? `
-<a class="btn dark" href="https://wa.me/2347085404814?text=${encodeURIComponent(`Hello Source Stays, I am interested in purchasing ${p.title}. I would like to make an enquiry. Please assist me with the next steps.`)}">
-  Enquire to Buy
-</a>
+ ${["sale", "land", "rent"].includes(String(p.category || "").toLowerCase()) ? `
+<button type="button" class="btn dark" id="openPropertyEnquiry">
+  ${String(p.category || "").toLowerCase() === "rent" ? "Enquire to Rent" : "Enquire to Buy"}
+</button>
 <p style="font-size:13px;color:#68736c;">
-  Inspection can be arranged on request. If you already know the property, you may proceed without inspection.
+  ${String(p.category || "").toLowerCase() === "rent" ? "Contact Source Stays to discuss this rental property." : "Inspection can be arranged on request. If you already know the property, you may proceed without inspection."}
 </p>
 ` : `
-<a class="btn dark" href="booking.html?id=${encodeURIComponent(p.id)}">
-  Request booking
-</a>
+<a class="btn dark" href="booking.html?id=${encodeURIComponent(p.id)}">Request booking</a>
 `}
   ${["shortlet", "hotel", "sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
     <button type="button" class="btn inspection-trigger"
@@ -717,6 +715,20 @@ ${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
     </button>
   ` : ""}
 </div>
+
+${["sale", "land", "rent"].includes(String(p.category || "").toLowerCase()) ? `
+  <section id="propertyEnquiryPanel" hidden style="margin-top:18px;padding:20px;border:1px solid #e7ebe7;border-radius:14px;background:#f9faf7;">
+    <h3>${String(p.category || "").toLowerCase() === "rent" ? "Enquire About This Rental" : "Enquire About This Property"}</h3>
+    <p class="muted">Leave your details and our team will contact you about this property.</p>
+    <form id="propertyEnquiryForm" style="display:grid;gap:12px;">
+      <label>Full name<input name="customer_name" required maxlength="100" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></label>
+      <label>Phone number<input name="customer_phone" type="tel" required maxlength="30" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></label>
+      <label>Message (optional)<textarea name="message" rows="3" maxlength="1000" placeholder="Tell us how you would like to proceed." style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></textarea></label>
+      <button type="submit" class="btn dark" id="submitPropertyEnquiry">Submit Enquiry</button>
+      <p id="propertyEnquiryMessage" class="muted" aria-live="polite"></p>
+    </form>
+  </section>
+` : ""}
 
 ${["shortlet", "hotel", "sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
   <section id="inspectionRequestPanel" hidden>
@@ -843,6 +855,49 @@ style="width: auto; height: auto; max-width: 100%; max-height: 70vh; border-radi
         </div>
       `;
 
+const enquiryButton = document.getElementById("openPropertyEnquiry");
+const enquiryPanel = document.getElementById("propertyEnquiryPanel");
+const enquiryForm = document.getElementById("propertyEnquiryForm");
+
+if (enquiryButton && enquiryPanel && enquiryForm) {
+  enquiryButton.addEventListener("click", () => {
+    enquiryPanel.hidden = !enquiryPanel.hidden;
+    enquiryButton.textContent = enquiryPanel.hidden
+      ? (String(p.category || "").toLowerCase() === "rent" ? "Enquire to Rent" : "Enquire to Buy")
+      : "Close Enquiry Form";
+    if (!enquiryPanel.hidden) {
+      enquiryPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      enquiryForm.elements.customer_name.focus({ preventScroll: true });
+    }
+  });
+
+  enquiryForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = document.getElementById("submitPropertyEnquiry");
+    const status = document.getElementById("propertyEnquiryMessage");
+    const formData = new FormData(enquiryForm);
+    const customerName = String(formData.get("customer_name") || "").trim();
+    const customerPhone = String(formData.get("customer_phone") || "").trim();
+    const customerMessage = String(formData.get("message") || "").trim();
+    const enquiryType = String(p.category || "").toLowerCase() === "rent" ? "Rental enquiry" : "Purchase enquiry";
+    const subject = enquiryType + ": " + p.title + (customerMessage ? " — " + customerMessage : "");
+    if (!customerName || !customerPhone) { status.textContent = "Please enter your name and phone number."; return; }
+    button.disabled = true;
+    button.textContent = "Submitting...";
+    status.textContent = "Submitting your enquiry...";
+    try {
+      await SourceStays.submitEnquiry({ customer_name: customerName, customer_phone: customerPhone, subject, property_id: Number(p.id), status: "new" });
+      status.textContent = "Your enquiry has been received. Source Stays will contact you shortly.";
+      enquiryForm.reset();
+    } catch (error) {
+      console.error("Property enquiry submission failed:", error);
+      status.textContent = error.message || "We could not submit your enquiry. Please try again.";
+    } finally {
+      button.disabled = false;
+      button.textContent = "Submit Enquiry";
+    }
+  });
+}
 const inspectionButton = document.getElementById("openInspectionForm");
 const inspectionPanel = document.getElementById("inspectionRequestPanel");
 const inspectionForm = document.getElementById("customerInspectionForm");
