@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Partner Property Payment | Source Stays</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:24px 15px;background:#f5f7f5;color:#222;font-family:Arial,sans-serif}.container{max-width:600px;margin:30px auto;background:#fff;padding:28px;border-radius:14px;box-shadow:0 5px 25px rgba(0,0,0,.07)}.brand{text-align:center;color:#176b42;font-size:25px;font-weight:bold}h1{text-align:center;font-size:23px;margin:14px 0}.muted{color:#666;line-height:1.6;text-align:center;font-size:14px}.details{background:#f2f7f3;border-radius:10px;padding:16px;margin:22px 0}.details p{margin:9px 0;font-size:14px;overflow-wrap:anywhere}.details strong{color:#176b42}.notice{background:#fff8e8;color:#76551a;padding:13px;border-radius:8px;font-size:13px;line-height:1.6;margin:18px 0}label{display:block;font-weight:bold;margin:18px 0 8px;font-size:14px}input[type=file]{width:100%;padding:13px;border:1px solid #ccc;border-radius:8px}button{width:100%;margin-top:18px;padding:15px;background:#176b42;color:#fff;border:0;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer}button:disabled{opacity:.6;cursor:not-allowed}#message{margin-top:18px;padding:12px;border-radius:8px;font-size:14px;line-height:1.5;display:none;overflow-wrap:anywhere}#message.success{display:block;background:#e8f6ed;color:#176b42}#message.error{display:block;background:#fff0f0;color:#b42318}footer{text-align:center;color:#777;font-size:12px;margin-top:24px}[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main class="container">
+<div class="brand">SOURCE STAYS</div>
+<h1>Partner Property Payment</h1>
+<p class="muted">Review the beneficiary details and submit your payment receipt securely.</p>
+<div id="loading" class="muted">Verifying your secure payment link...</div>
+<section id="transaction" hidden>
+<div class="details">
+<p>Transaction reference: <strong id="reference"></strong></p>
+<p>Buyer: <strong id="buyer"></strong></p>
+<p>Amount to pay: <strong id="amount"></strong></p>
+<p>Payment status: <strong id="status"></strong></p>
+<hr>
+<p>Beneficiary: <strong id="accountName"></strong></p>
+<p>Bank: <strong id="bankName"></strong></p>
+<p>Account number: <strong id="accountNumber"></strong></p>
+<p>Payment reference: <strong id="paymentReference"></strong></p>
+<p id="instructionsRow" hidden>Additional instructions: <strong id="instructions"></strong></p>
+</div>
+<div class="notice"><strong>Important:</strong> Pay directly to the partner's beneficiary account above. Do not pay Source Stays. Your receipt will be reviewed by Source Stays and forwarded to the partner for payment confirmation.</div>
+<form id="receiptForm">
+<label for="receipt">Upload payment receipt</label>
+<input type="file" id="receipt" accept=".jpg,.jpeg,.png,.webp,.pdf" required>
+<p class="muted">Accepted formats: JPG, PNG, WEBP or PDF. Maximum size: 8 MB.</p>
+<button type="submit" id="submitButton">Submit Payment Receipt</button>
+</form>
+</section>
+<div id="message"></div>
+<footer>Source Stays | Hotels · Shortlets · Real Estate</footer>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+const params=new URLSearchParams(location.search);
+const transactionRef=params.get('ref')||'';
+const token=params.get('token')||'';
+const loading=document.getElementById('loading');
+const section=document.getElementById('transaction');
+const message=document.getElementById('message');
+const form=document.getElementById('receiptForm');
+const button=document.getElementById('submitButton');
+let client,verified=false;
+function showMessage(text,type){message.textContent=text;message.className=type;message.style.display='block'}
+function money(value){return new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:2}).format(Number(value))}
+async function callWorkflow(payload){
+const {data,error}=await client.functions.invoke('partner-customer-payment',{body:{...payload,transaction_ref:transactionRef,token}});
+if(error){let detail;try{detail=await error.context?.json()}catch(_){}throw new Error(detail?.error||error.message||'Payment service unavailable.')}
+if(!data?.success)throw new Error(data?.error||'Request could not be completed.');
+return data;
+}
+async function initialize(){
+try{
+if(!window.supabase||!window.SUPABASE_URL||!window.SUPABASE_PUBLISHABLE_KEY)throw new Error('Payment page configuration is unavailable.');
+if(!transactionRef||!token)throw new Error('This payment link is incomplete. Please contact Source Stays.');
+client=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+const data=await callWorkflow({action:'get_payment_details'});
+const t=data.transaction,p=data.payment_instructions;
+document.getElementById('reference').textContent=t.reference;
+document.getElementById('buyer').textContent=t.buyer_name;
+document.getElementById('amount').textContent=money(p.amount_to_pay);
+document.getElementById('status').textContent=t.payment_status.replaceAll('_',' ');
+document.getElementById('accountName').textContent=p.account_name;
+document.getElementById('bankName').textContent=p.bank_name;
+document.getElementById('accountNumber').textContent=p.account_number;
+document.getElementById('paymentReference').textContent=p.payment_reference||t.reference;
+if(p.additional_instructions){document.getElementById('instructions').textContent=p.additional_instructions;document.getElementById('instructionsRow').hidden=false}
+loading.hidden=true;section.hidden=false;verified=true;
+if(t.payment_status!=='awaiting_payment'){form.hidden=true;showMessage('A receipt has already been submitted or this transaction is no longer accepting receipts. Please contact Source Stays if you need assistance.','error')}
+}catch(e){loading.hidden=true;showMessage(e.message||'Unable to verify this payment link.','error')}
+}
+form.addEventListener('submit',async e=>{
+e.preventDefault();if(!verified)return;
+const file=document.getElementById('receipt').files[0];if(!file){showMessage('Please select your receipt.','error');return}
+const types=['image/jpeg','image/png','image/webp','application/pdf'];
+if(!types.includes(file.type)){showMessage('Only JPG, PNG, WEBP or PDF receipts are accepted.','error');return}
+if(file.size<=0||file.size>8*1024*1024){showMessage('Your receipt must not exceed 8 MB.','error');return}
+button.disabled=true;button.textContent='Preparing secure upload...';message.style.display='none';
+try{
+const upload=await callWorkflow({action:'create_upload_url',filename:file.name,content_type:file.type,file_size:file.size});
+const {error:uploadError}=await client.storage.from('partner-property-payment-proofs').uploadToSignedUrl(upload.path,upload.token,file,{contentType:file.type,upsert:false});
+if(uploadError)throw uploadError;
+button.textContent='Submitting receipt...';
+const result=await callWorkflow({action:'confirm_upload',path:upload.path,filename:file.name,content_type:file.type,file_size:file.size});
+form.hidden=true;showMessage(result.message,'success');
+}catch(e){console.error(e);showMessage(e.message||'Receipt upload failed. Please try again.','error')}
+finally{button.disabled=false;button.textContent='Submit Payment Receipt'}
+});
+initialize();
+</script>
+</body>
+</html>
