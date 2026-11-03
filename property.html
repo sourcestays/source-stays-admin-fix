@@ -690,10 +690,18 @@ ${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
   </p>
 </section>
 <div class="property-actions">
-  <a class="btn dark" href="booking.html?id=${encodeURIComponent(p.id)}">
-    Request booking
-  </a>
-
+ ${["sale", "land"].includes(String(p.category || "").toLowerCase()) ? `
+<a class="btn dark" href="https://wa.me/2347085404814?text=${encodeURIComponent(`Hello Source Stays, I am interested in purchasing ${p.title}. I would like to make an enquiry. Please assist me with the next steps.`)}">
+  Enquire to Buy
+</a>
+<p style="font-size:13px;color:#68736c;">
+  Inspection can be arranged on request. If you already know the property, you may proceed without inspection.
+</p>
+` : `
+<a class="btn dark" href="booking.html?id=${encodeURIComponent(p.id)}">
+  Request booking
+</a>
+`}
   ${["shortlet", "hotel"].includes(String(p.category || "").toLowerCase()) ? `
     <button type="button" class="btn inspection-trigger"
       id="openInspectionForm"
@@ -704,7 +712,7 @@ ${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
   ` : ""}
 </div>
 
-${["shortlet", "hotel"].includes(String(p.category || "").toLowerCase()) ? `
+${["shortlet", "hotel", "sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
   <section id="inspectionRequestPanel" hidden>
     <h3>Request a Property Inspection</h3>
     <p class="inspection-intro">
