@@ -281,6 +281,25 @@
 
   </div>
 </div>
+<section class="box" id="partnerManagement">
+<h3>Partner Management</h3>
+<p class="muted">Register independent property owners, developers and partner agents. Only approved partners can be used for partner property sales.</p>
+<div class="notice">Bank accounts added here remain pending. They cannot be used for payment instructions until independently verified and approved.</div>
+<form id="partnerForm"><input type="hidden" name="id">
+<div class="grid">
+<div class="field"><label>Partner type</label><select name="partner_type" required><option value="property_owner">Independent property owner</option><option value="developer">Developer</option><option value="agent">Partner agent</option></select></div>
+<div class="field"><label>Partner / business name</label><input name="partner_name" maxlength="180" required></div>
+<div class="field"><label>Contact person</label><input name="contact_person" maxlength="150"></div>
+<div class="field"><label>Email</label><input name="email" type="email" maxlength="254"></div>
+<div class="field"><label>Phone</label><input name="phone" type="tel" maxlength="40"></div>
+<div class="field"><label>Address</label><input name="address" maxlength="300"></div>
+<div class="field"><label>Commission type</label><select name="commission_type"><option value="percentage">Percentage (%)</option><option value="fixed">Fixed amount (₦)</option></select></div>
+<div class="field"><label>Commission value</label><input name="commission_value" type="number" min="0" step="0.01" value="0" required></div>
+</div><div class="field"><label>Admin notes</label><textarea name="notes" maxlength="2000"></textarea></div>
+<button class="btn gold" type="submit" id="savePartnerButton">Save partner</button>
+<button class="btn hidden" type="button" id="cancelPartnerEdit">Cancel edit</button><p id="partnerFormMessage" class="muted"></p></form>
+<hr><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><h4>Registered partners</h4><button class="btn" type="button" id="refreshPartners">Refresh partners</button></div>
+<div id="partnerList">Loading partners...</div></section>
 <div class="grid"><section class="box"><h3>Properties</h3><div id="props"></div></section><section class="box"><h3 id="formTitle">Add property</h3><form id="propertyForm"><input type="hidden" name="id"><div class="field"><label>Title</label><input name="title" required></div><div class="field"><label>Category</label><select name="type"><option value="shortlet">Shortlet</option><option value="hotel">Hotel</option><option value="sale">For sale</option><option value="rent">For rent</option><option value="land">Land</option></select></div><div class="field"><label>Location</label><input name="location" placeholder="Lekki Phase 1, Lagos"></div><div class="field"><label>Base property price (₦)</label><input name="price" type="number" min="0" step="0.01"><small class="muted">For sale and land listings, enter the advertised base price here. Applicable fees entered below are added to this amount to calculate total payable now.</small></div><div class="field"><label>Price unit</label><input name="price_period" value="per night" placeholder="per night / per month / total"></div><details style="border:1px solid #e5e2d9;border-radius:10px;padding:12px;margin:14px 0"><summary style="font-weight:700;cursor:pointer">Fees & charges (enter 0 if not applicable)</summary><p class="muted">For sale and land listings, applicable fees are added to the base property price to calculate Total Payable Now. Fees marked due later are shown separately and are not included in that total. Accommodation charges remain separate from property-sale fees.</p><h4>Accommodation fees</h4><div class="field"><label>Refundable caution deposit (₦)</label><input name="caution_fee" type="number" min="0" step="0.01" value="0"></div><hr>
 <h4>Additional Booking Option</h4>
 
@@ -518,6 +537,7 @@ function showDash(){
   loadReviews();
   loadCustomerInspectionRequests();
   loadZylusSales();
+  loadPartners();
 }
 function getClient(){
   if(client) return client;
@@ -2352,6 +2372,20 @@ async function reviewCreditRedemption(id, approve, note, approveButton, rejectBu
     rejectButton.disabled = false;
   }
 }
+
+
+const partnerForm=document.getElementById('partnerForm');
+const partnerList=document.getElementById('partnerList');
+const partnerFormMessage=document.getElementById('partnerFormMessage');
+function partnerMessage(t,e=false){partnerFormMessage.textContent=t;partnerFormMessage.className=e?'danger':'muted';}
+function resetPartnerForm(){partnerForm.reset();partnerForm.elements.id.value='';partnerForm.elements.commission_value.value='0';document.getElementById('savePartnerButton').textContent='Save partner';document.getElementById('cancelPartnerEdit').classList.add('hidden');partnerMessage('');}
+window.editPartner=function(p){for(const k of ['id','partner_type','partner_name','contact_person','email','phone','address','commission_type','commission_value','notes'])partnerForm.elements[k].value=p[k]??'';document.getElementById('savePartnerButton').textContent='Update partner';document.getElementById('cancelPartnerEdit').classList.remove('hidden');document.getElementById('partnerManagement').scrollIntoView({behavior:'smooth'});};
+window.setPartnerStatus=async function(id,status){if(!confirm('Change this partner status to '+status+'?'))return;try{const {error}=await getClient().from('property_partners').update({status,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;await loadPartners();}catch(e){alert('Could not update partner: '+e.message);}};
+window.addPartnerBankAccount=async function(partnerId,partnerName){const bank_name=prompt('Bank name:');if(bank_name===null)return;const account_number=prompt('10-digit account number:');if(account_number===null)return;if(!/^[0-9]{10}$/.test(account_number.trim())){alert('Enter a valid 10-digit account number.');return;}const account_name=prompt('Account name as confirmed by bank lookup:');if(account_name===null||!account_name.trim())return;if(!confirm('Save for '+partnerName+' as PENDING verification?'))return;try{const {error}=await getClient().from('partner_bank_accounts').insert({partner_id:partnerId,bank_name:bank_name.trim(),account_name:account_name.trim(),account_number:account_number.trim(),verification_status:'pending',is_approved:false});if(error)throw error;alert('Account saved as pending. It cannot be used for payment instructions yet.');await loadPartners();}catch(e){alert('Could not save bank account: '+e.message);}};
+async function loadPartners(){partnerList.textContent='Loading partners...';try{const sb=getClient();const {data:ps,error}=await sb.from('property_partners').select('*').order('created_at',{ascending:false});if(error)throw error;const {data:as,error:ae}=await sb.from('partner_bank_accounts').select('*').order('created_at',{ascending:false});if(ae)throw ae;if(!ps?.length){partnerList.textContent='No partners registered yet.';return;}partnerList.innerHTML=ps.map(p=>{const linked=(as||[]).filter(a=>a.partner_id===p.id);const comm=p.commission_type==='percentage'?Number(p.commission_value)+'%':'₦'+money(p.commission_value);return '<article class="box" style="margin:12px 0;padding:16px"><strong>'+esc(p.partner_name)+'</strong><p class="muted">'+esc(p.partner_type.replaceAll('_',' '))+' · Commission: '+esc(comm)+' · Status: '+esc(p.status)+'</p><p class="muted">'+esc(p.contact_person||'')+' · '+esc(p.phone||'')+' · '+esc(p.email||'')+'</p><p class="muted">Beneficiary accounts: '+linked.length+'</p>'+linked.map(a=>'<div class="verify-box">'+esc(a.bank_name)+' · '+esc(a.account_name)+' · '+esc(a.account_number)+'<br>Status: '+esc(a.verification_status)+(a.is_approved?' · Approved':' · Not approved')+'</div>').join('')+'<div class="verify-actions"><button type="button" onclick=\'editPartner('+JSON.stringify(p).replace(/'/g,'&#39;')+')\'>Edit</button><button type="button" onclick=\'addPartnerBankAccount('+JSON.stringify(p.id)+','+JSON.stringify(p.partner_name).replace(/'/g,'&#39;')+')\'>Add bank account</button>'+(p.status!=='approved'?'<button type="button" onclick="setPartnerStatus(\''+p.id+'\',\'approved\')">Approve partner</button>':'')+(p.status!=='suspended'?'<button type="button" onclick="setPartnerStatus(\''+p.id+'\',\'suspended\')">Suspend partner</button>':'')+'</div></article>';}).join('');}catch(e){console.error(e);partnerList.textContent='Could not load partners: '+(e.message||e);}}
+partnerForm.addEventListener('submit',async e=>{e.preventDefault();const b=document.getElementById('savePartnerButton');b.disabled=true;try{const f=new FormData(partnerForm),type=String(f.get('commission_type')),value=Number(f.get('commission_value'));if(!Number.isFinite(value)||value<0||(type==='percentage'&&value>100))throw new Error('Percentage commission must be between 0 and 100.');const payload={partner_type:f.get('partner_type'),partner_name:String(f.get('partner_name')).trim(),contact_person:String(f.get('contact_person')||'').trim()||null,email:String(f.get('email')||'').trim()||null,phone:String(f.get('phone')||'').trim()||null,address:String(f.get('address')||'').trim()||null,commission_type:type,commission_value:value,notes:String(f.get('notes')||'').trim()||null,updated_at:new Date().toISOString()};const id=String(f.get('id')||'');const q=id?await getClient().from('property_partners').update(payload).eq('id',id):await getClient().from('property_partners').insert(payload);if(q.error)throw q.error;resetPartnerForm();partnerMessage(id?'Partner updated.':'Partner registered as pending approval.');await loadPartners();}catch(e){partnerMessage('Could not save partner: '+(e.message||e),true);}finally{b.disabled=false;}});
+document.getElementById('cancelPartnerEdit').addEventListener('click',resetPartnerForm);
+document.getElementById('refreshPartners').addEventListener('click',loadPartners);
 
 check();
 })();
