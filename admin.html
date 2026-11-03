@@ -300,6 +300,43 @@
 <button class="btn hidden" type="button" id="cancelPartnerEdit">Cancel edit</button><p id="partnerFormMessage" class="muted"></p></form>
 <hr><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><h4>Registered partners</h4><button class="btn" type="button" id="refreshPartners">Refresh partners</button></div>
 <div id="partnerList">Loading partners...</div></section>
+<section class="box" id="partnerPropertySales">
+  <h3>Partner Property Sales</h3>
+  <p class="muted">Create and track sales for properties assigned to approved partners. Buyers pay the partner directly, never Source Stays. This workflow is separate from Zylus Property Sales.</p>
+  <div class="notice">Testing stage: create and track the sale first. Payment instructions will remain unavailable until the partner's beneficiary account has been independently verified and approved.</div>
+  <form id="partnerSaleForm">
+    <div class="field">
+      <label for="partnerSaleProperty">Partner property</label>
+      <select id="partnerSaleProperty" name="property_id" required>
+        <option value="">Loading approved partner properties...</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="partnerSaleBuyerName">Buyer's full name</label>
+      <input id="partnerSaleBuyerName" name="buyer_name" maxlength="150" required>
+    </div>
+    <div class="field">
+      <label for="partnerSaleBuyerEmail">Buyer's email</label>
+      <input id="partnerSaleBuyerEmail" name="buyer_email" type="email" maxlength="254" required>
+    </div>
+    <div class="field">
+      <label for="partnerSaleBuyerPhone">Buyer's phone number</label>
+      <input id="partnerSaleBuyerPhone" name="buyer_phone" type="tel" maxlength="40" required>
+    </div>
+    <div class="field">
+      <label for="partnerSaleAmount">Agreed purchase amount (₦)</label>
+      <input id="partnerSaleAmount" name="purchase_amount" type="number" min="1" step="0.01" required>
+    </div>
+    <button class="btn gold" type="submit" id="createPartnerSaleButton">Create partner sales transaction</button>
+    <p id="partnerSaleMessage" class="muted"></p>
+  </form>
+  <hr>
+  <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap">
+    <h4>Partner sales transactions</h4>
+    <button class="btn" type="button" id="refreshPartnerSales">Refresh sales</button>
+  </div>
+  <div id="partnerSalesList">Loading partner sales...</div>
+</section>
 <div class="grid"><section class="box"><h3>Properties</h3><div id="props"></div></section><section class="box"><h3 id="formTitle">Add property</h3><form id="propertyForm"><input type="hidden" name="id"><div class="field"><label>Title</label><input name="title" required></div><div class="field"><label>Category</label><select name="type"><option value="shortlet">Shortlet</option><option value="hotel">Hotel</option><option value="sale">For sale</option><option value="rent">For rent</option><option value="land">Land</option></select></div><div class="field"><label>Partner / property owner</label><select name="partner_id" id="propertyPartner"><option value="">No partner assigned</option></select><small class="muted">Choose the approved company, developer, agent or owner responsible for this property. Zylus properties can also retain the existing Zylus Group flag below.</small></div><div class="field"><label>Location</label><input name="location" placeholder="Lekki Phase 1, Lagos"></div><div class="field"><label>Base property price (₦)</label><input name="price" type="number" min="0" step="0.01"><small class="muted">For sale and land listings, enter the advertised base price here. Applicable fees entered below are added to this amount to calculate total payable now.</small></div><div class="field"><label>Price unit</label><input name="price_period" value="per night" placeholder="per night / per month / total"></div><details style="border:1px solid #e5e2d9;border-radius:10px;padding:12px;margin:14px 0"><summary style="font-weight:700;cursor:pointer">Fees & charges (enter 0 if not applicable)</summary><p class="muted">For sale and land listings, applicable fees are added to the base property price to calculate Total Payable Now. Fees marked due later are shown separately and are not included in that total. Accommodation charges remain separate from property-sale fees.</p><h4>Accommodation fees</h4><div class="field"><label>Refundable caution deposit (₦)</label><input name="caution_fee" type="number" min="0" step="0.01" value="0"></div><hr>
 <h4>Additional Booking Option</h4>
 
@@ -538,6 +575,7 @@ function showDash(){
   loadCustomerInspectionRequests();
   loadZylusSales();
   loadPartners();
+  loadPartnerSales();
 }
 function getClient(){
   if(client) return client;
@@ -2396,6 +2434,100 @@ async function loadPartners(){partnerList.textContent='Loading partners...';try{
 partnerForm.addEventListener('submit',async e=>{e.preventDefault();const b=document.getElementById('savePartnerButton');b.disabled=true;try{const f=new FormData(partnerForm),type=String(f.get('commission_type')),value=Number(f.get('commission_value'));if(!Number.isFinite(value)||value<0||(type==='percentage'&&value>100))throw new Error('Percentage commission must be between 0 and 100.');const commissionAgreed=partnerForm.elements.commission_agreed.checked;const {data:{user:currentAdmin}}=await getClient().auth.getUser();const payload={partner_type:f.get('partner_type'),partner_name:String(f.get('partner_name')).trim(),contact_person:String(f.get('contact_person')||'').trim()||null,email:String(f.get('email')||'').trim()||null,phone:String(f.get('phone')||'').trim()||null,address:String(f.get('address')||'').trim()||null,commission_type:type,commission_value:value,commission_agreed:commissionAgreed,commission_agreed_at:commissionAgreed?new Date().toISOString():null,commission_agreed_by:commissionAgreed?currentAdmin?.id||null:null,notes:String(f.get('notes')||'').trim()||null,updated_at:new Date().toISOString()};const id=String(f.get('id')||'');const q=id?await getClient().from('property_partners').update(payload).eq('id',id):await getClient().from('property_partners').insert(payload);if(q.error)throw q.error;resetPartnerForm();partnerMessage(id?'Partner updated.':'Partner registered as pending approval.');await loadPartners();}catch(e){partnerMessage('Could not save partner: '+(e.message||e),true);}finally{b.disabled=false;}});
 document.getElementById('cancelPartnerEdit').addEventListener('click',resetPartnerForm);
 document.getElementById('refreshPartners').addEventListener('click',loadPartners);
+
+const partnerSaleForm=document.getElementById('partnerSaleForm');
+const partnerSaleMessage=document.getElementById('partnerSaleMessage');
+const partnerSalesList=document.getElementById('partnerSalesList');
+function partnerSaleMsg(message,isError=false){
+  partnerSaleMessage.textContent=message;
+  partnerSaleMessage.className=isError?'danger':'muted';
+}
+async function loadPartnerSaleProperties(){
+  const select=document.getElementById('partnerSaleProperty');
+  try{
+    const sb=getClient();
+    const [{data:properties,error:propertyError},{data:partners,error:partnerError}]=await Promise.all([
+      sb.from('properties').select('id,title,location,category,partner_id').in('category',['sale','land']).not('partner_id','is',null).order('title'),
+      sb.from('property_partners').select('id,partner_name,status').eq('status','approved')
+    ]);
+    if(propertyError)throw propertyError;
+    if(partnerError)throw partnerError;
+    const approved=new Map((partners||[]).map(p=>[p.id,p]));
+    const eligible=(properties||[]).filter(p=>approved.has(p.partner_id));
+    select.innerHTML='<option value="">Select an approved partner property</option>'+
+      eligible.map(p=>{
+        const partner=approved.get(p.partner_id);
+        return '<option value="'+esc(p.id)+'">'+esc(p.title)+' — '+esc(partner.partner_name)+' — '+esc(p.location||'')+'</option>';
+      }).join('');
+    if(!eligible.length)select.innerHTML='<option value="">No approved partner sale/land properties found</option>';
+  }catch(error){
+    console.error('Partner sale properties loading error:',error);
+    select.innerHTML='<option value="">Could not load partner properties</option>';
+    partnerSaleMsg('Could not load partner properties: '+(error.message||error),true);
+  }
+}
+async function loadPartnerSales(){
+  if(!partnerSalesList)return;
+  partnerSalesList.textContent='Loading partner sales...';
+  try{
+    const {data:sales,error}=await getClient().from('property_sales')
+      .select('id,property_id,partner_id,transaction_ref,buyer_name,purchase_amount,payment_status,commission_status,commission_amount,created_at')
+      .order('created_at',{ascending:false}).limit(50);
+    if(error)throw error;
+    if(!sales?.length){
+      partnerSalesList.innerHTML='<p class="muted">No partner sales transactions yet.</p>';
+      return;
+    }
+    const [{data:properties,error:pe},{data:partners,error:pa}]=await Promise.all([
+      getClient().from('properties').select('id,title'),
+      getClient().from('property_partners').select('id,partner_name')
+    ]);
+    if(pe)throw pe;
+    if(pa)throw pa;
+    const propertyNames=new Map((properties||[]).map(p=>[String(p.id),p.title]));
+    const partnerNames=new Map((partners||[]).map(p=>[p.id,p.partner_name]));
+    partnerSalesList.innerHTML='<table class="table"><thead><tr><th>Reference</th><th>Property / partner</th><th>Buyer</th><th>Amount</th><th>Payment status</th><th>Commission status</th></tr></thead><tbody>'+
+      sales.map(s=>'<tr><td>'+esc(s.transaction_ref)+'</td><td>'+esc(propertyNames.get(String(s.property_id))||'Property')+'<br><small>'+esc(partnerNames.get(s.partner_id)||'Partner')+'</small></td><td>'+esc(s.buyer_name)+'</td><td>₦'+money(s.purchase_amount)+'</td><td>'+esc(s.payment_status)+'</td><td>'+esc(s.commission_status)+'</td></tr>').join('')+
+      '</tbody></table>';
+  }catch(error){
+    console.error('Partner sales loading error:',error);
+    partnerSalesList.textContent='Could not load partner sales: '+(error.message||error);
+  }
+}
+partnerSaleForm.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const button=document.getElementById('createPartnerSaleButton');
+  button.disabled=true;
+  partnerSaleMsg('Creating partner sales transaction...');
+  try{
+    const values=new FormData(partnerSaleForm);
+    const payload={
+      action:'create_sale',
+      property_id:Number(values.get('property_id')),
+      buyer_name:String(values.get('buyer_name')||'').trim(),
+      buyer_email:String(values.get('buyer_email')||'').trim(),
+      buyer_phone:String(values.get('buyer_phone')||'').trim(),
+      purchase_amount:Number(values.get('purchase_amount'))
+    };
+    if(!Number.isSafeInteger(payload.property_id)||payload.property_id<=0)throw new Error('Select a valid partner property.');
+    if(!Number.isFinite(payload.purchase_amount)||payload.purchase_amount<=0)throw new Error('Enter a valid purchase amount.');
+    const {data,error}=await getClient().functions.invoke('partner-sales-workflow',{body:payload});
+    if(error)throw error;
+    if(!data?.success)throw new Error(data?.error||'The partner sale could not be created.');
+    partnerSaleForm.reset();
+    partnerSaleMsg('Partner sales transaction created successfully. Reference: '+(data.transaction_ref||data.sale?.transaction_ref||'created'));
+    await loadPartnerSales();
+  }catch(error){
+    console.error('Partner sale creation failed:',error);
+    partnerSaleMsg('Could not create partner sale: '+(error.message||error),true);
+  }finally{
+    button.disabled=false;
+  }
+});
+document.getElementById('refreshPartnerSales').addEventListener('click',async()=>{
+  await loadPartnerSaleProperties();
+  await loadPartnerSales();
+});
 
 check();
 })();
