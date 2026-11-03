@@ -886,7 +886,7 @@ if (enquiryButton && enquiryPanel && enquiryForm) {
     button.textContent = "Submitting...";
     status.textContent = "Submitting your enquiry...";
     try {
-      await SourceStays.submitEnquiry({ customer_name: customerName, customer_phone: customerPhone, subject, property_id: Number(p.id), status: "new" });
+      await SourceStays.submitEnquiry({ customer_name: customerName, customer_phone: customerPhone, subject, message: customerMessage || "Customer submitted a property enquiry.", property_id: Number(p.id), status: "new" });
       status.textContent = "Your enquiry has been received. Source Stays will contact you shortly.";
       enquiryForm.reset();
     } catch (error) {
