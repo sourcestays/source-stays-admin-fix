@@ -1260,7 +1260,7 @@ ${x.status==='approved' || x.status==='completed'
   : ''}
 </td></tr>
 `;}).join('')}</table>`:'<p class="muted">No booking requests yet.</p>';
-  enquiries.innerHTML=e?.length?`<h4>Enquiries</h4><table class="table"><tr><th>Customer</th><th>Interest</th><th>Property</th><th>Message</th><th>Status</th></tr>${e.map(x=>{const pr=propertyMap.get(Number(x.property_id));return `<tr><td><b>${esc(x.customer_name)}</b><br>${esc(x.customer_phone||'')}${x.customer_email?`<br><a href="mailto:${encodeURIComponent(x.customer_email)}">${esc(x.customer_email)}</a>`:''}</td><td>${esc(x.subject||'Enquiry')}</td><td><b>${esc(pr?.title||('Property #'+(x.property_id||'')))}</b><br><span class="muted">${esc(pr?.location||'')}</span></td><td>${esc(x.message||'—')}</td><td><select onchange="enquiryStatus(${x.id},this.value)"><option value="new" ${x.status==='new'?'selected':''}>New</option><option value="contacted" ${x.status==='contacted'?'selected':''}>Contacted</option><option value="closed" ${x.status==='closed'?'selected':''}>Closed</option></select></td></tr>`}).join('')}</table>`:'<p class="muted">No enquiries yet.</p>';
+  enquiries.innerHTML=e?.length?`<h4>Enquiries</h4><table class="table"><tr><th>Customer</th><th>Interest</th><th>Property</th><th>Message</th><th>Status</th><th>Actions</th></tr>${e.map(x=>{const pr=propertyMap.get(Number(x.property_id));return `<tr><td><b>${esc(x.customer_name)}</b><br>${esc(x.customer_phone||'')}${x.customer_email?`<br><a href="mailto:${encodeURIComponent(x.customer_email)}">${esc(x.customer_email)}</a>`:''}</td><td>${esc(x.subject||'Enquiry')}</td><td><b>${esc(pr?.title||('Property #'+(x.property_id||'')))}</b><br><span class="muted">${esc(pr?.location||'')}</span></td><td>${esc(x.message||'—')}</td><td><select onchange="enquiryStatus(${x.id},this.value)"><option value="new" ${x.status==='new'?'selected':''}>New</option><option value="contacted" ${x.status==='contacted'?'selected':''}>Contacted</option><option value="closed" ${x.status==='closed'?'selected':''}>Closed</option></select></td><td><button type="button" class="btn" onclick="deleteEnquiry(${x.id})">Delete</button></td></tr>`}).join('')}</table>`:'<p class="muted">No enquiries yet.</p>';
 await loadCreditRedemptions(); }catch(err){console.error(err);props.innerHTML='<p class="danger">Could not load dashboard data: '+esc(err.message||err)+'</p>';}
 }
 
@@ -2172,6 +2172,16 @@ if (!notes.trim()) {
 };
 
 window.enquiryStatus=async function(id,status){const {error}=await getClient().from('enquiries').update({status}).eq('id',id);if(error)alert(error.message);};
+window.deleteEnquiry=async function(id){
+  if(!confirm('Delete this enquiry permanently? This cannot be undone.'))return;
+  try{
+    const {error}=await getClient().from('enquiries').delete().eq('id',id);
+    if(error)throw error;
+    await load();
+  }catch(err){
+    alert('Could not delete enquiry: '+(err.message||err));
+  }
+};
 window.logout=async function(){try{await getClient().auth.signOut();}finally{showLogin();loginForm.reset();msg('');}};
   
 window.loadCreditRedemptions = async function() {
