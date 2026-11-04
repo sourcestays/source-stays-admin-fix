@@ -2679,20 +2679,30 @@ async function loadPartnerSales(){
       return;
     }
 
-    const [{data:properties,error:pe},{data:partners,error:pa},{data:proofs,error:proofError}]=await Promise.all([
+    const [{data:properties,error:pe},{data:partners,error:pa},{data:proofs,error:proofError},{data:bankAccounts,error:bankAccountError}]=await Promise.all([
       sb.from('properties').select('id,title'),
       sb.from('property_partners').select('id,partner_name'),
-  sb.from('property_payment_proofs')
-  .select('id,sale_id,storage_path,original_filename,file_type,file_size_bytes,review_status')
-  .in('sale_id',sales.map(s=>s.id))
+      sb.from('property_payment_proofs')
+        .select('id,sale_id,storage_path,original_filename,file_type,file_size_bytes,review_status')
+        .in('sale_id',sales.map(s=>s.id)),
+      sb.from('partner_bank_accounts')
+        .select('id,partner_id,bank_name,account_name,account_number,verification_status,is_approved')
     ]);
 
     if(pe)throw pe;
     if(pa)throw pa;
     if(proofError)throw proofError;
+    if(bankAccountError)throw bankAccountError;
 
     const propertyNames=new Map((properties||[]).map(p=>[String(p.id),p.title]));
     const partnerNames=new Map((partners||[]).map(p=>[p.id,p.partner_name]));
+    const bankAccountsByPartner=new Map();
+    for(const account of (bankAccounts||[])){
+      if(account.verification_status==='verified' && account.is_approved===true){
+        if(!bankAccountsByPartner.has(account.partner_id))bankAccountsByPartner.set(account.partner_id,[]);
+        bankAccountsByPartner.get(account.partner_id).push(account);
+      }
+    }
 
     const proofsBySale=new Map();
 
@@ -2781,6 +2791,26 @@ const confirmationAction=canConfirmPartnerPayment
      </div>`
   : '';
 
+const approvedBankAccounts=bankAccountsByPartner.get(s.partner_id)||[];
+const paymentInstructionsAction=String(s.payment_status).toLowerCase()==='awaiting_payment'
+  ? approvedBankAccounts.length
+    ? `<div class="verify-box">
+         <strong>Issue buyer payment instructions</strong>
+         <p class="muted">The buyer will pay directly into the selected partner account. Source Stays does not collect the purchase money.</p>
+         <div class="verify-actions">
+           <select id="partner-bank-account-${esc(s.id)}" aria-label="Approved partner beneficiary account">
+             <option value="">Select approved beneficiary account</option>
+             ${approvedBankAccounts.map(a=>`<option value="${esc(a.id)}">${esc(a.bank_name)} — ${esc(a.account_name)} — ${esc(a.account_number)}</option>`).join('')}
+           </select>
+           <button type="button" class="btn gold"
+             onclick="issuePartnerPaymentInstructions('${esc(s.id)}','partner-bank-account-${esc(s.id)}')">
+             Generate payment link
+           </button>
+         </div>
+       </div>`
+    : '<p class="muted">Payment link unavailable: this partner has no verified and approved beneficiary account.</p>'
+  : '';
+
       return `
         <tr>
           <td>
@@ -2800,6 +2830,7 @@ const confirmationAction=canConfirmPartnerPayment
         </tr>
         <tr>
           <td colspan="6">
+            ${paymentInstructionsAction}
             <strong>Payment receipt review</strong>
           ${receipts}${confirmationAction}
           </td>
@@ -2930,6 +2961,62 @@ window.confirmPartnerPayment = async function(saleId) {
   } catch (error) {
     console.error('Partner confirmation error:', error);
     alert('Could not record confirmation: ' + (error.message || error));
+  }
+};
+
+window.issuePartnerPaymentInstructions = async function(saleId, selectId) {
+  const accountSelect = document.getElementById(selectId);
+  const bankAccountId = accountSelect?.value || '';
+
+  if (!bankAccountId) {
+    alert('Select a verified and approved beneficiary account first.');
+    return;
+  }
+
+  const paymentReference = prompt('Payment reference (leave blank to use the transaction reference):', '');
+  if (paymentReference === null) return;
+
+  const additionalInstructions = prompt('Additional payment instructions for the buyer (optional):', '');
+  if (additionalInstructions === null) return;
+
+  if (!confirm('Generate secure payment instructions for this buyer? The buyer will pay the partner directly. If instructions are reissued later, the previous secure link will stop working.')) return;
+
+  try {
+    const { data, error } = await getClient().functions.invoke(
+      'partner-sales-workflow',
+      {
+        body: {
+          action: 'issue_payment_instructions',
+          sale_id: saleId,
+          bank_account_id: bankAccountId,
+          payment_reference: paymentReference.trim(),
+          additional_instructions: additionalInstructions.trim()
+        }
+      }
+    );
+
+    if (error) throw error;
+    if (!data?.success || !data?.proof_url) {
+      throw new Error(data?.error || 'Payment instructions were not generated.');
+    }
+
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(data.proof_url);
+      copied = true;
+    } catch (_) {}
+
+    alert(
+      (data.message || 'Payment instructions generated.') +
+      (copied
+        ? '\\n\\nThe secure customer link has been copied. You can now share it with the buyer.'
+        : '\\n\\nCopy this secure customer link and share it with the buyer:\\n' + data.proof_url)
+    );
+
+    await loadPartnerSales();
+  } catch (error) {
+    console.error('Partner payment instructions error:', error);
+    alert('Could not generate payment link: ' + (error.message || error));
   }
 };
 
