@@ -2790,6 +2790,10 @@ async function loadPartnerSales(){
             ${(Number(proof.file_size_bytes || 0) / 1024).toFixed(1)} KB
               Status: <strong>${esc(status)}</strong>
             </p>
+            <p class="muted" style="font-size:12px;overflow-wrap:anywhere">
+  Diagnostic storage path:
+  <code>${esc(proof.storage_path||'MISSING')}</code>
+</p>
             <div class="verify-actions">
               ${receiptLink}
               ${
