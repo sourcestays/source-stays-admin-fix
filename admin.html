@@ -2776,6 +2776,8 @@ async function loadPartnerSales(){
             '" target="_blank" rel="noopener noreferrer">View receipt</a>';
         }else{
           console.error('Could not create receipt viewing link:',signedError);
+          const reason=signedError?.message||signedError?.error||'Unknown storage permission or file-path error';
+          receiptLink='<span class="muted" style="color:#b45309">Receipt link unavailable: '+esc(reason)+'</span>';
         }
 
         const status=String(proof.review_status||'pending').toLowerCase();
