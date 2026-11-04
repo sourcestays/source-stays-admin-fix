@@ -2714,17 +2714,24 @@ async function loadPartnerSales(){
       const cards=await Promise.all(items.map(async proof=>{
         let receiptLink='';
 
-        const {data:signed,error:signedError}=await sb.storage
-          .from('partner-property-payment-proofs')
-          .createSignedUrl(proof.storage_path,600);
+     const {data:viewData,error:viewError}=await sb.functions.invoke(
+  'admin-view-partner-receipt',
+  {
+    body:{proof_id:proof.id}
+  }
+);
 
-        if(!signedError && signed?.signedUrl){
-          receiptLink=
-            '<a class="btn" href="'+esc(signed.signedUrl)+
-            '" target="_blank" rel="noopener noreferrer">View receipt</a>';
-        }else{
-          console.error('Could not create receipt viewing link:',signedError);
-        }
+if(!viewError && viewData?.success && viewData?.signed_url){
+  receiptLink =
+    '<a class="btn" href="'+esc(viewData.signed_url)+
+    '" target="_blank" rel="noopener noreferrer">View receipt</a>';
+}else{
+  console.error('Could not create receipt viewing link:',viewError||viewData?.error);
+  receiptLink =
+    '<span class="muted" style="color:#b45309">'+
+    esc(viewError?.message||viewData?.error||'Receipt viewing unavailable')+
+    '</span>';
+}
 
         const status=String(proof.review_status||'pending').toLowerCase();
 
