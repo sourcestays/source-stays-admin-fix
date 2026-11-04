@@ -2661,32 +2661,278 @@ async function loadPartnerSaleProperties(){
 }
 async function loadPartnerSales(){
   if(!partnerSalesList)return;
+
   partnerSalesList.textContent='Loading partner sales...';
+
   try{
-    const {data:sales,error}=await getClient().from('property_sales')
-      .select('id,property_id,partner_id,transaction_ref,buyer_name,purchase_amount,payment_status,commission_status,commission_amount,created_at')
-      .order('created_at',{ascending:false}).limit(50);
+    const sb=getClient();
+
+    const {data:sales,error}=await sb.from('property_sales')
+      .select('id,property_id,partner_id,transaction_ref,buyer_name,buyer_email,purchase_amount,payment_status,commission_status,commission_amount,created_at')
+      .order('created_at',{ascending:false})
+      .limit(50);
+
     if(error)throw error;
+
     if(!sales?.length){
       partnerSalesList.innerHTML='<p class="muted">No partner sales transactions yet.</p>';
       return;
     }
-    const [{data:properties,error:pe},{data:partners,error:pa}]=await Promise.all([
-      getClient().from('properties').select('id,title'),
-      getClient().from('property_partners').select('id,partner_name')
+
+    const [{data:properties,error:pe},{data:partners,error:pa},{data:proofs,error:proofError}]=await Promise.all([
+      sb.from('properties').select('id,title'),
+      sb.from('property_partners').select('id,partner_name'),
+  sb.from('property_payment_proofs')
+  .select('id,sale_id,storage_path,original_filename,file_type,file_size_bytes,review_status')
+  .in('sale_id',sales.map(s=>s.id))
     ]);
+
     if(pe)throw pe;
     if(pa)throw pa;
+    if(proofError)throw proofError;
+
     const propertyNames=new Map((properties||[]).map(p=>[String(p.id),p.title]));
     const partnerNames=new Map((partners||[]).map(p=>[p.id,p.partner_name]));
-    partnerSalesList.innerHTML='<table class="table"><thead><tr><th>Reference</th><th>Property / partner</th><th>Buyer</th><th>Amount</th><th>Payment status</th><th>Commission status</th></tr></thead><tbody>'+
-      sales.map(s=>'<tr><td>'+esc(s.transaction_ref)+'</td><td>'+esc(propertyNames.get(String(s.property_id))||'Property')+'<br><small>'+esc(partnerNames.get(s.partner_id)||'Partner')+'</small></td><td>'+esc(s.buyer_name)+'</td><td>₦'+money(s.purchase_amount)+'</td><td>'+esc(s.payment_status)+'</td><td>'+esc(s.commission_status)+'</td></tr>').join('')+
-      '</tbody></table>';
+
+    const proofsBySale=new Map();
+
+    for(const proof of (proofs||[])){
+      if(!proofsBySale.has(proof.sale_id)){
+        proofsBySale.set(proof.sale_id,[]);
+      }
+
+      proofsBySale.get(proof.sale_id).push(proof);
+    }
+
+    const receiptCards=async sale=>{
+      const items=proofsBySale.get(sale.id)||[];
+
+      if(!items.length){
+        return '<p class="muted">No payment receipt submitted yet.</p>';
+      }
+
+      const cards=await Promise.all(items.map(async proof=>{
+        let receiptLink='';
+
+        const {data:signed,error:signedError}=await sb.storage
+          .from('partner-property-payment-proofs')
+          .createSignedUrl(proof.storage_path,600);
+
+        if(!signedError && signed?.signedUrl){
+          receiptLink=
+            '<a class="btn" href="'+esc(signed.signedUrl)+
+            '" target="_blank" rel="noopener noreferrer">View receipt</a>';
+        }else{
+          console.error('Could not create receipt viewing link:',signedError);
+        }
+
+        const status=String(proof.review_status||'pending').toLowerCase();
+
+        return `
+          <div class="verify-box">
+            <strong>${esc(proof.original_filename||'Payment receipt')}</strong>
+            <p class="muted">
+              ${esc(proof.file_type||'File')} ·
+            ${(Number(proof.file_size_bytes || 0) / 1024).toFixed(1)} KB
+              Status: <strong>${esc(status)}</strong>
+            </p>
+            <div class="verify-actions">
+              ${receiptLink}
+              ${
+                status==='pending'
+                ? `
+                  <button type="button" class="btn gold"
+                    onclick="reviewPartnerReceipt('${esc(proof.id)}','approved')">
+                    Approve receipt
+                  </button>
+                  <button type="button" class="btn dark"
+                    onclick="reviewPartnerReceipt('${esc(proof.id)}','rejected')">
+                    Reject receipt
+                  </button>
+                `
+                : ''
+              }
+            </div>
+          </div>
+        `;
+      }));
+
+      return cards.join('');
+    };
+
+    const rows=await Promise.all(sales.map(async s=>{
+      const receipts=await receiptCards(s);
+
+const approvedProof=(proofsBySale.get(s.id)||[])
+  .some(p=>String(p.review_status).toLowerCase()==='approved');
+
+const canConfirmPartnerPayment=
+  approvedProof &&
+  ['proof_submitted','under_review'].includes(
+    String(s.payment_status).toLowerCase()
+  );
+
+const confirmationAction=canConfirmPartnerPayment
+  ? `<div class="verify-actions">
+       <button type="button" class="btn gold"
+         onclick="confirmPartnerPayment('${esc(s.id)}')">
+         Record partner confirmation
+       </button>
+     </div>`
+  : '';
+
+      return `
+        <tr>
+          <td>
+            <strong>${esc(s.transaction_ref)}</strong>
+          </td>
+          <td>
+            ${esc(propertyNames.get(String(s.property_id))||'Property')}
+            <br><small>${esc(partnerNames.get(s.partner_id)||'Partner')}</small>
+          </td>
+          <td>
+            ${esc(s.buyer_name)}
+            <br><small>${esc(s.buyer_email||'')}</small>
+          </td>
+          <td>₦${money(s.purchase_amount)}</td>
+          <td>${esc(s.payment_status)}</td>
+          <td>${esc(s.commission_status)}</td>
+        </tr>
+        <tr>
+          <td colspan="6">
+            <strong>Payment receipt review</strong>
+          ${receipts}${confirmationAction}
+          </td>
+        </tr>
+      `;
+    }));
+
+    partnerSalesList.innerHTML=`
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>Property / partner</th>
+              <th>Buyer</th>
+              <th>Amount</th>
+              <th>Payment status</th>
+              <th>Commission status</th>
+            </tr>
+          </thead>
+          <tbody>${rows.join('')}</tbody>
+        </table>
+      </div>
+    `;
+
   }catch(error){
     console.error('Partner sales loading error:',error);
-    partnerSalesList.textContent='Could not load partner sales: '+(error.message||error);
+    partnerSalesList.textContent=
+      'Could not load partner sales: '+(error.message||error);
   }
 }
+  
+window.reviewPartnerReceipt = async function(proofId, decision) {
+  if (!['approved', 'rejected'].includes(decision)) return;
+
+  let notes = '';
+
+  if (decision === 'rejected') {
+    notes = prompt('Enter the reason for rejecting this payment receipt:');
+
+    if (notes === null) return;
+
+    notes = notes.trim();
+
+    if (!notes) {
+      alert('Please provide a rejection reason.');
+      return;
+    }
+  }
+
+  const actionLabel = decision === 'approved' ? 'approve' : 'reject';
+
+  if (!confirm(`Are you sure you want to ${actionLabel} this receipt?`)) {
+    return;
+  }
+
+  try {
+    const sb = getClient();
+
+ const { data, error } = await sb
+  .from('property_payment_proofs')
+  .update({
+    review_status: decision
+  })
+  .eq('id', proofId)
+  .eq('review_status', 'pending')
+  .select('id')
+  .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      throw new Error(
+        'This receipt is no longer pending review. Refresh the list.'
+      );
+    }
+
+    alert(
+      decision === 'approved'
+        ? 'Receipt approved successfully.'
+        : 'Receipt rejected. The reason has been recorded.'
+    );
+
+    await loadPartnerSales();
+
+  } catch (error) {
+    console.error('Receipt review error:', error);
+    alert('Receipt review failed: ' + (error.message || error));
+  }
+};
+
+window.confirmPartnerPayment = async function(saleId) {
+  const confirmation = prompt(
+    'Enter the partner’s confirmation details (for example, confirmation date and how receipt was acknowledged):'
+  );
+
+  if (confirmation === null) return;
+
+  if (!confirmation.trim()) {
+    alert('Partner confirmation details are required.');
+    return;
+  }
+
+  if (!confirm('Record this partner payment confirmation?')) return;
+
+  try {
+    const { data, error } = await getClient().functions.invoke(
+      'partner-sales-workflow',
+      {
+        body: {
+          action: 'confirm_partner_payment',
+          sale_id: saleId,
+          partner_confirmation: confirmation.trim()
+        }
+      }
+    );
+
+    if (error) throw error;
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Partner confirmation failed.');
+    }
+
+    alert(data.message || 'Partner confirmation recorded successfully.');
+
+    await loadPartnerSales();
+
+  } catch (error) {
+    console.error('Partner confirmation error:', error);
+    alert('Could not record confirmation: ' + (error.message || error));
+  }
+};
+
 partnerSaleForm.addEventListener('submit',async e=>{
   e.preventDefault();
   const button=document.getElementById('createPartnerSaleButton');
