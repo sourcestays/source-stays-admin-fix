@@ -442,6 +442,35 @@
 <button class="btn gold">Save property</button>
 </form></section></div>
   
+<section class="box" id="hotelRoomManagement">
+  <h3>Hotel Room Categories & Rates</h3>
+  <p class="muted">Manage each hotel's room classes separately. Hotel net rates and markup are private to Source Stays admins; only the calculated customer rate will be shown publicly.</p>
+  <div class="field">
+    <label for="hotelRoomProperty">Select hotel</label>
+    <select id="hotelRoomProperty"><option value="">Choose a published hotel</option></select>
+  </div>
+  <form id="hotelRoomForm" class="hidden">
+    <input type="hidden" name="id">
+    <div class="grid">
+      <div class="field"><label>Room category name</label><input name="room_name" required maxlength="120" placeholder="e.g. Deluxe Room"></div>
+      <div class="field"><label>Hotel net rate per night (₦)</label><input name="hotel_net_rate" type="number" min="1" step="0.01" required></div>
+    </div>
+    <div class="field"><label>Description (optional)</label><textarea name="description" maxlength="1000" placeholder="Bed type, occupancy, room features..."></textarea></div>
+    <div class="grid">
+      <div class="field"><label>Markup type</label><select name="markup_type"><option value="fixed">Fixed amount (₦)</option><option value="percentage">Percentage (%)</option></select></div>
+      <div class="field"><label>Markup value</label><input name="markup_value" type="number" min="0" step="0.01" value="0" required></div>
+      <div class="field"><label>Display order</label><input name="sort_order" type="number" step="1" value="0"></div>
+    </div>
+    <p id="hotelRoomPreview" class="notice">Customer rate preview will appear here.</p>
+    <button class="btn gold" type="submit" id="saveHotelRoomButton">Save room category</button>
+    <button class="btn hidden" type="button" id="cancelHotelRoomEdit">Cancel edit</button>
+    <p id="hotelRoomMessage" class="muted" aria-live="polite"></p>
+  </form>
+  <hr>
+  <div id="hotelRoomList"><p class="muted">Select a hotel to manage its room categories.</p></div>
+</section>
+
+  
 <section class="box" id="availabilityManagement">
   <h3>Availability Management</h3>
   <p class="muted">
@@ -581,6 +610,7 @@ function showDash(){
   loadPartners();
   loadPartnerSaleProperties();
   loadPartnerSales();
+  loadHotelRoomCategories();
 }
 function getClient(){
   if(client) return client;
@@ -1313,6 +1343,123 @@ document.getElementById("customerInspectionRequests")
     }
   });
 
+
+const hotelRoomProperty=document.getElementById('hotelRoomProperty');
+const hotelRoomForm=document.getElementById('hotelRoomForm');
+const hotelRoomList=document.getElementById('hotelRoomList');
+const hotelRoomMessage=document.getElementById('hotelRoomMessage');
+function populateHotelRoomPropertySelect(properties){
+  if(!hotelRoomProperty)return;
+  const previous=hotelRoomProperty.value;
+  const hotels=(properties||[]).filter(p=>String(p.category||'').toLowerCase()==='hotel');
+  hotelRoomProperty.innerHTML='<option value="">Choose a hotel</option>'+hotels.map(p=>'<option value="'+Number(p.id)+'">'+esc(p.title||('Hotel #'+p.id))+' — '+esc(p.location||'')+'</option>').join('');
+  if(previous && hotels.some(p=>String(p.id)===previous))hotelRoomProperty.value=previous;
+}
+function hotelRoomRetail(net,type,value){
+  return Math.round((type==='percentage'?net*(1+value/100):net+value)*100)/100;
+}
+function updateHotelRoomPreview(){
+  if(!hotelRoomForm)return;
+  const net=Number(hotelRoomForm.elements.hotel_net_rate.value)||0;
+  const type=hotelRoomForm.elements.markup_type.value;
+  const value=Number(hotelRoomForm.elements.markup_value.value)||0;
+  const retail=hotelRoomRetail(net,type,value);
+  document.getElementById('hotelRoomPreview').textContent=net>0
+    ? 'Customer rate: ₦'+money(retail)+' per room, per night. Source Stays markup: ₦'+money(retail-net)+'.'
+    : 'Enter the hotel net rate and markup to preview the customer rate.';
+}
+function resetHotelRoomForm(){
+  hotelRoomForm.reset();
+  hotelRoomForm.elements.id.value='';
+  hotelRoomForm.elements.markup_type.value='fixed';
+  hotelRoomForm.elements.markup_value.value='0';
+  hotelRoomForm.elements.sort_order.value='0';
+  document.getElementById('saveHotelRoomButton').textContent='Save room category';
+  document.getElementById('cancelHotelRoomEdit').classList.add('hidden');
+  updateHotelRoomPreview();
+}
+async function loadHotelRoomCategories(){
+  if(!hotelRoomProperty)return;
+  try{
+    const {data:properties,error:propertyError}=await getClient().from('properties').select('id,title,location,category').eq('category','hotel').order('id',{ascending:false});
+    if(propertyError)throw propertyError;
+    populateHotelRoomPropertySelect(properties||[]);
+    await renderHotelRoomCategories();
+  }catch(error){
+    console.error('Hotel room categories load failed:',error);
+    hotelRoomList.innerHTML='<p class="danger">Could not load hotel room categories: '+esc(error.message||error)+'</p>';
+  }
+}
+async function renderHotelRoomCategories(){
+  const propertyId=Number(hotelRoomProperty.value);
+  resetHotelRoomForm();
+  hotelRoomForm.classList.toggle('hidden',!propertyId);
+  if(!propertyId){hotelRoomList.innerHTML='<p class="muted">Select a hotel to manage its room categories.</p>';return;}
+  hotelRoomList.innerHTML='<p class="muted">Loading room categories…</p>';
+  try{
+    const {data,error}=await getClient().from('hotel_room_categories').select('*').eq('property_id',propertyId).order('sort_order').order('created_at');
+    if(error)throw error;
+    if(!data?.length){hotelRoomList.innerHTML='<p class="muted">No room categories added for this hotel yet.</p>';return;}
+    hotelRoomList.innerHTML='<table class="table"><thead><tr><th>Room category</th><th>Hotel net</th><th>Markup</th><th>Customer rate</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+data.map(room=>{
+      const retail=hotelRoomRetail(Number(room.hotel_net_rate),room.markup_type,Number(room.markup_value));
+      const markup=room.markup_type==='percentage'?Number(room.markup_value)+'%':'₦'+money(room.markup_value);
+      return '<tr><td><b>'+esc(room.room_name)+'</b>'+(room.description?'<br><small>'+esc(room.description)+'</small>':'')+'</td><td>₦'+money(room.hotel_net_rate)+'</td><td>'+esc(markup)+'</td><td><b>₦'+money(retail)+'</b> / night</td><td>'+(room.is_active?'Active':'Hidden')+'</td><td><button type="button" onclick="editHotelRoomCategory(\''+room.id+'\')">Edit</button> <button type="button" onclick="toggleHotelRoomCategory(\''+room.id+'\','+(!room.is_active)+')">'+(room.is_active?'Hide':'Activate')+'</button></td></tr>';
+    }).join('')+'</tbody></table>';
+    window.hotelRoomCategoryCache=new Map(data.map(room=>[room.id,room]));
+  }catch(error){
+    console.error(error);
+    hotelRoomList.innerHTML='<p class="danger">Could not load room categories: '+esc(error.message||error)+'</p>';
+  }
+}
+window.editHotelRoomCategory=function(id){
+  const room=window.hotelRoomCategoryCache?.get(id);
+  if(!room)return;
+  for(const key of ['id','room_name','description','hotel_net_rate','markup_type','markup_value','sort_order'])hotelRoomForm.elements[key].value=room[key]??'';
+  document.getElementById('saveHotelRoomButton').textContent='Update room category';
+  document.getElementById('cancelHotelRoomEdit').classList.remove('hidden');
+  updateHotelRoomPreview();
+  hotelRoomForm.scrollIntoView({behavior:'smooth',block:'center'});
+};
+window.toggleHotelRoomCategory=async function(id,isActive){
+  if(!confirm((isActive?'Activate':'Hide')+' this room category?'))return;
+  try{
+    const {error}=await getClient().from('hotel_room_categories').update({is_active:isActive}).eq('id',id);
+    if(error)throw error;
+    await renderHotelRoomCategories();
+  }catch(error){alert('Could not update room category: '+(error.message||error));}
+};
+hotelRoomProperty?.addEventListener('change',renderHotelRoomCategories);
+['hotel_net_rate','markup_type','markup_value'].forEach(key=>hotelRoomForm?.elements[key]?.addEventListener('input',updateHotelRoomPreview));
+hotelRoomForm?.addEventListener('submit',async function(event){
+  event.preventDefault();
+  const button=document.getElementById('saveHotelRoomButton');
+  const propertyId=Number(hotelRoomProperty.value);
+  if(!propertyId){hotelRoomMessage.textContent='Select a hotel first.';return;}
+  const fd=new FormData(hotelRoomForm);
+  const net=Number(fd.get('hotel_net_rate'));
+  const markup=Number(fd.get('markup_value'));
+  const type=String(fd.get('markup_type'));
+  if(!Number.isFinite(net)||net<=0||!Number.isFinite(markup)||markup<0||(type==='percentage'&&markup>100)){
+    hotelRoomMessage.textContent='Enter a valid net rate and markup. Percentage markup cannot exceed 100%.';
+    return;
+  }
+  const payload={property_id:propertyId,room_name:String(fd.get('room_name')||'').trim(),description:String(fd.get('description')||'').trim()||null,hotel_net_rate:net,markup_type:type,markup_value:markup,sort_order:Number(fd.get('sort_order'))||0};
+  const id=String(fd.get('id')||'').trim();
+  button.disabled=true;button.textContent='Saving…';hotelRoomMessage.textContent='';
+  try{
+    const query=getClient().from('hotel_room_categories');
+    const result=id?await query.update(payload).eq('id',id):await query.insert(payload);
+    if(result.error)throw result.error;
+    hotelRoomMessage.textContent='Room category saved. Customer rate: ₦'+money(hotelRoomRetail(net,type,markup))+' per night.';
+    resetHotelRoomForm();
+    await renderHotelRoomCategories();
+  }catch(error){
+    console.error(error);
+    hotelRoomMessage.textContent='Could not save room category: '+(error.message||error);
+  }finally{button.disabled=false;button.textContent=id?'Update room category':'Save room category';}
+});
+document.getElementById('cancelHotelRoomEdit')?.addEventListener('click',resetHotelRoomForm);
+
 async function load(){
  try{
   const sb=getClient();
@@ -1330,6 +1477,7 @@ async function load(){
     verifications=v||[];
   }
   if(ee) console.error(ee); if(be) console.error(be);
+  populateHotelRoomPropertySelect(p||[]);
   const propertyMap=new Map((p||[]).map(x=>[Number(x.id),x]));
   const verificationMap=new Map();
   for(const v of verifications){if(!verificationMap.has(Number(v.booking_id)))verificationMap.set(Number(v.booking_id),v);}
