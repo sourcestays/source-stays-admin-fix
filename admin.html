@@ -1390,34 +1390,70 @@ async function loadZylusSales() {
 
     if (salesError) throw salesError;
 
-  salesList.innerHTML = sales?.length
-  ? `<table class="table">
-      <tr>
-        <th>Reference</th>
-        <th>Buyer</th>
-        <th>Amount</th>
-        <th>Status</th>
-        <th>Action</th>
-      </tr>
-      ${sales.map(s => `
-        <tr>
-          <td>${esc(s.transaction_ref)}</td>
-          <td>${esc(s.buyer_name)}</td>
-          <td>${money(s.purchase_amount)}</td>
-          <td>${esc(s.payment_status)}</td>
-          <td>
-            <button
-              type="button"
-              class="btn gold issue-zylus-payment"
-              data-sale-id="${esc(s.id)}">
-              Issue payment instructions
-            </button>
-            <button type="button" class="btn" onclick="deleteSalesTransaction('${esc(s.id)}')">Delete</button>
-          </td>
-        </tr>
-      `).join('')}
-    </table>`
-  : '<p class="muted">No Zylus sales transactions yet.</p>';
+    const { data: proofs, error: proofsError } = sales?.length
+      ? await sb.from('zylus_payment_proofs')
+          .select('id,sale_id,original_filename,file_type,file_size_bytes,review_status,created_at')
+          .in('sale_id', sales.map(s => s.id))
+          .order('created_at', { ascending: false })
+      : { data: [], error: null };
+
+    if (proofsError) throw proofsError;
+
+    const proofsBySale = new Map();
+    (proofs || []).forEach(proof => {
+      if (!proofsBySale.has(proof.sale_id)) proofsBySale.set(proof.sale_id, []);
+      proofsBySale.get(proof.sale_id).push(proof);
+    });
+
+    salesList.innerHTML = sales?.length
+      ? `<table class="table">
+          <tr>
+            <th>Reference</th>
+            <th>Buyer</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+          ${sales.map(s => {
+            const receipts = proofsBySale.get(s.id) || [];
+            const receiptHtml = receipts.length
+              ? receipts.map(proof => `
+                  <div class="verify-box">
+                    <strong>${esc(proof.original_filename || 'Payment receipt')}</strong>
+                    <p class="muted">
+                      ${esc(proof.file_type || 'File')} ·
+                      ${(Number(proof.file_size_bytes || 0) / 1024).toFixed(1)} KB ·
+                      Status: <strong>${esc(proof.review_status || 'pending')}</strong>
+                    </p>
+                    <button type="button" class="btn view-zylus-receipt"
+                      data-proof-id="${esc(proof.id)}">View receipt</button>
+                  </div>
+                `).join('')
+              : '<p class="muted">No payment receipt submitted yet.</p>';
+
+            return `
+              <tr>
+                <td>${esc(s.transaction_ref)}</td>
+                <td>${esc(s.buyer_name)}</td>
+                <td>${money(s.purchase_amount)}</td>
+                <td>${esc(s.payment_status)}</td>
+                <td>
+                  <button type="button" class="btn gold issue-zylus-payment"
+                    data-sale-id="${esc(s.id)}">Issue payment instructions</button>
+                  <button type="button" class="btn"
+                    onclick="deleteSalesTransaction('${esc(s.id)}')">Delete</button>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="5">
+                  <strong>Payment receipt</strong>
+                  ${receiptHtml}
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </table>`
+      : '<p class="muted">No Zylus sales transactions yet.</p>';
   } catch (error) {
     console.error('Zylus sales loading error:', error);
     propertySelect.innerHTML =
@@ -1557,7 +1593,41 @@ zylusAccountNumber.addEventListener('blur', async function() {
 
 // Start loading banks
 loadZylusBanks();
-document.getElementById('zylusSalesList').addEventListener('click', function(e) {
+document.getElementById('zylusSalesList').addEventListener('click', async function(e) {
+  const receiptButton = e.target.closest('.view-zylus-receipt');
+  if (receiptButton) {
+    const proofId = receiptButton.dataset.proofId;
+    const receiptWindow = window.open('about:blank', '_blank');
+
+    if (!receiptWindow) {
+      alert('Please allow pop-ups for this site to view the receipt.');
+      return;
+    }
+
+    receiptWindow.document.write('<p style="font-family:Arial;padding:24px">Loading secure receipt...</p>');
+
+    try {
+      receiptButton.disabled = true;
+      const { data, error } = await getClient().functions.invoke(
+        'zylus-sales-workflow',
+        { body: { action: 'view_payment_proof', proof_id: proofId } }
+      );
+
+      if (error) throw error;
+      if (!data?.success || !data?.signed_url) {
+        throw new Error(data?.error || 'Could not create a secure receipt link.');
+      }
+
+      receiptWindow.location.href = data.signed_url;
+    } catch (error) {
+      receiptWindow.close();
+      alert('Could not open receipt: ' + (error.message || error));
+    } finally {
+      receiptButton.disabled = false;
+    }
+    return;
+  }
+
   const button = e.target.closest('.issue-zylus-payment');
   if (!button) return;
 
