@@ -60,7 +60,7 @@
   overflow-wrap: anywhere;
 }.thumb{width:70px;height:50px;object-fit:cover;border-radius:7px}.notice{background:#fff7df;border:1px solid #ead49a;padding:12px;border-radius:10px;font-size:13px}.danger{color:#9b2c2c}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{padding:16px;border:1px solid #eee;border-radius:12px}.stat b{display:block;font-size:25px;color:#123f32}@media(max-width:800px){.grid{grid-template-columns:1fr}.table{display:block;overflow:auto;white-space:nowrap}.stats{grid-template-columns:1fr}}
 @media(max-width:700px){.top{flex-wrap:wrap;gap:12px}.top>div:last-child{width:100%;display:flex;flex-wrap:wrap;gap:8px}}@media(max-width:700px){h2{font-size:32px;line-height:1.15}}@media(max-width:700px){.table{font-size:13px}.table th,.table td{padding:6px}.table img{width:70px;height:50px;object-fit:cover}}</style></head><body><div class="admin">
-<div id="login" class="box login"><a class="brand-logo" href="index.html"><img src="source-stays-logo-green-gold.png" alt="Source Stays"></a><div class="eyebrow" style="margin-top:12px">Source Stays</div><h2>Admin dashboard</h2><p class="muted">Manage apartments, hotels and real-estate listings from one place.</p><div id="modeNotice" class="notice">Live Supabase login — demo login has been disabled.</div><form id="loginForm"><div class="field"><label>Email</label><input name="email" type="email" value="" required></div><div class="field"><label>Password</label><input name="password" type="password" placeholder="Enter admin password" required></div><button class="btn dark">Sign in</button><p id="loginMsg" class="muted"></p></form></div>
+<div id="login" class="box login"><a class="brand-logo" href="index.html"><img src="source-stays-logo-green-gold.png" alt="Source Stays"></a><div class="eyebrow" style="margin-top:12px">Source Stays</div><h2>Admin dashboard</h2><p class="muted">Manage apartments, hotels and real-estate listings from one place.</p><div id="modeNotice" class="notice">Live Supabase login — demo login has been disabled.</div><form id="loginForm"><div class="field"><label>Email</label><input name="email" type="email" value="" required></div><div class="field"><label>Password</label><input name="password" type="password" placeholder="Enter admin password" required></div><button class="btn dark" type="submit">Sign in</button><p style="margin:10px 0 0"><a href="#" id="forgotPasswordLink">Forgot password?</a></p><p id="loginMsg" class="muted"></p></form></div>
 
 <div id="mfaEnroll" class="hidden">
   <h2>Set up Google Authenticator</h2>
@@ -545,6 +545,10 @@
 <script>
 (function(){
 'use strict';
+// Remove legacy credentials from the address bar and current history entry.
+if (/[?&](?:email|password)=/i.test(window.location.search)) {
+  window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+}
 let editing=null;
 const login=document.getElementById('login'),dash=document.getElementById('dash'),loginForm=document.getElementById('loginForm'),loginMsg=document.getElementById('loginMsg'),propertyForm=document.getElementById('propertyForm');
 const BUCKET='Property_images';
@@ -873,6 +877,24 @@ form.reset();
     }
   }
 );
+document.getElementById('forgotPasswordLink').addEventListener('click',async function(e){
+  e.preventDefault();
+  const email=String(loginForm.elements.email.value||'').trim();
+  if(!email){msg('Enter your admin email address first, then click Forgot password.',true);loginForm.elements.email.focus();return;}
+  const link=this;
+  link.style.pointerEvents='none';
+  msg('Sending password recovery email...');
+  try{
+    const sb=getClient();
+    const redirectTo=window.location.origin+'/reset-password.html';
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo});
+    if(error) throw error;
+    msg('Password recovery email sent. Open the email and follow the secure link to set a new password.');
+  }catch(err){
+    console.error('Password recovery request failed:',err);
+    msg(err.message||'Could not send the recovery email. Please try again.',true);
+  }finally{link.style.pointerEvents='';}
+});
 loginForm.addEventListener('submit',async function(e){
   e.preventDefault();
   e.stopPropagation();
