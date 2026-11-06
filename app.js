@@ -12,8 +12,8 @@ async function getListings(){
 }
 async function loadListings(){
  const box=document.getElementById('listings'); if(!box)return;
- 
-try {
+
+ try {
   const items = await getListings();
 
   console.log('[Source Stays diagnostic]', {
@@ -25,10 +25,49 @@ try {
       physical_inspection_verified: p.physical_inspection_verified
     }))
   });
- 
-box.innerHTML=items.length?items.map(p=>`<article class="card"><div class="photo" style="background-image:url('${esc(p.image_url||'')}')"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(p.title)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(p.location||'Lagos')}${p.category === 'land' ? ' • Land' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)'}</div><div class="price">₦${money(p.price)} / ${esc(p.price_period||'per night')}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`).join(''):'<p>No matching listings yet. Try another location or contact Source Stays.'}
 
- catch(e){console.error(e);box.innerHTML='<p>Listings are temporarily unavailable. Please try again or contact Source Stays on WhatsApp.</p>'}
+  // Hotel cards use the customer-safe room-category view, never properties.price.
+  // This keeps hotel net rates and markup private and leaves non-hotel pricing untouched.
+  const hotelIds = items
+    .filter(p => String(p.category || '').toLowerCase() === 'hotel')
+    .map(p => p.id);
+
+  const hotelStartingPrices = new Map();
+  if (hotelIds.length) {
+    const { data: roomRates, error: ratesError } = await supabaseClient
+      .from('hotel_room_categories_public')
+      .select('property_id, customer_rate')
+      .in('property_id', hotelIds);
+
+    if (ratesError) {
+      console.error('Could not load public hotel room rates:', ratesError);
+    } else {
+      (roomRates || []).forEach(room => {
+        const rate = Number(room.customer_rate);
+        if (!Number.isFinite(rate) || rate <= 0) return;
+        const current = hotelStartingPrices.get(String(room.property_id));
+        if (current === undefined || rate < current) {
+          hotelStartingPrices.set(String(room.property_id), rate);
+        }
+      });
+    }
+  }
+
+  box.innerHTML = items.length ? items.map(p => {
+    const isHotel = String(p.category || '').toLowerCase() === 'hotel';
+    const startingRate = hotelStartingPrices.get(String(p.id));
+    const priceLabel = isHotel
+      ? (startingRate
+          ? 'Rooms from ₦' + money(startingRate) + ' / per night'
+          : 'View room rates')
+      : '₦' + money(p.price) + ' / ' + esc(p.price_period || 'per night');
+
+    return `<article class="card"><div class="photo" style="background-image:url('${esc(p.image_url||'')}')"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(p.title)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(p.location||'Lagos')}${p.category === 'land' ? ' • Land' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)'}</div><div class="price">${priceLabel}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`;
+  }).join('') : '<p>No matching listings yet. Try another location or contact Source Stays.';
+ } catch(e) {
+  console.error(e);
+  box.innerHTML='<p>Listings are temporarily unavailable. Please try again or contact Source Stays on WhatsApp.</p>';
+ }
 }
 
 
