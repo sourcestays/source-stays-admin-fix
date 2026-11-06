@@ -500,7 +500,7 @@
       document.body.style.overflow = "";
     }
 
-    function renderProperty(p) {
+    function renderProperty(p, hotelRooms = []) {
       const title = SourceStays.esc(p.title || "Property");
       const category = SourceStays.esc(p.category || "shortlet");
       const location = SourceStays.esc(p.location || "Lagos");
@@ -625,7 +625,7 @@ const hasPaymentPlan = isSaleListing &&
   </div>
 </section>
 ` : `
-${isSaleListing ? `<h3>Base property price: ₦${SourceStays.money(basePropertyPrice)}</h3>` : `<h3>₦${SourceStays.money(p.price)} / ${period}</h3>`}
+${String(p.category || "").toLowerCase() === "hotel" ? "" : (isSaleListing ? `<h3>Base property price: ₦${SourceStays.money(basePropertyPrice)}</h3>` : `<h3>₦${SourceStays.money(p.price)} / ${period}</h3>`)}
 `}
 ${hasPricingBreakdown || hasPaymentPlan || (isSaleListing && feesDueLater) ? `
 <section style="margin-top:20px;padding:20px;border:1px solid #e7ebe7;border-radius:14px;background:#f7f8f5;">
@@ -658,6 +658,31 @@ ${hasPricingBreakdown || hasPaymentPlan || (isSaleListing && feesDueLater) ? `
             <p class="description-in-info">${description}</p>
 
             <p><b>Amenities:</b> ${amenities}</p>
+
+            ${String(p.category || "").toLowerCase() === "hotel" ? `
+              <section class="hotel-room-list" style="margin:24px 0;padding:22px;border:1px solid #e7ebe7;border-radius:16px;background:#f7f8f5;">
+                <h3 style="margin:0 0 8px;color:#123f32;">Available Room Categories</h3>
+                <p style="margin:0 0 18px;color:#68736c;">Choose the room type that suits your stay. All prices are per room, per night.</p>
+                ${hotelRooms.length ? hotelRooms.map(room => {
+                  const roomName = SourceStays.esc(room.room_name || "Hotel room");
+                  const roomDescription = SourceStays.esc(room.description || "");
+                  const roomRate = Number(room.customer_rate) || 0;
+                  const maxGuests = Number(room.max_guests) || 2;
+                  const photos = Array.isArray(room.photo_urls) ? room.photo_urls : [];
+                  return `
+                    <article style="margin:0 0 16px;padding:16px;background:#fff;border:1px solid #e7ebe7;border-radius:12px;">
+                      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+                        <div><h4 style="margin:0 0 6px;color:#123f32;font-size:19px;">${roomName}</h4><p style="margin:0;color:#68736c;font-size:13px;">Up to ${maxGuests} guests</p></div>
+                        <strong style="color:#123f32;font-size:19px;">₦${SourceStays.money(roomRate)} <span style="font-size:12px;font-weight:500;">/ night</span></strong>
+                      </div>
+                      ${roomDescription ? `<p style="margin:12px 0;line-height:1.65;">${roomDescription}</p>` : ""}
+                      ${photos.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:12px;">${photos.map(url => `<img src="${SourceStays.esc(url)}" alt="${roomName}" loading="lazy" style="width:100%;height:130px;object-fit:cover;border-radius:8px;">`).join("")}</div>` : ""}
+                      ${room.video_url ? `<video controls playsinline preload="metadata" style="width:100%;max-height:360px;margin-top:12px;border-radius:10px;" src="${SourceStays.esc(room.video_url)}"></video>` : ""}
+                    </article>
+                  `;
+                }).join("") : '<p style="margin:0;color:#68736c;">Room details are being updated. Please contact Source Stays for current room options.</p>'}
+              </section>
+            ` : ""}
 
 
 ${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
@@ -1260,7 +1285,21 @@ dateInput.min = localToday;
           return;
         }
 
-        renderProperty(property);
+        let hotelRooms = [];
+        if (String(property.category || "").toLowerCase() === "hotel") {
+          const { data: roomData, error: roomError } = await SourceStays.supabase
+            .from("hotel_room_categories_public")
+            .select("id, room_name, description, customer_rate, max_guests, photo_urls, video_url, sort_order")
+            .eq("property_id", propertyId)
+            .order("sort_order", { ascending: true });
+          if (roomError) {
+            console.error("Could not load hotel room categories:", roomError);
+          } else {
+            hotelRooms = roomData || [];
+          }
+        }
+
+        renderProperty(property, hotelRooms);
 
       } catch (error) {
         console.error("Could not load property:", error);
