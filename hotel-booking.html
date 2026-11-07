@@ -80,6 +80,7 @@
   const guestsInput = document.getElementById('guestCount');
   const estimate = document.getElementById('estimate');
   const money = n => Number(n || 0).toLocaleString('en-NG');
+  const CAUTION_FEE_PER_ROOM = 20000;
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   let client, user, property, room;
 
@@ -97,8 +98,16 @@
     }
     const nights = Math.round((new Date(checkOut.value+'T00:00:00') - new Date(checkIn.value+'T00:00:00')) / 86400000);
     const count = Math.max(1, Number(roomsInput.value || 1));
+    const accommodation = Number(room.customer_rate) * nights * count;
+    const cautionFee = CAUTION_FEE_PER_ROOM * count;
+    const estimatedTotal = accommodation + cautionFee;
     estimate.hidden = false;
-    estimate.textContent = 'Estimated accommodation: ₦' + money(Number(room.customer_rate) * nights * count) + ' (' + count + ' room(s) × ' + nights + ' night(s) × ₦' + money(room.customer_rate) + '). Final payment is only requested after availability is confirmed.';
+    estimate.innerHTML =
+      '<strong>Estimated cost breakdown</strong><br>' +
+      'Accommodation: ₦' + money(accommodation) + ' (' + count + ' room(s) × ' + nights + ' night(s) × ₦' + money(room.customer_rate) + ')<br>' +
+      'Refundable caution fee: ₦' + money(cautionFee) + ' (' + count + ' room(s) × ₦' + money(CAUTION_FEE_PER_ROOM) + ')<br>' +
+      '<strong>Estimated amount payable: ₦' + money(estimatedTotal) + '</strong><br>' +
+      '<small>The caution fee is refundable after checkout, subject to room inspection and no damage. Final payment is only requested after availability is confirmed.</small>';
   }
 
   async function init() {
@@ -127,7 +136,7 @@
       return;
     }
     document.getElementById('backLink').href = 'property.html?id=' + encodeURIComponent(propertyId);
-    summary.innerHTML = '<strong>' + esc(room.room_name) + '</strong><br>₦' + money(room.customer_rate) + ' per room, per night<br><span class="muted">' + esc(property.location || 'Location available on request') + ' · Up to ' + Number(room.max_guests || 2) + ' guests per room</span>';
+    summary.innerHTML = '<strong>' + esc(room.room_name) + '</strong><br>₦' + money(room.customer_rate) + ' per room, per night<br>Refundable caution fee: ₦' + money(CAUTION_FEE_PER_ROOM) + ' per room<br><span class="muted">Caution fee refunded after checkout, subject to inspection and no damage.<br>' + esc(property.location || 'Location available on request') + ' · Up to ' + Number(room.max_guests || 2) + ' guests per room</span>';
     user = authResult.data?.user || null;
     if (!user) {
       loginNotice.hidden = false;
