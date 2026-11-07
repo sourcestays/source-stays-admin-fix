@@ -193,8 +193,20 @@
       };
       const { data, error } = await client.from('hotel_availability_requests').insert(payload).select('request_ref').single();
       if (error) throw error;
+
+      // Email notification runs server-side. A mail failure must not undo the saved request.
+      let emailNotice = 'An email notification has been sent to Source Stays.';
+      const { data: emailResult, error: emailError } = await client.functions.invoke(
+        'notify-hotel-availability-request',
+        { body: { request_ref: data.request_ref } }
+      );
+      if (emailError || !emailResult?.email_sent) {
+        console.error('Hotel request email notification failed:', emailError || emailResult?.error);
+        emailNotice = 'Your request is saved, but the email notification could not be sent. Source Stays can still view it in the admin dashboard.';
+      }
+
       status.style.color = '#087443';
-      status.textContent = 'Your availability request has been received. Reference: ' + data.request_ref + '. Source Stays will confirm availability with the hotel before requesting payment. No payment has been taken.';
+      status.textContent = 'Your availability request has been received. Reference: ' + data.request_ref + '. Source Stays will confirm availability with the hotel before requesting payment. No payment has been taken. ' + emailNotice;
       form.reset();
       estimate.hidden = true;
     } catch (error) {
