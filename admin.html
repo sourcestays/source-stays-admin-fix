@@ -522,6 +522,12 @@
   </div>
 </section>
 <section class="box"><h3>Bookings & enquiries</h3><div id="bookings"></div><div id="enquiries"></div></section>
+<section class="box" id="hotelAvailabilityAdmin">
+  <h3>Hotel Availability Requests</h3>
+  <p class="muted">Review customer hotel requests, contact the hotel through WhatsApp, and record its availability response. Availability confirmations expire after 15 minutes.</p>
+  <button type="button" class="btn dark" id="refreshHotelAvailability">Refresh Hotel Requests</button>
+  <div id="hotelAvailabilityRequests" style="margin-top:16px"><p class="muted">Hotel requests will appear here.</p></div>
+</section>
 
 <section class="box" id="creditRedemptionAdmin">
   <h3>Source Stays Credit Redemption Requests</h3>
@@ -614,6 +620,7 @@ function showDash(){
   loadPartnerSaleProperties();
   loadPartnerSales();
   loadHotelRoomCategories();
+  loadHotelAvailabilityRequests();
 }
 function getClient(){
   if(client) return client;
@@ -2926,6 +2933,120 @@ window.addPartnerBankAccountById = async function(partnerId) {
     }
   };
 };
+
+
+const hotelAvailabilityContainer = document.getElementById('hotelAvailabilityRequests');
+
+function hotelRequestWhatsAppUrl(phone, request, partner) {
+  const digits = String(phone || '').replace(/\\D/g, '');
+  if (!digits) return '';
+  const international = digits.startsWith('0') ? '234' + digits.slice(1) : digits;
+  const message = [
+    'Hello ' + (partner.partner_name || 'Hotel Partner') + ',',
+    'Source Stays is checking availability for a customer request.',
+    'Request reference: ' + request.request_ref,
+    'Room: ' + request.room_category,
+    'Check-in: ' + request.check_in,
+    'Check-out: ' + request.check_out,
+    'Rooms: ' + request.rooms_requested,
+    'Guests: ' + request.guests,
+    'Please confirm whether this room category is available for these dates and advise any relevant conditions.'
+  ].join('\\n');
+  return 'https://wa.me/' + international + '?text=' + encodeURIComponent(message);
+}
+
+window.loadHotelAvailabilityRequests = async function() {
+  if (!hotelAvailabilityContainer) return;
+  hotelAvailabilityContainer.textContent = 'Loading hotel availability requests...';
+  try {
+    const sb = getClient();
+    const { data: requests, error } = await sb.from('hotel_availability_requests')
+      .select('*').order('created_at', { ascending: false }).limit(100);
+    if (error) throw error;
+
+    const now = Date.now();
+    const expiredIds = (requests || []).filter(r =>
+      r.status === 'available' && r.availability_expires_at &&
+      new Date(r.availability_expires_at).getTime() <= now
+    ).map(r => r.id);
+
+    if (expiredIds.length) {
+      const { error: expiryError } = await sb.from('hotel_availability_requests')
+        .update({ status: 'expired' }).in('id', expiredIds);
+      if (expiryError) console.error('Could not mark expired confirmations:', expiryError);
+      (requests || []).forEach(r => { if (expiredIds.includes(r.id)) r.status = 'expired'; });
+    }
+
+    if (!requests || !requests.length) {
+      hotelAvailabilityContainer.innerHTML = '<p class="muted">No hotel availability requests yet.</p>';
+      return;
+    }
+
+    const propertyIds = [...new Set(requests.map(r => r.property_id))];
+    const [{ data: properties, error: propertyError }, { data: partners, error: partnerError }] = await Promise.all([
+      sb.from('properties').select('id,title,location,partner_id').in('id', propertyIds),
+      sb.from('property_partners').select('id,partner_name,phone')
+    ]);
+    if (propertyError) throw propertyError;
+    if (partnerError) throw partnerError;
+    const propertyMap = new Map((properties || []).map(p => [String(p.id), p]));
+    const partnerMap = new Map((partners || []).map(p => [String(p.id), p]));
+
+    hotelAvailabilityContainer.innerHTML = requests.map(r => {
+      const property = propertyMap.get(String(r.property_id)) || {};
+      const partner = property.partner_id ? partnerMap.get(String(property.partner_id)) || {} : {};
+      const whatsappUrl = hotelRequestWhatsAppUrl(partner.phone, r, partner);
+      const expiry = r.status === 'available' && r.availability_expires_at
+        ? '<p><strong>Availability expires:</strong> ' + esc(r.availability_expires_at) + '</p>' : '';
+      const note = r.hotel_confirmation_note
+        ? '<p><strong>Hotel response:</strong> ' + esc(r.hotel_confirmation_note) + '</p>' : '';
+      const whatsapp = whatsappUrl
+        ? '<a class="btn gold" href="' + esc(whatsappUrl) + '" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">Contact hotel on WhatsApp</a>'
+        : '<p class="danger">No partner WhatsApp number is saved. Add the partner phone in Partner Management.</p>';
+      const actions = r.status === 'pending_availability'
+        ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
+          '<button type="button" class="btn dark" onclick="setHotelAvailabilityStatus(\'' + r.id + '\',\'available\')">Mark Available (15 min)</button>' +
+          '<button type="button" class="btn" onclick="setHotelAvailabilityStatus(\'' + r.id + '\',\'unavailable\')">Mark Unavailable</button></div>'
+        : '';
+      return '<article class="box" style="margin:14px 0;padding:16px">' +
+        '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>' + esc(r.request_ref) + '</strong><strong>' + esc(r.status.replaceAll('_',' ').toUpperCase()) + '</strong></div>' +
+        '<p><strong>Hotel listing:</strong> ' + esc(property.title || ('Property #' + r.property_id)) + ' · ' + esc(property.location || '') + '</p>' +
+        '<p><strong>Partner:</strong> ' + esc(partner.partner_name || 'No assigned partner') + ' · <strong>Partner phone:</strong> ' + esc(partner.phone || 'Not saved') + '</p>' +
+        '<p><strong>Customer:</strong> ' + esc(r.customer_name) + ' · ' + esc(r.customer_phone) + ' · ' + esc(r.customer_email || 'No email') + '</p>' +
+        '<p><strong>Room:</strong> ' + esc(r.room_category) + ' · <strong>Dates:</strong> ' + esc(r.check_in) + ' to ' + esc(r.check_out) + '</p>' +
+        '<p><strong>Rooms:</strong> ' + Number(r.rooms_requested) + ' · <strong>Guests:</strong> ' + Number(r.guests) + '</p>' +
+        '<p><strong>Customer note:</strong> ' + esc(r.customer_note || 'None') + '</p>' + note + expiry + whatsapp + actions +
+        (r.status === 'available' ? '<p class="muted">This confirmation is valid only until the expiry time above.</p>' : '') +
+        '</article>';
+    }).join('');
+  } catch (error) {
+    console.error('Hotel availability requests load error:', error);
+    hotelAvailabilityContainer.textContent = 'Could not load hotel requests: ' + (error.message || error);
+  }
+};
+
+window.setHotelAvailabilityStatus = async function(id, status) {
+  if (!['available', 'unavailable'].includes(status)) return;
+  const promptText = status === 'available'
+    ? 'Optional: enter the hotel confirmation details or conditions.'
+    : 'Optional: enter the hotel response or reason unavailable.';
+  const note = prompt(promptText) || null;
+  const update = status === 'available'
+    ? { status: 'available', availability_confirmed_at: new Date().toISOString(),
+        availability_expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+        hotel_confirmation_note: note }
+    : { status: 'unavailable', availability_confirmed_at: null,
+        availability_expires_at: null, hotel_confirmation_note: note };
+  try {
+    const { error } = await getClient().from('hotel_availability_requests').update(update).eq('id', id);
+    if (error) throw error;
+    await loadHotelAvailabilityRequests();
+  } catch (error) {
+    alert('Could not update hotel availability: ' + (error.message || error));
+  }
+};
+
+document.getElementById('refreshHotelAvailability')?.addEventListener('click', loadHotelAvailabilityRequests);
 
 async function loadPartners(){partnerList.textContent='Loading partners...';try{const sb=getClient();const {data:ps,error}=await sb.from('property_partners').select('*').order('created_at',{ascending:false});if(error)throw error;const {data:as,error:ae}=await sb.from('partner_bank_accounts').select('*').order('created_at',{ascending:false});if(ae)throw ae;window.partnerCache=new Map((ps||[]).map(p=>[p.id,p]));refreshPropertyPartnerOptions(propertyForm.elements.partner_id?.value||'');if(!ps?.length){partnerList.textContent='No partners registered yet.';return;}partnerList.innerHTML=ps.map(p=>{const linked=(as||[]).filter(a=>a.partner_id===p.id);const comm=p.commission_type==='percentage'?Number(p.commission_value)+'%':'₦'+money(p.commission_value);return '<article class="box" style="margin:12px 0;padding:16px"><strong>'+esc(p.partner_name)+'</strong><p class="muted">'+esc(p.partner_type.replaceAll('_',' '))+' · Commission: '+(p.commission_agreed?esc(comm):'Not agreed yet')+' · Status: '+esc(p.status)+'</p><p class="muted">'+esc(p.contact_person||'')+' · '+esc(p.phone||'')+' · '+esc(p.email||'')+'</p><p class="muted">Beneficiary accounts: '+linked.length+'</p>'+linked.map(a=>'<div class="verify-box">'+esc(a.bank_name)+' · '+esc(a.account_name)+' · '+esc(a.account_number)+'<br>Status: '+esc(a.verification_status)+(a.is_approved?' · Approved':' · Not approved')+(!a.is_approved?'<div class="verify-actions"><button type="button" class="btn gold" onclick="approvePartnerBankAccount(\''+a.id+'\')">Approve beneficiary for payments</button></div>':'')+'</div>').join('')+'<div class="verify-actions"><button type="button" onclick="editPartnerById(\''+p.id+'\')">Edit</button><button type="button" onclick="addPartnerBankAccountById(\''+p.id+'\')">Add bank account</button>'+(p.status!=='approved'?'<button type="button" onclick="setPartnerStatus(\''+p.id+'\',\'approved\')">Approve partner</button>':'')+(p.status!=='suspended'?'<button type="button" onclick="setPartnerStatus(\''+p.id+'\',\'suspended\')">Suspend partner</button>':'')+'</div></article>';}).join('');}catch(e){console.error(e);partnerList.textContent='Could not load partners: '+(e.message||e);}}
 partnerForm.addEventListener('submit',async e=>{e.preventDefault();const b=document.getElementById('savePartnerButton');b.disabled=true;try{const f=new FormData(partnerForm),type=String(f.get('commission_type')),value=Number(f.get('commission_value'));if(!Number.isFinite(value)||value<0||(type==='percentage'&&value>100))throw new Error('Percentage commission must be between 0 and 100.');const commissionAgreed=partnerForm.elements.commission_agreed.checked;const {data:{user:currentAdmin}}=await getClient().auth.getUser();const payload={partner_type:f.get('partner_type'),partner_name:String(f.get('partner_name')).trim(),contact_person:String(f.get('contact_person')||'').trim()||null,email:String(f.get('email')||'').trim()||null,phone:String(f.get('phone')||'').trim()||null,address:String(f.get('address')||'').trim()||null,commission_type:type,commission_value:value,commission_agreed:commissionAgreed,commission_agreed_at:commissionAgreed?new Date().toISOString():null,commission_agreed_by:commissionAgreed?currentAdmin?.id||null:null,notes:String(f.get('notes')||'').trim()||null,updated_at:new Date().toISOString()};const id=String(f.get('id')||'');const q=id?await getClient().from('property_partners').update(payload).eq('id',id):await getClient().from('property_partners').insert(payload);if(q.error)throw q.error;resetPartnerForm();partnerMessage(id?'Partner updated.':'Partner registered as pending approval.');await loadPartners();}catch(e){partnerMessage('Could not save partner: '+(e.message||e),true);}finally{b.disabled=false;}});
