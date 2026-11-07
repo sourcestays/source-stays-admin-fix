@@ -2951,7 +2951,7 @@ function hotelRequestWhatsAppUrl(phone, request, partner) {
     'Rooms: ' + request.rooms_requested,
     'Guests: ' + request.guests,
     'Please confirm whether this room category is available for these dates and advise any relevant conditions.'
-  ].join('\\n');
+  ].join('\n');
   return 'https://wa.me/' + international + '?text=' + encodeURIComponent(message);
 }
 
