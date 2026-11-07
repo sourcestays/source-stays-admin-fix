@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
       return json({ error: "Payment was initialized but could not be saved. Contact Source Stays before retrying." }, 500);
     }
 
-    const { error: requestUpdateError } = await admin
+    const { data: updatedRequest, error: requestUpdateError } = await admin
       .from("hotel_availability_requests")
       .update({
         status: "awaiting_payment",
@@ -246,11 +246,18 @@ Deno.serve(async (req) => {
       })
       .eq("id", request.id)
       .eq("status", current.status)
-      .gt("availability_expires_at", new Date().toISOString());
+      .gt("availability_expires_at", new Date().toISOString())
+      .select("id")
+      .maybeSingle();
 
-    if (requestUpdateError) {
-      console.error("Could not update hotel request after Paystack initialization:", requestUpdateError);
-      return json({ error: "Payment link created but request status needs admin review. Contact Source Stays." }, 500);
+    if (requestUpdateError || !updatedRequest) {
+      console.error(
+        "Could not safely update hotel request after Paystack initialization:",
+        requestUpdateError || "Request status or availability window changed."
+      );
+      return json({
+        error: "Availability expired or changed while payment was being prepared. Do not pay using this link. Contact Source Stays for a fresh confirmation."
+      }, 409);
     }
 
     return json({
