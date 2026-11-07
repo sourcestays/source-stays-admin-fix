@@ -2983,19 +2983,42 @@ window.loadHotelAvailabilityRequests = async function() {
     }
 
     const propertyIds = [...new Set(requests.map(r => r.property_id))];
-    const [{ data: properties, error: propertyError }, { data: partners, error: partnerError }] = await Promise.all([
+    const roomCategoryIds = [...new Set(requests.map(r => r.room_category_id).filter(Boolean))];
+    const [{ data: properties, error: propertyError }, { data: partners, error: partnerError }, { data: roomRates, error: roomRateError }] = await Promise.all([
       sb.from('properties').select('id,title,location,partner_id').in('id', propertyIds),
-      sb.from('property_partners').select('id,partner_name,phone')
+      sb.from('property_partners').select('id,partner_name,phone'),
+      roomCategoryIds.length
+        ? sb.from('hotel_room_categories_public').select('id,customer_rate').in('id', roomCategoryIds)
+        : Promise.resolve({ data: [], error: null })
     ]);
     if (propertyError) throw propertyError;
     if (partnerError) throw partnerError;
+    if (roomRateError) throw roomRateError;
     const propertyMap = new Map((properties || []).map(p => [String(p.id), p]));
     const partnerMap = new Map((partners || []).map(p => [String(p.id), p]));
+    const roomRateMap = new Map((roomRates || []).map(room => [String(room.id), Number(room.customer_rate)]));
+    const hotelMoney = value => '₦' + Number(value || 0).toLocaleString('en-NG', { maximumFractionDigits: 2 });
 
     hotelAvailabilityContainer.innerHTML = requests.map(r => {
       const property = propertyMap.get(String(r.property_id)) || {};
       const partner = property.partner_id ? partnerMap.get(String(property.partner_id)) || {} : {};
       const whatsappUrl = hotelRequestWhatsAppUrl(partner.phone, r, partner);
+      const checkInDate = new Date(r.check_in + 'T00:00:00Z');
+      const checkOutDate = new Date(r.check_out + 'T00:00:00Z');
+      const nights = Math.max(0, Math.round((checkOutDate - checkInDate) / 86400000));
+      const roomCount = Number(r.rooms_requested || 1);
+      const nightlyRate = roomRateMap.get(String(r.room_category_id)) || 0;
+      const accommodationTotal = nightlyRate * nights * roomCount;
+      const cautionFeeTotal = 20000 * roomCount;
+      const estimatedTotal = accommodationTotal + cautionFeeTotal;
+      const pricing = nightlyRate > 0 && nights > 0
+        ? '<div class="verify-box" style="margin:12px 0"><strong>Estimated customer cost breakdown</strong>' +
+          '<p>Room rate: ' + hotelMoney(nightlyRate) + ' per room, per night</p>' +
+          '<p>Accommodation: ' + hotelMoney(accommodationTotal) + ' (' + roomCount + ' room(s) × ' + nights + ' night(s))</p>' +
+          '<p>Refundable caution fee: ' + hotelMoney(cautionFeeTotal) + ' (' + roomCount + ' room(s) × ₦20,000)</p>' +
+          '<p><strong>Estimated total payable: ' + hotelMoney(estimatedTotal) + '</strong></p>' +
+          '<small>Caution fee is refundable after checkout, subject to room inspection and no damage. Final payment is requested only after hotel availability is confirmed.</small></div>'
+        : '<p class="muted">Pricing estimate unavailable: the selected room rate could not be loaded.</p>';
       const expiry = r.status === 'available' && r.availability_expires_at
         ? '<p><strong>Availability expires:</strong> ' + esc(r.availability_expires_at) + '</p>' : '';
       const note = r.hotel_confirmation_note
@@ -3015,6 +3038,7 @@ window.loadHotelAvailabilityRequests = async function() {
         '<p><strong>Customer:</strong> ' + esc(r.customer_name) + ' · ' + esc(r.customer_phone) + ' · ' + esc(r.customer_email || 'No email') + '</p>' +
         '<p><strong>Room:</strong> ' + esc(r.room_category) + ' · <strong>Dates:</strong> ' + esc(r.check_in) + ' to ' + esc(r.check_out) + '</p>' +
         '<p><strong>Rooms:</strong> ' + Number(r.rooms_requested) + ' · <strong>Guests:</strong> ' + Number(r.guests) + '</p>' +
+        pricing +
         '<p><strong>Customer note:</strong> ' + esc(r.customer_note || 'None') + '</p>' + note + expiry + whatsapp + actions +
         (r.status === 'available' ? '<p class="muted">This confirmation is valid only until the expiry time above.</p>' : '') +
         '</article>';
