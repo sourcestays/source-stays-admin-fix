@@ -143,7 +143,7 @@
     }
     const expiry = req.availability_expires_at ? new Date(req.availability_expires_at).getTime() : 0;
     const isValid = expiry > Date.now();
-    payButton.hidden = !(req.status === 'available' && isValid && req.payment_status !== 'paid');
+    payButton.hidden = !(['available','awaiting_payment'].includes(req.status) && isValid && req.payment_status !== 'paid');
     if (req.payment_status === 'paid' && req.hotel_reservation_confirmed_at) {
       trackerMessage.textContent = 'Payment received and your hotel reservation has been confirmed. Source Stays will provide your booking details and check-in instructions.';
     } else if (req.payment_status === 'paid') {
