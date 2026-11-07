@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
       headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         from: "Source Stays <bookings@sourcestays.com.ng>",
-        to: ["sourcestays@gmail.com"],
+        to: ["admin@sourcestays.com.ng"],
         subject: "New Hotel Request " + request.request_ref + " — " + request.room_category,
         html,
       }),
