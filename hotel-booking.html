@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#123f32">
+<title>Hotel Room Request | Source Stays</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.hotel-request{max-width:720px;margin:36px auto;padding:0 18px}
+.request-card{background:#fff;border:1px solid #e5e9e5;border-radius:16px;padding:26px;box-shadow:0 12px 35px rgba(18,63,50,.05)}
+.request-card h1{margin:8px 0 18px;font-size:clamp(28px,4vw,38px)}
+.room-summary{padding:16px;background:#f7f8f5;border:1px solid #e1e8e2;border-radius:12px;margin-bottom:20px}
+.field{margin:14px 0}
+.field label{display:block;font-weight:700;margin-bottom:6px}
+.field input,.field textarea{width:100%;padding:13px;border:1px solid #d6ded7;border-radius:8px;font:inherit;box-sizing:border-box}
+.field textarea{min-height:90px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.disclosure{background:#fff8e8;border:1px solid #e7d6a8;padding:14px;border-radius:10px;margin:18px 0}
+.status{margin-top:14px;white-space:pre-wrap}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.request-card{padding:19px}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+<a class="logo" href="index.html" aria-label="Source Stays home"><img src="source-stays-logo-green-gold.png" alt="Source Stays"></a>
+<a class="btn dark" id="backLink" href="index.html">Back</a>
+</div></header>
+<main class="hotel-request">
+<div class="eyebrow">Hotel availability request</div>
+<section class="request-card">
+<h1>Request your selected room</h1>
+<div id="roomSummary" class="room-summary">Loading selected room…</div>
+<div id="loginNotice" hidden>
+<p>You need to log in to your Source Stays customer account before submitting a hotel availability request.</p>
+<a class="btn dark" id="accountLink" href="account.html">Log in / Create an account</a>
+<p class="muted">After logging in, return to the hotel page and select this room again.</p>
+</div>
+<form id="hotelRequestForm" hidden>
+<div class="field"><label for="customerName">Full name</label><input id="customerName" name="customer_name" required minlength="2" maxlength="150"></div>
+<div class="grid">
+<div class="field"><label for="customerPhone">Phone / WhatsApp</label><input id="customerPhone" name="customer_phone" type="tel" required minlength="7" maxlength="40"></div>
+<div class="field"><label for="customerEmail">Email address</label><input id="customerEmail" name="customer_email" type="email" maxlength="254"></div>
+</div>
+<div class="grid">
+<div class="field"><label for="checkIn">Check-in</label><input id="checkIn" name="check_in" type="date" required></div>
+<div class="field"><label for="checkOut">Check-out</label><input id="checkOut" name="check_out" type="date" required></div>
+</div>
+<div class="grid">
+<div class="field"><label for="roomsRequested">Number of rooms</label><input id="roomsRequested" name="rooms_requested" type="number" min="1" max="20" value="1" required></div>
+<div class="field"><label for="guestCount">Total guests</label><input id="guestCount" name="guests" type="number" min="1" max="50" value="1" required></div>
+</div>
+<div id="estimate" class="room-summary" hidden></div>
+<div class="field"><label for="customerNote">Additional request (optional)</label><textarea id="customerNote" name="customer_note" maxlength="1000" placeholder="Any special request?"></textarea></div>
+<div class="disclosure">
+<strong>Hotel identity and confirmation</strong>
+<p style="margin:8px 0">For partner protection, the hotel's trading name and exact address are withheld until your payment has been verified and the hotel reservation has been confirmed. Submitting this form is only an availability request; it does not reserve a room or require payment.</p>
+<label style="display:flex;gap:9px;align-items:flex-start;font-weight:600"><input id="identityDisclosure" type="checkbox" required style="margin-top:4px;width:auto">I understand and agree that the hotel's identity and exact address will be shared after payment verification and booking confirmation.</label>
+</div>
+<button id="submitRequest" class="btn dark" type="submit">Submit availability request</button>
+<p id="requestStatus" class="status" role="status" aria-live="polite"></p>
+</form>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase-config.js"></script>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const propertyId = Number(params.get('property_id'));
+  const roomId = params.get('room_id');
+  const summary = document.getElementById('roomSummary');
+  const form = document.getElementById('hotelRequestForm');
+  const loginNotice = document.getElementById('loginNotice');
+  const status = document.getElementById('requestStatus');
+  const submit = document.getElementById('submitRequest');
+  const checkIn = document.getElementById('checkIn');
+  const checkOut = document.getElementById('checkOut');
+  const roomsInput = document.getElementById('roomsRequested');
+  const guestsInput = document.getElementById('guestCount');
+  const estimate = document.getElementById('estimate');
+  const money = n => Number(n || 0).toLocaleString('en-NG');
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  let client, user, property, room;
+
+  const today = new Date();
+  const todayString = [today.getFullYear(),String(today.getMonth()+1).padStart(2,'0'),String(today.getDate()).padStart(2,'0')].join('-');
+  checkIn.min = todayString;
+  checkOut.min = todayString;
+  checkIn.addEventListener('change', () => { checkOut.min = checkIn.value || todayString; updateEstimate(); });
+  checkOut.addEventListener('change', updateEstimate);
+  roomsInput.addEventListener('input', updateEstimate);
+
+  function updateEstimate() {
+    if (!room || !checkIn.value || !checkOut.value || checkOut.value <= checkIn.value) {
+      estimate.hidden = true; return;
+    }
+    const nights = Math.round((new Date(checkOut.value+'T00:00:00') - new Date(checkIn.value+'T00:00:00')) / 86400000);
+    const count = Math.max(1, Number(roomsInput.value || 1));
+    estimate.hidden = false;
+    estimate.textContent = 'Estimated accommodation: ₦' + money(Number(room.customer_rate) * nights * count) + ' (' + count + ' room(s) × ' + nights + ' night(s) × ₦' + money(room.customer_rate) + '). Final payment is only requested after availability is confirmed.';
+  }
+
+  async function init() {
+    if (!window.supabase || !window.SUPABASE_URL || !window.SUPABASE_PUBLISHABLE_KEY) {
+      summary.textContent = 'Booking services are temporarily unavailable. Please contact Source Stays.';
+      return;
+    }
+    if (!propertyId || !roomId) {
+      summary.textContent = 'The selected room link is incomplete. Please return to the hotel page and choose a room.';
+      return;
+    }
+    client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_PUBLISHABLE_KEY);
+    const [propertyResult, roomResult, authResult] = await Promise.all([
+      client.from('properties').select('id,title,location,category').eq('id',propertyId).maybeSingle(),
+      client.from('hotel_room_categories_public').select('id,property_id,room_name,description,customer_rate,max_guests').eq('id',roomId).eq('property_id',propertyId).maybeSingle(),
+      client.auth.getUser()
+    ]);
+    if (propertyResult.error || roomResult.error || !propertyResult.data || !roomResult.data) {
+      summary.textContent = 'We could not load this room. It may no longer be available. Please return to the hotel page.';
+      return;
+    }
+    property = propertyResult.data;
+    room = roomResult.data;
+    if (String(property.category || '').toLowerCase() !== 'hotel') {
+      summary.textContent = 'This booking request is only available for hotel rooms.';
+      return;
+    }
+    document.getElementById('backLink').href = 'property.html?id=' + encodeURIComponent(propertyId);
+    summary.innerHTML = '<strong>' + esc(room.room_name) + '</strong><br>₦' + money(room.customer_rate) + ' per room, per night<br><span class="muted">' + esc(property.location || 'Location available on request') + ' · Up to ' + Number(room.max_guests || 2) + ' guests per room</span>';
+    user = authResult.data?.user || null;
+    if (!user) {
+      loginNotice.hidden = false;
+      document.getElementById('accountLink').href = 'account.html';
+      return;
+    }
+    document.getElementById('customerName').value = user.user_metadata?.full_name || '';
+    document.getElementById('customerPhone').value = user.user_metadata?.phone || '';
+    document.getElementById('customerEmail').value = user.email || '';
+    guestsInput.max = Math.min(50, Number(room.max_guests || 2));
+    guestsInput.value = Math.min(2, Number(room.max_guests || 2));
+    form.hidden = false;
+  }
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    status.style.color = '#b42318';
+    status.textContent = '';
+    if (!user) { status.textContent = 'Please log in to your Source Stays account before submitting.'; return; }
+    if (!checkIn.value || !checkOut.value || checkOut.value <= checkIn.value) {
+      status.textContent = 'Please select a valid check-in and check-out date.'; return;
+    }
+    const roomsRequested = Number(roomsInput.value);
+    const guests = Number(guestsInput.value);
+    if (!Number.isInteger(roomsRequested) || roomsRequested < 1 || roomsRequested > 20 ||
+        !Number.isInteger(guests) || guests < 1 || guests > 50) {
+      status.textContent = 'Please enter valid room and guest numbers.'; return;
+    }
+    if (guests > roomsRequested * Number(room.max_guests || 2)) {
+      status.textContent = 'This room category accommodates up to ' + Number(room.max_guests || 2) + ' guests per room. Increase the room count or reduce the guest count.'; return;
+    }
+    if (!document.getElementById('identityDisclosure').checked) {
+      status.textContent = 'Please acknowledge the hotel identity disclosure before continuing.'; return;
+    }
+    submit.disabled = true;
+    submit.textContent = 'Submitting request…';
+    try {
+      const { data: authData, error: authError } = await client.auth.getUser();
+      if (authError || !authData.user) throw new Error('Your session has expired. Please log in again.');
+      const payload = {
+        property_id: propertyId,
+        room_category_id: room.id,
+        customer_user_id: authData.user.id,
+        customer_name: document.getElementById('customerName').value.trim(),
+        customer_email: document.getElementById('customerEmail').value.trim() || null,
+        customer_phone: document.getElementById('customerPhone').value.trim(),
+        room_category: room.room_name,
+        check_in: checkIn.value,
+        check_out: checkOut.value,
+        rooms_requested: roomsRequested,
+        guests,
+        customer_note: document.getElementById('customerNote').value.trim() || null,
+        status: 'pending_availability'
+      };
+      const { data, error } = await client.from('hotel_availability_requests').insert(payload).select('request_ref').single();
+      if (error) throw error;
+      status.style.color = '#087443';
+      status.textContent = 'Your availability request has been received. Reference: ' + data.request_ref + '. Source Stays will confirm availability with the hotel before requesting payment. No payment has been taken.';
+      form.reset();
+      estimate.hidden = true;
+    } catch (error) {
+      console.error('Hotel availability request failed:', error);
+      status.style.color = '#b42318';
+      status.textContent = error.message || 'We could not submit your request. Please try again.';
+    } finally {
+      submit.disabled = false;
+      submit.textContent = 'Submit availability request';
+    }
+  });
+
+  init().catch(error => {
+    console.error(error);
+    summary.textContent = 'We could not load the selected room. Please try again.';
+  });
+})();
+</script>
+</body>
+</html>
