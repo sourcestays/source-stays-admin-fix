@@ -136,7 +136,20 @@ Deno.serve(async (req) => {
 
     const accommodation = Math.round(Number(room.customer_rate) * nights * rooms * 100) / 100;
     const cautionFee = 20000 * rooms;
-    const total = Math.round((accommodation + cautionFee) * 100) / 100;
+    const grossTotal = Math.round((accommodation + cautionFee) * 100) / 100;
+    const { data: approvedCredit, error: creditError } = await admin
+      .from("hotel_source_stays_credit_redemptions")
+      .select("id,amount,status")
+      .eq("request_id", request.id)
+      .eq("customer_user_id", user.id)
+      .eq("status", "approved")
+      .maybeSingle();
+    if (creditError) throw creditError;
+    const creditAmount = approvedCredit ? Number(approvedCredit.amount) : 0;
+    if (!Number.isFinite(creditAmount) || creditAmount < 0 || creditAmount > grossTotal) {
+      return json({ error: "The approved Source Stays Credit amount is invalid. Please contact support." }, 409);
+    }
+    const total = Math.round((grossTotal - creditAmount) * 100) / 100;
     const amountKobo = Math.round(total * 100);
     if (!Number.isSafeInteger(amountKobo) || amountKobo <= 0) {
       return json({ error: "The calculated payment amount is invalid." }, 400);
@@ -173,6 +186,7 @@ Deno.serve(async (req) => {
         accommodation_amount: accommodation,
         caution_fee_amount: cautionFee,
         total_amount: total,
+        credit_amount: creditAmount,
         rooms_requested: rooms,
         nights,
         room_category_id: room.id,
