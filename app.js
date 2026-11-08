@@ -10,7 +10,11 @@ async function getListings(){
  if(locationValue) q=q.ilike('location',`%${locationValue}%`);
  const {data,error}=await q; if(error) throw error; return data||[];
 }
+let listingsVisibleCount = 8;
+const LISTINGS_PAGE_SIZE = 8;
+
 async function loadListings(){
+  listingsVisibleCount = LISTINGS_PAGE_SIZE;
  const box=document.getElementById('listings'); if(!box)return;
 
  try {
@@ -53,7 +57,9 @@ async function loadListings(){
     }
   }
 
-  box.innerHTML = items.length ? items.map(p => {
+  const renderVisibleListings = () => {
+   const visibleItems = items.slice(0, listingsVisibleCount);
+   box.innerHTML = visibleItems.length ? visibleItems.map(p => {
     const isHotel = String(p.category || '').toLowerCase() === 'hotel';
     const startingRate = hotelStartingPrices.get(String(p.id));
     const priceLabel = isHotel
@@ -64,6 +70,15 @@ async function loadListings(){
 
     return `<article class="card"><div class="photo" style="background-image:url('${esc(p.image_url||'')}')"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(p.title)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(p.location||'Lagos')}${p.category === 'land' ? ' • Land' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)'}</div><div class="price">${priceLabel}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`;
   }).join('') : '<p>No matching listings yet. Try another location or contact Source Stays.';
+   const moreButton = document.getElementById('loadMoreListings');
+   if (moreButton) moreButton.hidden = listingsVisibleCount >= items.length;
+  };
+  renderVisibleListings();
+  const moreButton = document.getElementById('loadMoreListings');
+  if (moreButton) moreButton.onclick = () => {
+   listingsVisibleCount = Math.min(listingsVisibleCount + LISTINGS_PAGE_SIZE, items.length);
+   renderVisibleListings();
+  };
  } catch(e) {
   console.error(e);
   box.innerHTML='<p>Listings are temporarily unavailable. Please try again or contact Source Stays on WhatsApp.</p>';
