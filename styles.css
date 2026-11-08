@@ -1181,3 +1181,24 @@ nav#primaryNav .dropdown-menu a:focus-visible {
     font-size: 14px;
   }
 }
+
+
+/* Homepage search category selector — refined custom chevron */
+.search select#type {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  box-sizing: border-box;
+  padding: 0 48px 0 16px;
+  background-color: #f4f4f0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23123f32' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 17px center;
+  background-size: 16px 16px;
+}
+
+.search select#type:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(197, 163, 91, 0.12);
+}
