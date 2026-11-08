@@ -1282,6 +1282,11 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 }
 
 @media (max-width: 760px) {
+  /* Keep the contact CTA closer to the section above on mobile. */
+  #contact.section {
+    padding: 28px 0 32px;
+  }
+
   .cta.cta-lifestyle {
     grid-template-columns: 1fr;
     border-radius: 18px;
@@ -1307,7 +1312,12 @@ nav#primaryNav .dropdown-menu a:focus-visible {
 
   .cta-lifestyle-image,
   .cta-lifestyle-image img {
-    min-height: 250px;
-    max-height: 300px;
+    height: 220px;
+    min-height: 220px;
+    max-height: 220px;
+  }
+
+  .cta-lifestyle-image img {
+    object-position: center 52%;
   }
 }
