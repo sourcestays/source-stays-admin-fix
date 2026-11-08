@@ -1202,6 +1202,7 @@ async function loadCustomerInspectionRequests() {
               <th>Customer</th>
               <th>Preferred inspection</th>
               <th>Message</th>
+              <th>Admin response note</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -1242,6 +1243,22 @@ async function loadCustomerInspectionRequests() {
                   </td>
 
                   <td>${esc(r.message || "No message")}</td>
+
+                  <td style="min-width:240px;">
+                    <textarea data-inspection-note="${Number(r.id)}"
+                      rows="3" maxlength="1000"
+                      placeholder="If unavailable, tell the customer the nearest available date..."
+                      style="width:100%;min-width:220px;padding:9px;border:1px solid #ddd;border-radius:8px;font:inherit;">${esc(r.admin_note || "")}</textarea>
+                    <button type="button" data-save-inspection-note="${Number(r.id)}">
+                      Save note
+                    </button>
+                    <a data-inspection-whatsapp="${Number(r.id)}"
+                      href="https://wa.me/${whatsappPhone}?text=${encodeURIComponent("Hello " + (r.customer_name || "") + ", regarding your inspection request for " + (p?.title || "the property") + ": " + (r.admin_note || "Please contact Source Stays for an update."))}"
+                      target="_blank" rel="noopener noreferrer"
+                      style="display:inline-block;margin:6px 0;color:#16834a;font-weight:700;">
+                      WhatsApp with note
+                    </a>
+                  </td>
 
                   <td>
                     <span style="
@@ -1289,6 +1306,43 @@ document.getElementById("refreshCustomerInspections")
 
 document.getElementById("customerInspectionRequests")
   ?.addEventListener("click", async event => {
+    const noteButton = event.target.closest("[data-save-inspection-note]");
+    if (noteButton) {
+      const id = Number(noteButton.dataset.saveInspectionNote);
+      const noteField = document.querySelector(`[data-inspection-note="${id}"]`);
+      if (!noteField) return;
+      noteButton.disabled = true;
+      noteButton.textContent = "Saving...";
+      try {
+        const { error } = await getClient()
+          .from("inspection_requests")
+          .update({
+            admin_note: noteField.value.trim() || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", id);
+        if (error) throw error;
+        const whatsappLink = document.querySelector(`[data-inspection-whatsapp="${id}"]`);
+        if (whatsappLink) {
+          const requestRow = noteButton.closest("tr");
+          const customerName = requestRow?.querySelector("td:nth-child(2) b")?.textContent || "there";
+          const propertyName = requestRow?.querySelector("td:first-child b")?.textContent || "your property";
+          const phone = whatsappLink.href.split("wa.me/")[1]?.split("?")[0] || "";
+          whatsappLink.href = "https://wa.me/" + phone + "?text=" + encodeURIComponent(
+            "Hello " + customerName + ", regarding your inspection request for " +
+            propertyName.replace(/^#\d+ — /, "") + ": " +
+            (noteField.value.trim() || "Please contact Source Stays for an update.")
+          );
+        }
+        noteButton.textContent = "Saved";
+      } catch (error) {
+        alert("Could not save the response note: " + (error.message || error));
+        noteButton.textContent = "Save note";
+      } finally {
+        noteButton.disabled = false;
+      }
+      return;
+    }
     const deleteButton = event.target.closest("[data-delete-inspection]");
     if (deleteButton) {
       const id = deleteButton.getAttribute("data-delete-inspection");
