@@ -3034,7 +3034,11 @@ window.loadHotelAvailabilityRequests = async function() {
           ? '<div style="margin-top:12px"><button type="button" class="btn dark" onclick="setHotelAvailabilityStatus(\'' + r.id + '\',\'available\')">Reconfirm Available (15 min)</button></div>'
           : r.status === 'available'
             ? '<div style="margin-top:12px"><button type="button" class="btn gold" onclick="notifyHotelCustomer(\'' + r.id + '\',\'available\')">Resend availability email</button></div>'
-            : '';
+            : r.payment_status === 'paid' && !r.hotel_reservation_confirmed_at
+              ? '<div style="margin-top:12px"><button type="button" class="btn dark" onclick="confirmHotelReservation(\\'' + r.id + '\\')">Confirm Hotel Reservation</button></div>'
+              : r.hotel_reservation_confirmed_at
+                ? '<p class="muted"><strong>Hotel reservation confirmed:</strong> ' + esc(r.hotel_reservation_confirmed_at) + '</p>'
+                : '';
       return '<article class="box" style="margin:14px 0;padding:16px">' +
         '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>' + esc(r.request_ref) + '</strong><strong>' + esc(r.status.replaceAll('_',' ').toUpperCase()) + '</strong></div>' +
         '<p><strong>Hotel listing:</strong> ' + esc(property.title || ('Property #' + r.property_id)) + ' · ' + esc(property.location || '') + '</p>' +
@@ -3050,6 +3054,26 @@ window.loadHotelAvailabilityRequests = async function() {
   } catch (error) {
     console.error('Hotel availability requests load error:', error);
     hotelAvailabilityContainer.textContent = 'Could not load hotel requests: ' + (error.message || error);
+  }
+};
+
+window.confirmHotelReservation = async function(id) {
+  if (!confirm('Confirm that the hotel has accepted this reservation and Source Stays has completed the agreed hotel settlement?')) return;
+  const instructions = prompt('Enter customer check-in instructions (optional):') || '';
+  try {
+    const { data, error } = await getClient().functions.invoke(
+      'confirm-hotel-reservation',
+      { body: { request_id: id, check_in_instructions: instructions } }
+    );
+    if (error || !data?.success) throw new Error(data?.error || error?.message || 'Hotel confirmation failed.');
+    if (data.email_sent) {
+      alert('Hotel reservation confirmed. Customer confirmation email sent with hotel details.');
+    } else {
+      alert(data.warning || 'Reservation confirmed, but the customer email was not sent. Please contact the customer.');
+    }
+    await loadHotelAvailabilityRequests();
+  } catch (error) {
+    alert('Could not confirm hotel reservation: ' + (error.message || error));
   }
 };
 
