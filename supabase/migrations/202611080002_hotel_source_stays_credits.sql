@@ -9,9 +9,11 @@ create table if not exists public.hotel_source_stays_credit_redemptions (
   admin_note text,
   created_at timestamptz not null default now(),
   reviewed_at timestamptz,
-  reviewed_by uuid references auth.users(id),
-  unique (request_id)
+  reviewed_by uuid references auth.users(id)
 );
+create unique index if not exists hotel_source_stays_credit_one_active_request_idx
+  on public.hotel_source_stays_credit_redemptions(request_id)
+  where status in ('pending','approved');
 alter table public.hotel_source_stays_credit_redemptions enable row level security;
 drop policy if exists "Customers view own hotel credit requests" on public.hotel_source_stays_credit_redemptions;
 create policy "Customers view own hotel credit requests" on public.hotel_source_stays_credit_redemptions
