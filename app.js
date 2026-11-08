@@ -11,7 +11,7 @@ async function getListings(){
  const {data,error}=await q; if(error) throw error; return data||[];
 }
 let listingsVisibleCount = 8;
-const LISTINGS_PAGE_SIZE = 8;
+const LISTINGS_PAGE_SIZE = 9;
 
 async function loadListings(){
   listingsVisibleCount = LISTINGS_PAGE_SIZE;
