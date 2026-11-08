@@ -3064,6 +3064,32 @@ window.setHotelAvailabilityStatus = async function(id, status) {
   try {
     const { error } = await getClient().from('hotel_availability_requests').update(update).eq('id', id);
     if (error) throw error;
+
+    if (status === 'available') {
+      const { data: notice, error: noticeError } = await getClient().functions.invoke(
+        'notify-hotel-availability-status',
+        { body: { request_id: id, status: 'available' } }
+      );
+      if (noticeError || !notice?.success) {
+        console.error('Customer availability email notification failed:', noticeError || notice?.error);
+        alert('Availability was saved for 15 minutes, but the customer email could not be sent. Please contact the customer manually. ' + (notice?.error || noticeError?.message || ''));
+      } else if (notice.email_sent) {
+        alert('Availability confirmed. Customer email notification sent successfully.');
+      } else {
+        alert('Availability confirmed, but this customer has no email address. Please notify them by WhatsApp or phone.');
+      }
+    } else {
+      const { data: notice, error: noticeError } = await getClient().functions.invoke(
+        'notify-hotel-availability-status',
+        { body: { request_id: id, status: 'unavailable' } }
+      );
+      if (noticeError || !notice?.success || !notice.email_sent) {
+        console.warn('Customer unavailable notification was not sent:', noticeError || notice?.error);
+        alert('Unavailable status saved. Customer email notification could not be sent; please contact them manually.');
+      } else {
+        alert('Unavailable status saved. Customer has been notified by email.');
+      }
+    }
     await loadHotelAvailabilityRequests();
   } catch (error) {
     alert('Could not update hotel availability: ' + (error.message || error));
