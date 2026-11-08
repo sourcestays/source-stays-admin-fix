@@ -3028,10 +3028,10 @@ window.loadHotelAvailabilityRequests = async function() {
         : '<p class="danger">No partner WhatsApp number is saved. Add the partner phone in Partner Management.</p>';
       const actions = r.status === 'pending_availability'
         ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
-          '<button type="button" class="btn dark" onclick="setHotelAvailabilityStatus(\\'' + r.id + '\\',\\'available\\')">Mark Available (15 min)</button>' +
-          '<button type="button" class="btn" onclick="setHotelAvailabilityStatus(\\'' + r.id + '\\',\\'unavailable\\')">Mark Unavailable</button></div>'
+          '<button type="button" class="btn dark" onclick="setHotelAvailabilityStatus(\'' + r.id + '\',\'available\')">Mark Available (15 min)</button>' +
+          '<button type="button" class="btn" onclick="setHotelAvailabilityStatus(\'' + r.id + '\',\'unavailable\')">Mark Unavailable</button></div>'
         : r.status === 'available'
-          ? '<div style="margin-top:12px"><button type="button" class="btn gold" onclick="notifyHotelCustomer(\\'' + r.id + '\\',\\'available\\')">Resend availability email</button></div>'
+          ? '<div style="margin-top:12px"><button type="button" class="btn gold" onclick="notifyHotelCustomer(\'' + r.id + '\',\'available\')">Resend availability email</button></div>'
           : ''; 
       return '<article class="box" style="margin:14px 0;padding:16px">' +
         '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>' + esc(r.request_ref) + '</strong><strong>' + esc(r.status.replaceAll('_',' ').toUpperCase()) + '</strong></div>' +
