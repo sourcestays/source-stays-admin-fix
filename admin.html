@@ -3035,7 +3035,7 @@ window.loadHotelAvailabilityRequests = async function() {
           : r.status === 'available'
             ? '<div style="margin-top:12px"><button type="button" class="btn gold" onclick="notifyHotelCustomer(\'' + r.id + '\',\'available\')">Resend availability email</button></div>'
             : r.payment_status === 'paid' && !r.hotel_reservation_confirmed_at
-              ? '<div style="margin-top:12px"><button type="button" class="btn dark" onclick="confirmHotelReservation(\\'' + r.id + '\\')">Confirm Hotel Reservation</button></div>'
+              ? '<div style="margin-top:12px"><button type="button" class="btn dark" onclick="confirmHotelReservation(\'' + r.id + '\')">Confirm Hotel Reservation</button></div>'
               : r.hotel_reservation_confirmed_at
                 ? '<p class="muted"><strong>Hotel reservation confirmed:</strong> ' + esc(r.hotel_reservation_confirmed_at) + '</p>'
                 : '';
