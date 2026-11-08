@@ -64,7 +64,7 @@
 <button id="submitRequest" class="btn dark" type="submit">Submit availability request</button>
 <p id="requestStatus" class="status" role="status" aria-live="polite"></p>
 </form>
-<div id="requestTracker" class="request-tracker" hidden aria-live="polite"><strong>Booking request status</strong><p id="trackerMessage">Checking your request…</p><div id="trackerDetails"></div><button id="payHotelButton" class="btn dark" type="button" hidden>Pay Now</button></div>
+<div id="requestTracker" class="request-tracker" hidden aria-live="polite"><strong>Booking request status</strong><p id="trackerMessage">Checking your request…</p><div id="trackerDetails"></div><div id="releasedHotelDetails"></div><button id="payHotelButton" class="btn dark" type="button" hidden>Pay Now</button></div>
 </section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -87,6 +87,7 @@
   const tracker = document.getElementById('requestTracker');
   const trackerMessage = document.getElementById('trackerMessage');
   const trackerDetails = document.getElementById('trackerDetails');
+  const releasedHotelDetails = document.getElementById('releasedHotelDetails');
   const payButton = document.getElementById('payHotelButton');
   let activeRequestRef = params.get('request_ref') || null;
   let trackerTimer = null;
@@ -146,8 +147,19 @@
     const isValid = expiry > Date.now();
     payButton.hidden = !(['available','awaiting_payment'].includes(req.status) && isValid && req.payment_status !== 'paid');
     if (req.payment_status === 'paid' && req.hotel_reservation_confirmed_at) {
-      trackerMessage.textContent = 'Payment received and your hotel reservation has been confirmed. Source Stays will provide your booking details and check-in instructions.';
+      trackerMessage.textContent = 'Your payment is verified and your hotel reservation is confirmed.';
+      releasedHotelDetails.textContent = 'Loading confirmed hotel details…';
+      try {
+        const { data: hotelData, error: hotelError } = await client.functions.invoke(
+          'get-confirmed-hotel-details', { body: { request_ref: activeRequestRef } }
+        );
+        if (hotelError || !hotelData?.confirmed) throw new Error(hotelData?.error || hotelError?.message || 'Hotel details are not available yet.');
+        releasedHotelDetails.innerHTML = '<div class="room-summary"><strong>Confirmed hotel details</strong><p><strong>Hotel:</strong> ' + esc(hotelData.hotel_name) + '</p><p><strong>Address:</strong> ' + esc(hotelData.hotel_address) + '</p>' + (hotelData.hotel_phone ? '<p><strong>Hotel contact:</strong> ' + esc(hotelData.hotel_phone) + '</p>' : '') + '</div>';
+      } catch (hotelError) {
+        releasedHotelDetails.textContent = hotelError.message || 'Your confirmed hotel details will be available shortly. Please check your confirmation email.';
+      }
     } else if (req.payment_status === 'paid') {
+      releasedHotelDetails.textContent = '';
       trackerMessage.textContent = 'Your payment has been verified. We are waiting for the hotel to confirm your reservation. Your hotel identity and address remain protected until confirmation.';
     } else if (req.status === 'available' && isValid) {
       trackerMessage.textContent = 'The hotel has confirmed availability. Complete payment before the confirmation expires.';
