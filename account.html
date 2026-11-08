@@ -790,8 +790,9 @@ document.getElementById('authCard').hidden = false;
     
 async function loadCustomerBookings(userId) {
   const bookingsContainer = document.getElementById('customerBookings');
-
   bookingsContainer.textContent = 'Loading your bookings...';
+
+  bookingsContainer.replaceChildren();
 
   try {
     const { data: bookings, error } = await client
@@ -802,26 +803,16 @@ async function loadCustomerBookings(userId) {
 
     if (error) throw error;
 
-    if (!bookings || bookings.length === 0) {
-      bookingsContainer.textContent =
-        'No bookings are linked to your account yet. New bookings made while logged in can appear here.';
-      return;
-    }
-
-    bookingsContainer.replaceChildren();
-
-    bookings.forEach(function (booking) {
+    (bookings || []).forEach(function (booking) {
       const card = document.createElement('div');
-      card.style.cssText =
-        'padding:14px 0;border-bottom:1px solid #e1e8e2;';
+      card.style.cssText = 'padding:14px 0;border-bottom:1px solid #e1e8e2;';
 
       const title = document.createElement('h4');
       title.textContent = 'Booking #' + booking.id;
       title.style.margin = '0 0 8px';
 
       const dates = document.createElement('p');
-      dates.textContent =
-        'Check-in: ' + (booking.check_in || 'Not set') +
+      dates.textContent = 'Check-in: ' + (booking.check_in || 'Not set') +
         ' | Check-out: ' + (booking.check_out || 'Not set');
 
       const guests = document.createElement('p');
@@ -831,24 +822,101 @@ async function loadCustomerBookings(userId) {
       status.textContent = 'Booking status: ' + (booking.status || 'Pending');
 
       const payment = document.createElement('p');
-      payment.textContent = 'Payment status: ' +
-        (booking.payment_status || 'Not available');
+      payment.textContent = 'Payment status: ' + (booking.payment_status || 'Not available');
 
       card.append(title, dates, guests, status, payment);
 
       if (booking.amount_due !== null && booking.amount_due !== undefined) {
         const amount = document.createElement('p');
-        amount.textContent = 'Amount: ' +
-          (booking.currency || 'NGN') + ' ' + booking.amount_due;
+        amount.textContent = 'Amount: ' + (booking.currency || 'NGN') + ' ' + booking.amount_due;
         card.appendChild(amount);
       }
 
       bookingsContainer.appendChild(card);
     });
   } catch (error) {
-    console.error('Unable to load customer bookings:', error);
+    console.error('Unable to load ordinary customer bookings:', error);
+    const message = document.createElement('p');
+    message.textContent = 'Some standard booking details could not be loaded.';
+    bookingsContainer.appendChild(message);
+  }
+
+  try {
+    const { data: hotelRequests, error: hotelError } = await client
+      .from('hotel_availability_requests')
+      .select('id, request_ref, room_category, check_in, check_out, rooms_requested, guests, status, payment_status, hotel_reservation_confirmed_at, hotel_identity_released_at, created_at')
+      .eq('customer_user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (hotelError) throw hotelError;
+
+    (hotelRequests || []).forEach(async function (request) {
+      const card = document.createElement('div');
+      card.style.cssText = 'padding:14px 0;border-bottom:1px solid #e1e8e2;';
+
+      const title = document.createElement('h4');
+      title.textContent = 'Hotel reservation ' + (request.request_ref || '');
+      title.style.margin = '0 0 8px';
+
+      const room = document.createElement('p');
+      room.textContent = 'Room: ' + (request.room_category || 'Hotel room');
+
+      const dates = document.createElement('p');
+      dates.textContent = 'Check-in: ' + (request.check_in || 'Not set') +
+        ' | Check-out: ' + (request.check_out || 'Not set');
+
+      const occupancy = document.createElement('p');
+      occupancy.textContent = 'Rooms: ' + (request.rooms_requested ?? 1) +
+        ' | Guests: ' + (request.guests ?? 'Not set');
+
+      const payment = document.createElement('p');
+      payment.textContent = 'Payment status: ' + (request.payment_status || 'Not available');
+
+      const reservation = document.createElement('p');
+      const isConfirmed = request.payment_status === 'paid' &&
+        !!request.hotel_reservation_confirmed_at &&
+        !!request.hotel_identity_released_at;
+      reservation.textContent = 'Reservation status: ' +
+        (isConfirmed ? 'Confirmed' : (request.status || 'Awaiting confirmation'));
+
+      card.append(title, room, dates, occupancy, payment, reservation);
+      bookingsContainer.appendChild(card);
+
+      if (isConfirmed) {
+        const details = document.createElement('p');
+        details.textContent = 'Loading confirmed hotel details...';
+        card.appendChild(details);
+
+        try {
+          const { data: hotelDetails, error: detailsError } = await client.functions.invoke(
+            'get-confirmed-hotel-details',
+            { body: { request_ref: request.request_ref } }
+          );
+          if (detailsError) throw detailsError;
+
+          if (hotelDetails?.confirmed) {
+            details.textContent = 'Hotel: ' + (hotelDetails.hotel_name || 'Confirmed hotel') +
+              (hotelDetails.hotel_address ? ' | Address: ' + hotelDetails.hotel_address : '') +
+              (hotelDetails.hotel_phone ? ' | Phone: ' + hotelDetails.hotel_phone : '');
+          } else {
+            details.textContent = 'Your hotel has confirmed the reservation. Please refer to your confirmation email for the hotel details.';
+          }
+        } catch (detailsError) {
+          console.error('Unable to load confirmed hotel details:', detailsError);
+          details.textContent = 'Your reservation is confirmed. Please refer to your confirmation email for the hotel details.';
+        }
+      }
+    });
+  } catch (hotelError) {
+    console.error('Unable to load customer hotel reservations:', hotelError);
+    const message = document.createElement('p');
+    message.textContent = 'Hotel reservations could not be loaded right now.';
+    bookingsContainer.appendChild(message);
+  }
+
+  if (!bookingsContainer.children.length) {
     bookingsContainer.textContent =
-      'We could not load your bookings right now. Please try again later.';
+      'No bookings are linked to your account yet. New bookings made while logged in can appear here.';
   }
 }
 
