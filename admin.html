@@ -3028,9 +3028,11 @@ window.loadHotelAvailabilityRequests = async function() {
         : '<p class="danger">No partner WhatsApp number is saved. Add the partner phone in Partner Management.</p>';
       const actions = r.status === 'pending_availability'
         ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
-          '<button type="button" class="btn dark" onclick="setHotelAvailabilityStatus(\'' + r.id + '\',\'available\')">Mark Available (15 min)</button>' +
-          '<button type="button" class="btn" onclick="setHotelAvailabilityStatus(\'' + r.id + '\',\'unavailable\')">Mark Unavailable</button></div>'
-        : '';
+          '<button type="button" class="btn dark" onclick="setHotelAvailabilityStatus(\\'' + r.id + '\\',\\'available\\')">Mark Available (15 min)</button>' +
+          '<button type="button" class="btn" onclick="setHotelAvailabilityStatus(\\'' + r.id + '\\',\\'unavailable\\')">Mark Unavailable</button></div>'
+        : r.status === 'available'
+          ? '<div style="margin-top:12px"><button type="button" class="btn gold" onclick="notifyHotelCustomer(\\'' + r.id + '\\',\\'available\\')">Resend availability email</button></div>'
+          : ''; 
       return '<article class="box" style="margin:14px 0;padding:16px">' +
         '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>' + esc(r.request_ref) + '</strong><strong>' + esc(r.status.replaceAll('_',' ').toUpperCase()) + '</strong></div>' +
         '<p><strong>Hotel listing:</strong> ' + esc(property.title || ('Property #' + r.property_id)) + ' · ' + esc(property.location || '') + '</p>' +
@@ -3046,6 +3048,19 @@ window.loadHotelAvailabilityRequests = async function() {
   } catch (error) {
     console.error('Hotel availability requests load error:', error);
     hotelAvailabilityContainer.textContent = 'Could not load hotel requests: ' + (error.message || error);
+  }
+};
+
+window.notifyHotelCustomer = async function(id, status) {
+  try {
+    const { data, error } = await getClient().functions.invoke(
+      'notify-hotel-availability-status',
+      { body: { request_id: id, status } }
+    );
+    if (error || !data?.success) throw new Error(data?.error || error?.message || 'Notification failed.');
+    alert(data.email_sent ? 'Customer availability email sent successfully.' : 'No customer email is saved. Please contact the customer by WhatsApp or phone.');
+  } catch (error) {
+    alert('Could not notify customer: ' + (error.message || error));
   }
 };
 
