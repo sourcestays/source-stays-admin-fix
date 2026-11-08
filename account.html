@@ -474,7 +474,7 @@
 
   <form id="redemptionForm">
     <div class="field">
-      <label for="redemptionBooking">Choose an eligible booking</label>
+      <label for="redemptionBooking">Choose an eligible booking or hotel reservation</label>
       <select id="redemptionBooking" required
         style="width:100%;min-height:48px;padding:12px;border:1px solid #d6ded7;border-radius:9px;background:#fff;font:inherit">
         <option value="">Loading your eligible bookings...</option>
@@ -973,77 +973,58 @@ async function loadCustomerCredits(userId) {
 async function loadEligibleRedemptionBookings(userId) {
   const select = document.getElementById('redemptionBooking');
   if (!select) return;
-
   select.replaceChildren();
-
   const placeholder = document.createElement('option');
   placeholder.value = '';
-  placeholder.textContent = 'Loading eligible bookings...';
+  placeholder.textContent = 'Loading eligible bookings and hotel reservations...';
   select.appendChild(placeholder);
 
   try {
-    const { data: bookings, error: bookingsError } = await client
-      .from('bookings')
-      .select('id, check_in, check_out, amount_due, status, payment_status, created_at')
-      .eq('customer_user_id', userId)
-      .in('status', ['pending', 'approved', 'confirmed'])
-      .eq('payment_status', 'unpaid')
-      .gt('amount_due', 0)
-      .order('created_at', { ascending: false });
+    const [bookingResult, redemptionResult, hotelResult, hotelRedemptionResult] = await Promise.all([
+      client.from('bookings').select('id,check_in,check_out,amount_due,status,payment_status,created_at')
+        .eq('customer_user_id',userId).in('status',['pending','approved','confirmed'])
+        .eq('payment_status','unpaid').gt('amount_due',0).order('created_at',{ascending:false}),
+      client.from('source_stays_credit_redemptions').select('booking_id,status')
+        .eq('customer_user_id',userId).in('status',['pending','approved']),
+      client.from('hotel_availability_requests').select('id,request_ref,room_category,check_in,check_out,rooms_requested,status,payment_status,availability_expires_at,room_category_id,property_id')
+        .eq('customer_user_id',userId).in('status',['available','awaiting_payment'])
+        .in('payment_status',['not_started','failed']).order('created_at',{ascending:false}),
+      client.from('hotel_source_stays_credit_redemptions').select('request_id,status')
+        .eq('customer_user_id',userId).in('status',['pending','approved'])
+    ]);
+    if (bookingResult.error) throw bookingResult.error;
+    if (redemptionResult.error) throw redemptionResult.error;
+    if (hotelResult.error) throw hotelResult.error;
+    if (hotelRedemptionResult.error) throw hotelRedemptionResult.error;
 
-    if (bookingsError) throw bookingsError;
+    const usedBookingIds = new Set((redemptionResult.data||[]).map(x=>String(x.booking_id)));
+    const usedHotelIds = new Set((hotelRedemptionResult.data||[]).map(x=>String(x.request_id)));
+    const options = [];
 
-    const { data: requests, error: requestsError } = await client
-      .from('source_stays_credit_redemptions')
-      .select('booking_id, status')
-      .eq('customer_user_id', userId)
-      .in('status', ['pending', 'approved']);
-
-    if (requestsError) throw requestsError;
-
-    const reservedBookingIds = new Set(
-      (requests || []).map(request => String(request.booking_id))
-    );
-
-    const eligibleBookings = (bookings || []).filter(
-      booking => !reservedBookingIds.has(String(booking.id))
-    );
-
-    select.replaceChildren();
-
-    const firstOption = document.createElement('option');
-    firstOption.value = '';
-    firstOption.textContent = eligibleBookings.length
-      ? 'Choose a booking'
-      : 'No eligible unpaid bookings found';
-    select.appendChild(firstOption);
-
-    eligibleBookings.forEach(booking => {
-      const option = document.createElement('option');
-      option.value = booking.id;
-
-      const dates = booking.check_in && booking.check_out
-        ? ` (${booking.check_in} to ${booking.check_out})`
-        : '';
-
-      option.textContent =
-        `Booking #${booking.id}${dates} — ₦${Number(
-          booking.amount_due
-        ).toLocaleString('en-NG')}`;
-
-      select.appendChild(option);
+    (bookingResult.data||[]).filter(x=>!usedBookingIds.has(String(x.id))).forEach(booking=>{
+      options.push({value:'booking:'+booking.id,label:'Shortlet booking #'+booking.id+
+        (booking.check_in&&booking.check_out?' ('+booking.check_in+' to '+booking.check_out+')':'')+
+        ' — ₦'+Number(booking.amount_due).toLocaleString('en-NG')});
     });
-  } catch (error) {
-    console.error('Could not load eligible bookings:', error);
-    select.replaceChildren();
 
-    const option = document.createElement('option');
-    option.value = '';
-    option.textContent = 'Could not load bookings. Please refresh.';
-    select.appendChild(option);
+    (hotelResult.data||[]).filter(x=>!usedHotelIds.has(String(x.id))&&x.availability_expires_at&&new Date(x.availability_expires_at).getTime()>Date.now())
+      .forEach(hotel=>{
+        options.push({value:'hotel:'+hotel.id,label:'Hotel '+hotel.request_ref+' — '+hotel.room_category+
+          ' ('+hotel.check_in+' to '+hotel.check_out+')'});
+      });
+
+    select.replaceChildren();
+    const first=document.createElement('option');
+    first.value='';
+    first.textContent=options.length?'Choose a booking or hotel reservation':'No eligible unpaid bookings or hotel reservations found';
+    select.appendChild(first);
+    options.forEach(item=>{const option=document.createElement('option');option.value=item.value;option.textContent=item.label;select.appendChild(option);});
+  } catch(error) {
+    console.error('Could not load eligible credit redemptions:',error);
+    select.replaceChildren();
+    const option=document.createElement('option');option.value='';option.textContent='Could not load eligible reservations. Please refresh.';select.appendChild(option);
   }
 }
-
 
 async function loadRedemptionRequests(userId) {
   const box = document.getElementById('redemptionRequests');
@@ -1106,13 +1087,13 @@ if (redemptionForm) {
 
     const button = document.getElementById('redemptionSubmit');
     const message = document.getElementById('redemptionMessage');
-    const bookingId = document.getElementById('redemptionBooking').value;
+    const selectedReservation = document.getElementById('redemptionBooking').value;
     const amount = Number(
       document.getElementById('redemptionAmount').value
     );
     const note = document.getElementById('redemptionNote').value.trim();
 
-    if (!bookingId) {
+    if (!selectedReservation) {
       message.textContent = 'Please choose an eligible booking.';
       return;
     }
@@ -1127,16 +1108,21 @@ if (redemptionForm) {
     message.textContent = '';
 
     try {
-      const { error } = await client.rpc(
-        'request_source_stays_credit_redemption',
-        {
-          p_booking_id: Number(bookingId),
+      let result;
+      if (selectedReservation.startsWith('hotel:')) {
+        result = await client.rpc('request_hotel_source_stays_credit_redemption', {
+          p_request_id: selectedReservation.slice(6),
           p_amount: amount,
           p_customer_note: note
-        }
-      );
-
-      if (error) throw error;
+        });
+      } else {
+        result = await client.rpc('request_source_stays_credit_redemption', {
+          p_booking_id: Number(selectedReservation.slice(8)),
+          p_amount: amount,
+          p_customer_note: note
+        });
+      }
+      if (result.error) throw result.error;
 
       message.textContent =
         'Request submitted successfully. It is awaiting administrator review.';
