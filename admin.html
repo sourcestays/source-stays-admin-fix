@@ -2587,14 +2587,14 @@ window.loadHotelCreditRedemptions = async function() {
       const card=document.createElement('article');
       card.style.cssText='padding:14px 0;border-bottom:1px solid #e5e2d9';
       const reqResult=await getClient().from('hotel_availability_requests')
-        .select('request_ref,room_category,check_in,check_out,payment_status')
+        .select('request_ref,customer_name,customer_phone,room_category,check_in,check_out,payment_status')
         .eq('id',request.request_id).maybeSingle();
-      const customerResult=await getClient().from('customer_profiles')
-        .select('full_name,phone').eq('id',request.customer_user_id).maybeSingle();
       const title=document.createElement('h4');
       title.textContent='Hotel '+(reqResult.data?.request_ref||request.request_id);
       const details=document.createElement('p');
-      details.textContent=(customerResult.data?.full_name||'Customer')+' · '+(reqResult.data?.room_category||'Hotel room')+
+      details.textContent=(reqResult.data?.customer_name||'Customer')+
+        (reqResult.data?.customer_phone?' · '+reqResult.data.customer_phone:'')+
+        ' · '+(reqResult.data?.room_category||'Hotel room')+
         ' · '+(reqResult.data?.check_in||'')+' to '+(reqResult.data?.check_out||'');
       const amount=document.createElement('p');
       amount.textContent='Credit requested: ₦'+Number(request.amount).toLocaleString('en-NG');
