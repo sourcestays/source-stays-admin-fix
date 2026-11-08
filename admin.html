@@ -3062,7 +3062,7 @@ window.confirmHotelReservation = async function(id) {
   const instructions = prompt('Enter customer check-in instructions (optional):') || '';
   try {
     const { data, error } = await getClient().functions.invoke(
-      'confirm-hotel-reservation',
+      'Confirm-hotel-reservation',
       { body: { request_id: id, check_in_instructions: instructions } }
     );
     if (error || !data?.success) throw new Error(data?.error || error?.message || 'Hotel confirmation failed.');
