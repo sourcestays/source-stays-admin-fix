@@ -30,15 +30,32 @@
     .about-card h2 { color: #123f32; }
     .founder-video {
       background: #123f32;
-      color: white;
-      min-height: 280px;
       border-radius: 16px;
-      display: grid;
-      place-content: center;
-      text-align: center;
-      padding: 24px;
+      overflow: hidden;
+      min-width: 0;
+      box-shadow: 0 12px 30px rgba(18, 63, 50, 0.14);
     }
-    .founder-video p { color: #eee; }
+    .founder-video video {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 720px;
+      object-fit: contain;
+      background: #0b241d;
+    }
+    .founder-video-caption {
+      padding: 16px 20px;
+      color: white;
+    }
+    .founder-video-caption h3 {
+      margin: 0 0 6px;
+      color: white;
+    }
+    .founder-video-caption p {
+      margin: 0;
+      color: #eee;
+      line-height: 1.6;
+    }
     .about-cta {
       background: #f7f3ea;
       padding: 38px;
@@ -149,22 +166,22 @@
       </p>
 
       <p>
-        In my founder's message, I will share the story behind
-        Source Stays, the values guiding our work and the vision
-        we are building towards.
+        Watch this personal message to hear directly from our founder
+        about the story behind Source Stays, the values guiding our work
+        and the vision we are building towards.
       </p>
     </div>
 
-    <div class="founder-video" aria-label="Founder message video placeholder">
-      <div aria-hidden="true" style="font-size:42px;margin-bottom:12px">
-        ▶
+    <div class="founder-video">
+      <video controls preload="metadata" playsinline
+        aria-label="Founder introduction message from Source Stays">
+        <source src="assets/source-stays-founder-message.mp4" type="video/mp4">
+        Your browser does not support video playback.
+      </video>
+      <div class="founder-video-caption">
+        <h3>Message from the Founder</h3>
+        <p>A personal welcome and a look at the vision behind Source Stays.</p>
       </div>
-
-      <h2 style="color:white">Message from the Founder</h2>
-
-      <p>
-        Our 90-second founder message will be featured here soon.
-      </p>
     </div>
   </div>
 </section>
