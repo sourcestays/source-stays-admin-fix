@@ -64,7 +64,7 @@ async function loadListings(){
     const startingRate = hotelStartingPrices.get(String(p.id));
     const priceLabel = isHotel
       ? (startingRate
-          ? 'Rooms from ₦' + money(startingRate) + ' / per night'
+          ? 'Starting from ₦' + money(startingRate) + ' / per night'
           : 'View room rates')
       : '₦' + money(p.price) + ' / ' + esc(p.price_period || 'per night');
 
