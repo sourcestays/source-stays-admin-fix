@@ -112,7 +112,7 @@
       <p>Explore published real estate listings from Source Stays. Browse homes and properties for sale, land opportunities and rental properties, then contact our team to discuss details or arrange an inspection.</p>
       <form class="realestate-search" onsubmit="event.preventDefault(); document.getElementById('properties').scrollIntoView({behavior:'smooth'}); loadListings();">
         <select id="type" aria-label="Choose property listing type">
-          <option value="all">All property listings</option>
+          <option value="realestate" selected>All real estate listings</option>
           <option value="sale">Properties for sale</option>
           <option value="land">Land for sale</option>
           <option value="rent">Properties for rent</option>
@@ -237,7 +237,7 @@
 <script>
 (function () {
   const requestedType = new URLSearchParams(window.location.search).get('type');
-  const allowedTypes = ['all', 'sale', 'land', 'rent'];
+  const allowedTypes = ['realestate', 'all', 'sale', 'land', 'rent'];
   const typeSelect = document.getElementById('type');
   if (typeSelect && allowedTypes.includes(requestedType)) typeSelect.value = requestedType;
 })();
