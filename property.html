@@ -414,7 +414,7 @@
 
     // Update search and social metadata from the published property record.
     function setPropertySeo(p) {
-      const clean = (value) => String(value || "").replace(/\\s+/g, " ").trim();
+      const clean = (value) => String(value || "").replace(/\s+/g, " ").trim();
       const title = clean(p.title) || "Property Listing";
       const location = clean(p.location) || "Lagos, Nigeria";
       const category = clean(p.category).toLowerCase();
