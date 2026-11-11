@@ -57,16 +57,15 @@ export default async function handler(req, res) {
       return SITE_URL + "/property.html?id=" + encodeURIComponent(id);
     }));
 
-    const body = '<?xml version="1.0" encoding="UTF-8"?>\\n' +
-      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\\n' +
+    const body = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
       urls.map(function (url) {
         return "  <url><loc>" + xmlEscape(url) + "</loc></url>";
-      }).join("\\n") +
-      "\\n</urlset>";
+      }).join("\n") +
+      "\n</urlset>";
 
     res.setHeader("Content-Type", "application/xml; charset=utf-8");
     res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
-    res.setHeader("X-Robots-Tag", "noindex");
     return res.status(200).send(req.method === "HEAD" ? "" : body);
   } catch (error) {
     console.error("Sitemap generation failed:", error);
