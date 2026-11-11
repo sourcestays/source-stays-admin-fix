@@ -6,7 +6,8 @@ function money(x){return Number(x||0).toLocaleString('en-NG');}
 async function getListings(){
  const type=document.getElementById('type')?.value||'all', locationValue=document.getElementById('location')?.value||'';
  let q=supabaseClient.from('properties').select('*').eq('published',true).order('featured',{ascending:false}).order('id',{ascending:false});
- if(type!=='all') q=q.eq('category',type);
+ if(type==='realestate') q=q.in('category',['sale','land','rent']);
+ else if(type!=='all') q=q.eq('category',type);
  if(locationValue) q=q.ilike('location',`%${locationValue}%`);
  const {data,error}=await q; if(error) throw error; return data||[];
 }
