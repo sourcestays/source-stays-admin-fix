@@ -4,7 +4,18 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Property | Source Stays</title>
+  <title>Property Listing | Source Stays</title>
+  <meta name="description" content="Explore this property listing with Source Stays. View photos, details, amenities and enquiry options.">
+  <link rel="canonical" href="https://sourcestays.com.ng/property.html">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Source Stays">
+  <meta property="og:title" content="Property Listing | Source Stays">
+  <meta property="og:description" content="Explore this property listing with Source Stays. View photos, details, amenities and enquiry options.">
+  <meta property="og:url" content="https://sourcestays.com.ng/property.html">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Property Listing | Source Stays">
+  <meta name="twitter:description" content="Explore this property listing with Source Stays.">
   <link rel="stylesheet" href="styles.css">
 
   <style>
@@ -400,6 +411,69 @@
     let galleryReady = false;
 
     const detail = document.getElementById("detail");
+
+    // Update search and social metadata from the published property record.
+    function setPropertySeo(p) {
+      const clean = (value) => String(value || "").replace(/\\s+/g, " ").trim();
+      const title = clean(p.title) || "Property Listing";
+      const location = clean(p.location) || "Lagos, Nigeria";
+      const category = clean(p.category).toLowerCase();
+      const descriptionText = clean(p.description) ||
+        `${title} in ${location}. View property photos, features and enquiry details with Source Stays.`;
+      const description = descriptionText.slice(0, 300);
+      const pageUrl = `https://sourcestays.com.ng/property.html?id=${encodeURIComponent(p.id)}`;
+      const fullTitle = `${title} in ${location} | Source Stays`;
+      document.title = fullTitle;
+
+      const setMeta = (selector, attribute, value, content) => {
+        let element = document.head.querySelector(selector);
+        if (!element) {
+          element = document.createElement("meta");
+          element.setAttribute(attribute, value);
+          document.head.appendChild(element);
+        }
+        element.setAttribute("content", content);
+      };
+      setMeta('meta[name="description"]', "name", "description", description);
+      setMeta('meta[property="og:title"]', "property", "og:title", fullTitle);
+      setMeta('meta[property="og:description"]', "property", "og:description", description);
+      setMeta('meta[property="og:url"]', "property", "og:url", pageUrl);
+      setMeta('meta[name="twitter:title"]', "name", "twitter:title", fullTitle);
+      setMeta('meta[name="twitter:description"]', "name", "twitter:description", description);
+
+      let canonical = document.head.querySelector('link[rel="canonical"]');
+      if (!canonical) {
+        canonical = document.createElement("link");
+        canonical.rel = "canonical";
+        document.head.appendChild(canonical);
+      }
+      canonical.href = pageUrl;
+
+      const imageUrl = typeof p.image_url === "string" ? p.image_url : "";
+      if (imageUrl) setMeta('meta[property="og:image"]', "property", "og:image", imageUrl);
+
+      const structuredData = {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": fullTitle,
+        "description": description,
+        "url": pageUrl,
+        "isPartOf": { "@type": "WebSite", "name": "Source Stays", "url": "https://sourcestays.com.ng/" },
+        "about": {
+          "@type": "Thing",
+          "name": `${category || "property"} listing in ${location}`
+        }
+      };
+      if (imageUrl) structuredData.primaryImageOfPage = imageUrl;
+      let jsonLd = document.getElementById("propertyStructuredData");
+      if (!jsonLd) {
+        jsonLd = document.createElement("script");
+        jsonLd.type = "application/ld+json";
+        jsonLd.id = "propertyStructuredData";
+        document.head.appendChild(jsonLd);
+      }
+      jsonLd.textContent = JSON.stringify(structuredData);
+    }
 
     function safeImageUrl(url) {
       if (typeof url !== "string") return "";
@@ -1246,6 +1320,8 @@ dateInput.min = localToday;
         if (!property) {
           throw new Error("Property not found");
         }
+
+        setPropertySeo(property);
 
         let propertyImages = [];
 
