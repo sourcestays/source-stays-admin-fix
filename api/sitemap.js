@@ -51,6 +51,9 @@ export default async function handler(req, res) {
 
     const urls = [
       SITE_URL + "/",
+      SITE_URL + "/shortlets.html",
+      SITE_URL + "/hotels.html",
+      SITE_URL + "/real-estate.html",
       SITE_URL + "/about.html",
       SITE_URL + "/recb.html"
     ].concat(propertyIds.map(function (id) {
