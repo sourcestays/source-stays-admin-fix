@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Properties for Sale, Land & Rent in Lagos | Source Stays</title>
+  <meta name="description" content="Explore properties for sale, land for sale and homes for rent in Lagos with Source Stays. Browse published listings, request inspections and enquire about property management.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="canonical" href="https://sourcestays.com.ng/real-estate.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Source Stays">
+  <meta property="og:title" content="Properties for Sale, Land & Rent in Lagos | Source Stays">
+  <meta property="og:description" content="Browse property and land listings for sale or rent in Lagos. Enquire about inspections and property management with Source Stays.">
+  <meta property="og:url" content="https://sourcestays.com.ng/real-estate.html">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Properties for Sale, Land & Rent in Lagos | Source Stays">
+  <meta name="twitter:description" content="Explore real estate listings and property management support in Lagos with Source Stays.">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Properties for Sale, Land and Rent in Lagos",
+    "url": "https://sourcestays.com.ng/real-estate.html",
+    "description": "Browse published property listings for sale, land for sale and rent through Source Stays.",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "Source Stays",
+      "url": "https://sourcestays.com.ng/"
+    },
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://sourcestays.com.ng/" },
+        { "@type": "ListItem", "position": 2, "name": "Real Estate", "item": "https://sourcestays.com.ng/real-estate.html" }
+      ]
+    }
+  }
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .realestate-intro { max-width: 850px; }
+    .realestate-intro p { color: var(--muted); line-height: 1.8; }
+    .realestate-search { max-width: 900px; display: grid; grid-template-columns: minmax(180px, .8fr) minmax(220px, 1fr) auto; gap: 10px; margin-top: 24px; }
+    .realestate-search input, .realestate-search select { min-width: 0; width: 100%; min-height: 52px; border: 0; border-radius: 10px; padding: 0 15px; background: #fff; color: var(--ink); }
+    .realestate-services { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    .realestate-service { padding: 24px; border: 1px solid var(--line); border-radius: 15px; background: #fff; }
+    .realestate-service h3 { margin: 0 0 9px; color: var(--green); }
+    .realestate-service p { color: var(--muted); line-height: 1.7; }
+    .realestate-faq { max-width: 850px; }
+    .realestate-faq details { padding: 17px 0; border-bottom: 1px solid var(--line); }
+    .realestate-faq summary { font-weight: 800; cursor: pointer; }
+    .realestate-faq details p { color: var(--muted); line-height: 1.7; }
+    .management-panel { padding: 28px; border: 1px solid var(--line); border-radius: 16px; background: #fff; }
+    @media (max-width: 800px) {
+      .realestate-services { grid-template-columns: 1fr; }
+      .realestate-search { grid-template-columns: 1fr; }
+      .realestate-search .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="index.html" aria-label="Source Stays home">
+      <img src="source-stays-logo-green-gold.png" alt="Source Stays">
+    </a>
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="primaryNav">
+      <span></span><span></span><span></span>
+    </button>
+    <nav id="primaryNav">
+      <a href="shortlets.html">Shortlets</a>
+      <a href="hotels.html">Hotels</a>
+      <a href="real-estate.html" aria-current="page">Real Estate</a>
+      <a href="index.html#rewards">Rewards</a>
+      <a href="recb.html">RECB</a>
+      <a href="about.html">About Us</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+    <a class="btn dark nav-book" href="https://wa.me/2347085404814">Enquire</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap realestate-intro">
+      <div class="eyebrow">Real estate · Lagos, Nigeria</div>
+      <h1>Find a property to buy, land to own or a home to rent.</h1>
+      <p>Explore published real estate listings from Source Stays. Browse homes and properties for sale, land opportunities and rental properties, then contact our team to discuss details or arrange an inspection.</p>
+      <form class="realestate-search" onsubmit="event.preventDefault(); document.getElementById('properties').scrollIntoView({behavior:'smooth'}); loadListings();">
+        <select id="type" aria-label="Choose property listing type">
+          <option value="all">All property listings</option>
+          <option value="sale">Properties for sale</option>
+          <option value="land">Land for sale</option>
+          <option value="rent">Properties for rent</option>
+        </select>
+        <input id="location" type="search" placeholder="Search by area e.g. Magodo, Ikeja, Lekki" aria-label="Search properties by location">
+        <button class="btn gold" type="submit">Search properties</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="section" id="properties">
+    <div class="wrap">
+      <div class="head">
+        <div>
+          <div class="eyebrow">Browse real estate</div>
+          <h2>Property listings</h2>
+          <p>Explore currently published properties. Select a listing to review its details and the available enquiry or inspection steps.</p>
+        </div>
+      </div>
+      <div id="listings" class="cards" aria-live="polite">
+        <p>Loading property listings...</p>
+      </div>
+      <div class="listings-more-wrap" style="text-align:center;margin-top:24px;">
+        <button id="loadMoreListings" class="btn gold" type="button" hidden>View More Properties</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section cream">
+    <div class="wrap">
+      <div class="head">
+        <div class="eyebrow">Explore your options</div>
+        <h2>Real estate services</h2>
+        <p>Whether you are buying, renting or looking for support with a property, Source Stays can help you make an enquiry and understand the next steps.</p>
+      </div>
+      <div class="realestate-services">
+        <article class="realestate-service">
+          <h3>Properties for sale</h3>
+          <p>Browse published homes and other properties for sale. Review each listing and contact us for further information or an inspection.</p>
+          <a href="real-estate.html?type=sale#properties">View properties for sale →</a>
+        </article>
+        <article class="realestate-service">
+          <h3>Land for sale</h3>
+          <p>Explore listed land opportunities and enquire about location, documentation information and the inspection process.</p>
+          <a href="real-estate.html?type=land#properties">View land listings →</a>
+        </article>
+        <article class="realestate-service">
+          <h3>Properties for rent</h3>
+          <p>Find published rental options and contact Source Stays to discuss requirements, viewing and the applicable terms.</p>
+          <a href="real-estate.html?type=rent#properties">View rental properties →</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="management">
+    <div class="wrap">
+      <div class="management-panel">
+        <div class="eyebrow">For property owners</div>
+        <h2>Property management and letting support</h2>
+        <p>Own a residential or investment property and need assistance with management or letting? Contact Source Stays to discuss the property, its location and the support you require. Services and terms are discussed and agreed for each property.</p>
+        <a class="btn dark" href="https://wa.me/2347085404814?text=Hello%20Source%20Stays%2C%20I%20would%20like%20to%20discuss%20property%20management%20or%20letting%20services.">Discuss property management</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section cream">
+    <div class="wrap">
+      <div class="head">
+        <div class="eyebrow">Property enquiries</div>
+        <h2>Frequently asked questions</h2>
+      </div>
+      <div class="realestate-faq">
+        <details>
+          <summary>How do I search for a property in a particular area?</summary>
+          <p>Choose the property category and enter an area such as Magodo, Ikeja or Lekki in the search field. The results show published listings matching your selection.</p>
+        </details>
+        <details>
+          <summary>Can I inspect a property before making a decision?</summary>
+          <p>Contact Source Stays through the enquiry option on the listing or WhatsApp to discuss inspection arrangements and the next steps.</p>
+        </details>
+        <details>
+          <summary>How do I enquire about a property for sale or land?</summary>
+          <p>Open the listing and use its enquiry option. Our team can guide you on the available information and the appropriate next steps.</p>
+        </details>
+        <details>
+          <summary>Do you manage properties for owners?</summary>
+          <p>Contact us with your property location and management requirements so we can discuss the services and terms that may be suitable.</p>
+        </details>
+        <details>
+          <summary>Are all listings guaranteed to be available?</summary>
+          <p>Listings and property terms can change. Please contact Source Stays to confirm current status, price, documentation information and any inspection or transaction requirements before proceeding.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="cta">
+        <div>
+          <div class="eyebrow">Source Stays</div>
+          <h2>Need help with a property enquiry?</h2>
+          <p>Tell us whether you want to buy, rent, inspect or discuss property management.</p>
+        </div>
+        <a class="btn gold" href="https://wa.me/2347085404814?text=Hello%20Source%20Stays%2C%20I%20have%20a%20real%20estate%20enquiry.">Chat on WhatsApp</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap footer">
+    <div><b>SOURCE STAYS</b><p>Shortlets • Hotels • Real Estate</p></div>
+    <div><b>Explore</b><p><a href="index.html">Home</a><br><a href="shortlets.html">Shortlets</a><br><a href="hotels.html">Hotels</a><br><a href="recb.html">RECB</a></p></div>
+    <div><b>Contact</b><p>0708 540 4814<br>Sourcestays@gmail.com</p></div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+(function () {
+  const requestedType = new URLSearchParams(window.location.search).get('type');
+  const allowedTypes = ['all', 'sale', 'land', 'rent'];
+  const typeSelect = document.getElementById('type');
+  if (typeSelect && allowedTypes.includes(requestedType)) typeSelect.value = requestedType;
+})();
+</script>
+<script src="app.js"></script>
+<script>
+(function () {
+  const menuToggle = document.getElementById("menuToggle");
+  const primaryNav = document.getElementById("primaryNav");
+  if (!menuToggle || !primaryNav) return;
+  menuToggle.addEventListener("click", function () {
+    const isOpen = primaryNav.classList.toggle("open");
+    menuToggle.setAttribute("aria-expanded", String(isOpen));
+    menuToggle.setAttribute("aria-label", isOpen ? "Close navigation menu" : "Open navigation menu");
+  });
+  primaryNav.querySelectorAll("a").forEach(function (link) {
+    link.addEventListener("click", function () {
+      primaryNav.classList.remove("open");
+      menuToggle.setAttribute("aria-expanded", "false");
+      menuToggle.setAttribute("aria-label", "Open navigation menu");
+    });
+  });
+})();
+</script>
+</body>
+</html>
