@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shortlet Apartments in Lagos | Source Stays</title>
+  <meta name="description" content="Find shortlet apartments in Lagos with Source Stays. Explore published listings, compare locations and amenities, and enquire about your preferred stay.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="canonical" href="https://sourcestays.com.ng/shortlets.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Source Stays">
+  <meta property="og:title" content="Shortlet Apartments in Lagos | Source Stays">
+  <meta property="og:description" content="Explore shortlet apartments in Lagos, compare available listings and enquire with Source Stays.">
+  <meta property="og:url" content="https://sourcestays.com.ng/shortlets.html">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Shortlet Apartments in Lagos | Source Stays">
+  <meta name="twitter:description" content="Explore shortlet apartments in Lagos with Source Stays.">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Shortlet Apartments in Lagos",
+    "url": "https://sourcestays.com.ng/shortlets.html",
+    "description": "Explore shortlet apartment listings in Lagos through Source Stays.",
+    "isPartOf": {
+      "@type": "WebSite",
+      "name": "Source Stays",
+      "url": "https://sourcestays.com.ng/"
+    },
+    "breadcrumb": {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://sourcestays.com.ng/" },
+        { "@type": "ListItem", "position": 2, "name": "Shortlets", "item": "https://sourcestays.com.ng/shortlets.html" }
+      ]
+    }
+  }
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .shortlet-intro { max-width: 780px; }
+    .shortlet-intro p { color: var(--muted); line-height: 1.8; }
+    .shortlet-search { max-width: 720px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-top: 24px; }
+    .shortlet-search input { min-width: 0; width: 100%; min-height: 52px; border: 0; border-radius: 10px; padding: 0 15px; background: #fff; color: var(--ink); }
+    .shortlet-benefits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    .shortlet-benefit { padding: 22px; border: 1px solid var(--line); border-radius: 15px; background: #fff; }
+    .shortlet-benefit h3 { margin: 0 0 8px; color: var(--green); }
+    .shortlet-benefit p { margin: 0; color: var(--muted); line-height: 1.7; }
+    .shortlet-faq { max-width: 850px; }
+    .shortlet-faq details { padding: 17px 0; border-bottom: 1px solid var(--line); }
+    .shortlet-faq summary { font-weight: 800; cursor: pointer; }
+    .shortlet-faq details p { color: var(--muted); line-height: 1.7; }
+    @media (max-width: 800px) {
+      .shortlet-benefits { grid-template-columns: 1fr; }
+      .shortlet-search { grid-template-columns: 1fr; }
+      .shortlet-search .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap nav">
+    <a class="logo" href="index.html" aria-label="Source Stays home">
+      <img src="source-stays-logo-green-gold.png" alt="Source Stays">
+    </a>
+    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="primaryNav">
+      <span></span><span></span><span></span>
+    </button>
+    <nav id="primaryNav">
+      <a href="shortlets.html" aria-current="page">Shortlets</a>
+      <a href="index.html?type=hotel#stays">Hotels</a>
+      <a href="index.html#realestate">Real Estate</a>
+      <a href="index.html#rewards">Rewards</a>
+      <a href="about.html">About Us</a>
+      <a href="index.html#contact">Contact</a>
+    </nav>
+    <a class="btn dark nav-book" href="https://wa.me/2347085404814">Book / Enquire</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <div class="eyebrow">Shortlet apartments · Lagos, Nigeria</div>
+      <h1>Find a shortlet that feels like the right place to stay.</h1>
+      <p>Explore shortlet apartment listings from Source Stays. Browse available options, compare locations and amenities, then open a listing to view its details and enquire.</p>
+      <form class="shortlet-search" onsubmit="event.preventDefault(); document.getElementById('stays').scrollIntoView({behavior:'smooth'}); loadListings();">
+        <input id="location" type="search" placeholder="Search by area e.g. Lekki, Ikeja, Magodo" aria-label="Search shortlets by location">
+        <button class="btn gold" type="submit">Find a shortlet</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="section" id="stays">
+    <div class="wrap">
+      <div class="head">
+        <div class="eyebrow">Browse our listings</div>
+        <h2>Shortlet apartments</h2>
+        <p>Explore currently published shortlet listings. Select a property to view its full details, photos, amenities and enquiry options.</p>
+      </div>
+      <select id="type" aria-label="Listing category" hidden>
+        <option value="shortlet" selected>Shortlets</option>
+      </select>
+      <div id="listings" class="cards" aria-live="polite">
+        <p>Loading shortlet listings...</p>
+      </div>
+      <div class="listings-more-wrap" style="text-align:center;margin-top:24px;">
+        <button id="loadMoreListings" class="btn gold" type="button" hidden>View More Shortlets</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="section cream">
+    <div class="wrap">
+      <div class="head">
+        <div class="eyebrow">Booking with Source Stays</div>
+        <h2>A clearer way to find your next stay.</h2>
+        <p>Use the listing information to narrow your options, then contact Source Stays about the apartment that suits your plans.</p>
+      </div>
+      <div class="shortlet-benefits">
+        <article class="shortlet-benefit">
+          <h3>01. Explore options</h3>
+          <p>Browse published shortlet apartments and check their locations, photos and listed amenities.</p>
+        </article>
+        <article class="shortlet-benefit">
+          <h3>02. Review the details</h3>
+          <p>Open a listing to see its property information and the available enquiry or booking steps.</p>
+        </article>
+        <article class="shortlet-benefit">
+          <h3>03. Make an enquiry</h3>
+          <p>Contact Source Stays to discuss your preferred apartment, dates and booking requirements.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="head">
+        <div class="eyebrow">Shortlet questions</div>
+        <h2>Frequently asked questions</h2>
+      </div>
+      <div class="shortlet-faq">
+        <details>
+          <summary>How do I find a shortlet in a particular area?</summary>
+          <p>Use the location search near the top of this page. You can enter an area such as Lekki, Ikeja or Magodo to narrow the published listings.</p>
+        </details>
+        <details>
+          <summary>How can I see the full details of an apartment?</summary>
+          <p>Select the View button on a listing to open its property page, where you can review the available photos, property details and enquiry options.</p>
+        </details>
+        <details>
+          <summary>How do I confirm availability and make an enquiry?</summary>
+          <p>Use the enquiry or booking options shown on the property page, or contact Source Stays through WhatsApp to discuss your dates and requirements.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section cream">
+    <div class="wrap">
+      <div class="cta">
+        <div>
+          <div class="eyebrow">Source Stays</div>
+          <h2>Need help choosing a shortlet?</h2>
+          <p>Tell us your preferred location, dates and requirements. Our team can help you with your enquiry.</p>
+        </div>
+        <a class="btn gold" href="https://wa.me/2347085404814?text=Hello%20Source%20Stays%2C%20I%20need%20help%20finding%20a%20shortlet%20apartment.">Chat on WhatsApp</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap footer">
+    <div><b>SOURCE STAYS</b><p>Shortlets • Hotels • Real Estate</p></div>
+    <div><b>Explore</b><p><a href="index.html">Home</a><br><a href="about.html">About Us</a></p></div>
+    <div><b>Contact</b><p>0708 540 4814<br>Sourcestays@gmail.com</p></div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="app.js"></script>
+<script>
+(function () {
+  const menuToggle = document.getElementById("menuToggle");
+  const primaryNav = document.getElementById("primaryNav");
+  if (!menuToggle || !primaryNav) return;
+  function closeMenu() {
+    primaryNav.classList.remove("is-open");
+    menuToggle.setAttribute("aria-expanded", "false");
+    menuToggle.setAttribute("aria-label", "Open navigation menu");
+  }
+  menuToggle.addEventListener("click", function () {
+    const isOpen = primaryNav.classList.toggle("is-open");
+    menuToggle.setAttribute("aria-expanded", String(isOpen));
+    menuToggle.setAttribute("aria-label", isOpen ? "Close navigation menu" : "Open navigation menu");
+  });
+  primaryNav.querySelectorAll("a").forEach(link => link.addEventListener("click", closeMenu));
+  document.addEventListener("keydown", event => { if (event.key === "Escape") closeMenu(); });
+  window.addEventListener("resize", () => { if (window.innerWidth > 800) closeMenu(); });
+})();
+</script>
+</body>
+</html>
