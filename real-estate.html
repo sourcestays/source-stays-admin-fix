@@ -38,6 +38,30 @@
   </script>
   <link rel="stylesheet" href="styles.css">
   <style>
+    /* Keep all hero copy readable against the dark green background. */
+    .realestate-page .hero { color: #ffffff; }
+    .realestate-page .hero .eyebrow { color: #e4c477; }
+    .realestate-page .hero h1 { color: #ffffff !important; }
+    .realestate-page .hero p { color: #f4f7f5 !important; }
+    .realestate-page .hero .wrap { position: relative; z-index: 1; }
+
+    /* Keep listing cards tidy: show a short amenities preview, not the full list. */
+    .realestate-page #listings .card { display: flex; flex-direction: column; }
+    .realestate-page #listings .card .body { display: flex; flex: 1; flex-direction: column; }
+    .realestate-page #listings .card .row { align-items: flex-end; margin-top: auto; }
+    .realestate-page #listings .card .row .muted {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      line-height: 1.5;
+      max-width: 72%;
+    }
+    .realestate-page #listings .card .price { margin: 10px 0 14px; }
+    @media (max-width: 800px) {
+      .realestate-page #listings .card .row .muted { max-width: 68%; }
+    }
+
     .realestate-intro { max-width: 850px; }
     .realestate-intro p { color: var(--muted); line-height: 1.8; }
     .realestate-search { max-width: 900px; display: grid; grid-template-columns: minmax(180px, .8fr) minmax(220px, 1fr) auto; gap: 10px; margin-top: 24px; }
@@ -58,7 +82,7 @@
     }
   </style>
 </head>
-<body>
+<body class="realestate-page">
 <header>
   <div class="wrap nav">
     <a class="logo" href="index.html" aria-label="Source Stays home">
