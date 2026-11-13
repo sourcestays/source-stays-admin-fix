@@ -17,7 +17,7 @@ function optimizedPropertyImageUrl(value, width=720, quality=72){
 }
 async function getListings(){
  const type=document.getElementById('type')?.value||'all', locationValue=document.getElementById('location')?.value||'';
- let q=supabaseClient.from('properties').select('*').eq('published',true).order('featured',{ascending:false}).order('id',{ascending:false});
+ let q=supabaseClient.from('properties').select('id,title,category,price,price_period,location,bedrooms,guests,amenities,image_url,featured,published,owner_identity_verified,physical_inspection_verified').eq('published',true).order('featured',{ascending:false}).order('id',{ascending:false});
  if(type==='realestate') q=q.in('category',['sale','land','rent']);
  else if(type!=='all') q=q.eq('category',type);
  if(locationValue) q=q.ilike('location',`%${locationValue}%`);
@@ -43,46 +43,22 @@ async function loadListings(){
     }))
   });
 
-  // Hotel cards use the customer-safe room-category view, never properties.price.
-  // This keeps hotel net rates and markup private and leaves non-hotel pricing untouched.
+  // Render property cards immediately. Hotel customer rates are fetched afterwards
+  // so the additional room-category request cannot delay the first listings paint.
   const hotelIds = items
     .filter(p => String(p.category || '').toLowerCase() === 'hotel')
     .map(p => p.id);
-
-  const hotelStartingPrices = new Map();
-  if (hotelIds.length) {
-    const { data: roomRates, error: ratesError } = await supabaseClient
-      .from('hotel_room_categories_public')
-      .select('property_id, customer_rate')
-      .in('property_id', hotelIds);
-
-    if (ratesError) {
-      console.error('Could not load public hotel room rates:', ratesError);
-    } else {
-      (roomRates || []).forEach(room => {
-        const rate = Number(room.customer_rate);
-        if (!Number.isFinite(rate) || rate <= 0) return;
-        const current = hotelStartingPrices.get(String(room.property_id));
-        if (current === undefined || rate < current) {
-          hotelStartingPrices.set(String(room.property_id), rate);
-        }
-      });
-    }
-  }
 
   const renderVisibleListings = () => {
    const visibleItems = items.slice(0, listingsVisibleCount);
    box.innerHTML = visibleItems.length ? visibleItems.map(p => {
     const isHotel = String(p.category || '').toLowerCase() === 'hotel';
-    const startingRate = hotelStartingPrices.get(String(p.id));
     const priceLabel = isHotel
-      ? (startingRate
-          ? 'Starting from ₦' + money(startingRate) + ' / per night'
-          : 'View room rates')
+      ? 'View room rates'
       : '₦' + money(p.price) + ' / ' + esc(p.price_period || 'per night');
 
     const imageUrl = optimizedPropertyImageUrl(p.image_url);
-    return `<article class="card"><div class="photo"><img src="${esc(imageUrl)}" alt="${esc(p.title || 'Source Stays property')}" width="640" height="420" loading="lazy" decoding="async"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(p.title)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(p.location||'Lagos')}${p.category === 'land' ? ' • Land' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)'}</div><div class="price">${priceLabel}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`;
+    return `<article class="card"><div class="photo"><img src="${esc(imageUrl)}" alt="${esc(p.title || 'Source Stays property')}" width="640" height="420" loading="lazy" decoding="async"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(p.title)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(p.location||'Lagos')}${p.category === 'land' ? ' • Land' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)'}</div><div class="price"${isHotel ? ' data-hotel-price-for="' + esc(p.id) + '"' : ''}>${priceLabel}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`;
   }).join('') : '<p>No matching listings yet. Try another location or contact Source Stays.';
    const moreButton = document.getElementById('loadMoreListings');
    if (moreButton) moreButton.hidden = listingsVisibleCount >= items.length;
@@ -93,6 +69,32 @@ async function loadListings(){
    listingsVisibleCount = Math.min(listingsVisibleCount + LISTINGS_PAGE_SIZE, items.length);
    renderVisibleListings();
   };
+
+  // Update hotel cards when customer-safe room rates arrive; never expose partner net rates.
+  if (hotelIds.length) {
+    supabaseClient
+      .from('hotel_room_categories_public')
+      .select('property_id, customer_rate')
+      .in('property_id', hotelIds)
+      .then(({ data: roomRates, error: ratesError }) => {
+        if (ratesError) {
+          console.error('Could not load public hotel room rates:', ratesError);
+          return;
+        }
+        const startingPrices = new Map();
+        (roomRates || []).forEach(room => {
+          const rate = Number(room.customer_rate);
+          if (!Number.isFinite(rate) || rate <= 0) return;
+          const key = String(room.property_id);
+          const current = startingPrices.get(key);
+          if (current === undefined || rate < current) startingPrices.set(key, rate);
+        });
+        startingPrices.forEach((rate, propertyId) => {
+          const priceElement = box.querySelector('[data-hotel-price-for="' + CSS.escape(propertyId) + '"]');
+          if (priceElement) priceElement.textContent = 'Starting from ₦' + money(rate) + ' / per night';
+        });
+      });
+  }
  } catch(e) {
   console.error(e);
   box.innerHTML='<p>Listings are temporarily unavailable. Please try again or contact Source Stays on WhatsApp.</p>';
