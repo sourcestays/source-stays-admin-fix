@@ -3,6 +3,17 @@ const supabaseClient = createClient(window.SUPABASE_URL, window.SUPABASE_PUBLISH
 const BUCKET='property-images';
 const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 function money(x){return Number(x||0).toLocaleString('en-NG');}
+
+// Request smaller WebP derivatives for public Supabase property photos.
+// Keep the original URL as a CSS fallback; original storage files are untouched.
+function optimizedPropertyImageUrl(value, width=720, quality=72){
+ const original=String(value||'');
+ const objectPath='/storage/v1/object/public/';
+ if(!original.includes(objectPath)) return original;
+ return original.replace(objectPath,'/storage/v1/render/image/public/') +
+   (original.includes('?') ? '&' : '?') +
+   'width='+width+'&quality='+quality+'&format=webp';
+}
 async function getListings(){
  const type=document.getElementById('type')?.value||'all', locationValue=document.getElementById('location')?.value||'';
  let q=supabaseClient.from('properties').select('*').eq('published',true).order('featured',{ascending:false}).order('id',{ascending:false});
@@ -69,7 +80,7 @@ async function loadListings(){
           : 'View room rates')
       : '₦' + money(p.price) + ' / ' + esc(p.price_period || 'per night');
 
-    return `<article class="card"><div class="photo" style="background-image:url('${esc(p.image_url||'')}')"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(p.title)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(p.location||'Lagos')}${p.category === 'land' ? ' • Land' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)'}</div><div class="price">${priceLabel}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`;
+    return `<article class="card"><div class="photo" style="background-image:url('${esc(optimizedPropertyImageUrl(p.image_url))}'),url('${esc(p.image_url||'')}')"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(p.title)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(p.location||'Lagos')}${p.category === 'land' ? ' • Land' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)'}</div><div class="price">${priceLabel}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`;
   }).join('') : '<p>No matching listings yet. Try another location or contact Source Stays.';
    const moreButton = document.getElementById('loadMoreListings');
    if (moreButton) moreButton.hidden = listingsVisibleCount >= items.length;
