@@ -469,7 +469,31 @@
     }
   });
 
-  loadPublicReviews();
+  // Defer the public reviews request until the section is close to view.
+  // This keeps below-the-fold content off the homepage's initial network path.
+  let reviewsLoaded = false;
+  function loadReviewsWhenNeeded() {
+    if (reviewsLoaded) return;
+    reviewsLoaded = true;
+    loadPublicReviews();
+  }
+
+  if ('IntersectionObserver' in window) {
+    const reviewsSection = document.getElementById('reviews');
+    if (reviewsSection) {
+      const reviewsObserver = new IntersectionObserver(function (entries) {
+        if (entries.some(function (entry) { return entry.isIntersecting; })) {
+          loadReviewsWhenNeeded();
+          reviewsObserver.disconnect();
+        }
+      }, { rootMargin: '300px 0px' });
+      reviewsObserver.observe(reviewsSection);
+    } else {
+      loadReviewsWhenNeeded();
+    }
+  } else {
+    loadReviewsWhenNeeded();
+  }
 })();
 </script>
 
