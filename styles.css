@@ -147,7 +147,7 @@ nav a:hover {
 
 .btn.gold {
   background: var(--gold);
-  color: #fff;
+  color: var(--dark);
 }
 
 .btn.gold:hover {
@@ -188,7 +188,7 @@ nav a:hover {
   font-weight: 900;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--green);
 }
 
 h1,
