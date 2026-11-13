@@ -2,7 +2,7 @@
 (function () {
   if (document.getElementById("ss-ai-launcher")) return;
 
-  const AVATAR = "source-stays-ai-avatar.png";
+  const AVATAR = "source-stays-ai-avatar.webp";
   const WHATSAPP = "https://wa.me/2347085404814";
 
   const style = document.createElement("style");
