@@ -5,7 +5,8 @@ const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&
 function money(x){return Number(x||0).toLocaleString('en-NG');}
 
 // Request smaller WebP derivatives for public Supabase property photos.
-// Keep the original URL as a CSS fallback; original storage files are untouched.
+// The original storage URL is deliberately not added as a second CSS layer:
+// doing so makes the browser download both the optimized and original files.
 function optimizedPropertyImageUrl(value, width=720, quality=72){
  const original=String(value||'');
  const objectPath='/storage/v1/object/public/';
@@ -80,7 +81,8 @@ async function loadListings(){
           : 'View room rates')
       : '₦' + money(p.price) + ' / ' + esc(p.price_period || 'per night');
 
-    return `<article class="card"><div class="photo" style="background-image:url('${esc(optimizedPropertyImageUrl(p.image_url))}'),url('${esc(p.image_url||'')}')"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(p.title)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(p.location||'Lagos')}${p.category === 'land' ? ' • Land' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)'}</div><div class="price">${priceLabel}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`;
+    const imageUrl = optimizedPropertyImageUrl(p.image_url);
+    return `<article class="card"><div class="photo" style="background-image:url('${esc(imageUrl)}');background-color:#e8e8e8"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(p.title)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(p.location||'Lagos')}${p.category === 'land' ? ' • Land' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)'}</div><div class="price">${priceLabel}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`;
   }).join('') : '<p>No matching listings yet. Try another location or contact Source Stays.';
    const moreButton = document.getElementById('loadMoreListings');
    if (moreButton) moreButton.hidden = listingsVisibleCount >= items.length;
