@@ -654,7 +654,8 @@ function setPropertySeo(p, fallbackImageUrl = "") {
       document.body.style.overflow = "";
     }
 
-    function renderProperty(p, hotelRooms = []) {
+    function renderProperty(p, hotelRooms = [], villaPackages = []) {
+      const isVillaWithPackages = Array.isArray(villaPackages) && villaPackages.length > 0;
       const title = SourceStays.esc(p.title || "Property");
       const category = SourceStays.esc(p.category || "shortlet");
       const location = SourceStays.esc(p.location || "Lagos");
@@ -773,25 +774,23 @@ const hasPaymentPlan = isSaleListing &&
               • ${p.guests || 0} guests
             </p>
 
-          ${p.event_enabled ? `
+          ${isVillaWithPackages ? '' : (p.event_enabled ? `
 <section style="margin:20px 0;padding:20px;border:1px solid #e7ebe7;border-radius:14px;background:#f7f8f5;">
   <h3 style="margin-top:0;">Available Booking Options</h3>
-
   <div style="padding:14px;margin-bottom:12px;background:#fff;border-radius:10px;">
-    <h4>Entire 4-Bedroom Duplex</h4>
+    <h4>Entire Property</h4>
     <h3>₦${SourceStays.money(p.price)} / night</h3>
     <p>Refundable caution deposit: ₦${SourceStays.money(p.caution_fee || 0)}</p>
   </div>
-
   <div style="padding:14px;background:#fff;border-radius:10px;">
-    <h4>Private Indoor Event</h4>
+    <h4>Private Event</h4>
     <h3>₦${SourceStays.money(p.event_price)} / event</h3>
     <p>Refundable caution deposit: ₦${SourceStays.money(p.event_caution_fee || 0)}</p>
   </div>
 </section>
 ` : `
 ${String(p.category || "").toLowerCase() === "hotel" ? "" : (isSaleListing ? `<h3>Base property price: ₦${SourceStays.money(basePropertyPrice)}</h3>` : `<h3>₦${SourceStays.money(p.price)} / ${period}</h3>`)}
-`}
+`)}
 ${hasPricingBreakdown || hasPaymentPlan || (isSaleListing && feesDueLater) ? `
 <section style="margin-top:20px;padding:20px;border:1px solid #e7ebe7;border-radius:14px;background:#f7f8f5;">
 
@@ -823,6 +822,59 @@ ${hasPricingBreakdown || hasPaymentPlan || (isSaleListing && feesDueLater) ? `
             <p class="description-in-info">${description}</p>
 
             <p><b>Amenities:</b> ${amenities}</p>
+
+            ${isVillaWithPackages ? `
+              <section id="villa-getaway-section" style="margin:24px 0;padding:22px;border:1px solid #e7ebe7;border-radius:16px;background:#f7f8f5;">
+                <h3 style="margin:0 0 8px;color:#123f32;">Choose Your Villa Getaway</h3>
+                <p style="margin:0 0 18px;color:#68736c;">The booking is for the entire villa. Bedrooms are included as facilities and are not booked separately. All requests require availability confirmation by Source Stays.</p>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+                  ${villaPackages.map(pkg => `
+                    <article style="padding:16px;background:#fff;border:1px solid #e1e8e1;border-radius:12px;">
+                      <h4 style="margin:0 0 7px;color:#123f32;">${SourceStays.esc(pkg.package_name)}</h4>
+                      <p style="margin:0 0 8px;color:#68736c;font-size:13px;">${pkg.package_type === 'day_getaway' ? 'Day Getaway' : 'Overnight Getaway'} · ${pkg.boat_included ? 'Boat Inclusive' : 'Boat Exclusive'}</p>
+                      <strong style="display:block;color:#123f32;font-size:21px;margin-bottom:8px;">₦${SourceStays.money(pkg.customer_rate)}</strong>
+                      <p style="margin:0 0 8px;font-size:13px;">${pkg.boat_included ? 'Includes one 15-seater boat for a round trip.' : 'Boat not included.'}</p>
+                      <p style="margin:0 0 12px;font-size:13px;color:#68736c;">Maximum ${Number(pkg.max_guests)} guests</p>
+                      ${pkg.description ? `<p style="margin:0 0 12px;font-size:13px;line-height:1.5;">${SourceStays.esc(pkg.description)}</p>` : ''}
+                      <button type="button" class="btn dark villa-select-package" data-package-id="${SourceStays.esc(pkg.id)}" style="width:100%;">Request this getaway</button>
+                    </article>
+                  `).join('')}
+                </div>
+                <div id="villaRequestPanel" hidden style="margin-top:18px;padding:18px;background:#fff;border:1px solid #e1e8e1;border-radius:12px;">
+                  <h4 style="margin-top:0;">Request availability</h4>
+                  <p id="villaSelectedPackageLabel" class="muted"></p>
+                  <form id="villaBookingRequestForm" style="display:grid;gap:12px;">
+                    <input type="hidden" name="package_id">
+                    <label>Full name<input name="customer_name" required maxlength="100" autocomplete="name" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></label>
+                    <label>Phone number<input name="customer_phone" type="tel" required maxlength="30" autocomplete="tel" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></label>
+                    <label>Email address (optional)<input name="customer_email" type="email" maxlength="254" autocomplete="email" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></label>
+                    <label>Preferred date<input name="preferred_start_date" type="date" required min="${new Date().toISOString().slice(0,10)}" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></label>
+                    <label id="villaEndDateField" hidden>Check-out date<input name="preferred_end_date" type="date" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></label>
+                    <label>Number of guests<input name="guest_count" type="number" min="1" max="500" required value="2" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></label>
+                    <label>Additional message (optional)<textarea name="message" rows="3" maxlength="1000" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></textarea></label>
+                    <button type="submit" class="btn dark" id="submitVillaRequest">Submit Availability Request</button>
+                    <p id="villaRequestStatus" class="muted" aria-live="polite"></p>
+                    <p style="font-size:12px;color:#68736c;margin:0;">This is an enquiry only. Your getaway is not booked until Source Stays confirms availability and gives you the next steps.</p>
+                  </form>
+                </div>
+              </section>
+              <section style="margin:18px 0;padding:20px;border:1px solid #e7ebe7;border-radius:14px;background:#fff;">
+                <h3 style="margin-top:0;color:#123f32;">Special Events</h3>
+                <p>Planning a birthday, private party or special celebration? Contact Source Stays for a personalised quotation and event arrangements.</p>
+                <button type="button" class="btn dark" id="openVillaEventEnquiry">Enquire About a Special Event</button>
+                <div id="villaEventEnquiryPanel" hidden style="margin-top:16px;">
+                  <form id="villaEventEnquiryForm" style="display:grid;gap:12px;">
+                    <label>Full name<input name="customer_name" required maxlength="100" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></label>
+                    <label>Phone number<input name="customer_phone" type="tel" required maxlength="30" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></label>
+                    <label>Email address (optional)<input name="customer_email" type="email" maxlength="254" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></label>
+                    <label>Event date<input name="event_date" type="date" required min="${new Date().toISOString().slice(0,10)}" style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></label>
+                    <label>Tell us about your event<textarea name="message" rows="4" required maxlength="1500" placeholder="Event type, estimated guests, preferred arrangements..." style="display:block;width:100%;padding:12px;border:1px solid #d9e0da;border-radius:8px;"></textarea></label>
+                    <button type="submit" class="btn dark" id="submitVillaEventEnquiry">Send Event Enquiry</button>
+                    <p id="villaEventEnquiryStatus" class="muted" aria-live="polite"></p>
+                  </form>
+                </div>
+              </section>
+            ` : ''}
 
             ${String(p.category || "").toLowerCase() === "hotel" ? `
               <section class="hotel-room-list" style="margin:24px 0;padding:22px;border:1px solid #e7ebe7;border-radius:16px;background:#f7f8f5;">
@@ -887,7 +939,7 @@ ${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
   </p>
 </section>
 <div class="property-actions">
- ${["sale", "land", "rent"].includes(String(p.category || "").toLowerCase()) ? `
+ ${isVillaWithPackages ? '' : (["sale", "land", "rent"].includes(String(p.category || "").toLowerCase()) ? `
 <button type="button" class="btn dark" id="openPropertyEnquiry">
   ${String(p.category || "").toLowerCase() === "rent" ? "Enquire to Rent" : "Enquire to Buy"}
 </button>
@@ -896,7 +948,7 @@ ${["sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
 </p>
 ` : `
 <a class="btn dark" href="booking.html?id=${encodeURIComponent(p.id)}">Request booking</a>
-`}
+`)}
   ${["shortlet", "hotel", "sale", "rent", "land"].includes(String(p.category || "").toLowerCase()) ? `
     <button type="button" class="btn inspection-trigger"
       id="openInspectionForm"
@@ -1025,6 +1077,117 @@ ${["shortlet", "hotel", "sale", "rent", "land"].includes(String(p.category || ""
           <span class="modal-count" id="modalGalleryCount"></span>
         </div>
       `;
+
+if (isVillaWithPackages) {
+  const requestPanel = document.getElementById("villaRequestPanel");
+  const requestForm = document.getElementById("villaBookingRequestForm");
+  const endDateField = document.getElementById("villaEndDateField");
+  const endDateInput = requestForm?.elements.preferred_end_date;
+  const startDateInput = requestForm?.elements.preferred_start_date;
+  let selectedVillaPackage = null;
+
+  document.querySelectorAll(".villa-select-package").forEach(button => {
+    button.addEventListener("click", () => {
+      selectedVillaPackage = villaPackages.find(item => item.id === button.dataset.packageId);
+      if (!selectedVillaPackage) return;
+      requestForm.elements.package_id.value = selectedVillaPackage.id;
+      document.getElementById("villaSelectedPackageLabel").textContent =
+        `${selectedVillaPackage.package_name} — ₦${SourceStays.money(selectedVillaPackage.customer_rate)}`;
+      const isOvernight = selectedVillaPackage.package_type === "overnight_getaway";
+      endDateField.hidden = !isOvernight;
+      endDateInput.required = isOvernight;
+      endDateInput.value = "";
+      endDateInput.min = startDateInput.value || startDateInput.min;
+      requestPanel.hidden = false;
+      requestPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  });
+
+  startDateInput.addEventListener("change", () => {
+    endDateInput.min = startDateInput.value;
+    if (endDateInput.value && endDateInput.value <= startDateInput.value) endDateInput.value = "";
+  });
+
+  requestForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = document.getElementById("submitVillaRequest");
+    const status = document.getElementById("villaRequestStatus");
+    const fd = new FormData(requestForm);
+    const startDate = String(fd.get("preferred_start_date") || "");
+    const endDate = String(fd.get("preferred_end_date") || "");
+    const guestCount = Number(fd.get("guest_count"));
+    if (!selectedVillaPackage) { status.textContent = "Please select a getaway package."; return; }
+    if (selectedVillaPackage.package_type === "overnight_getaway" && (!endDate || endDate <= startDate)) {
+      status.textContent = "Please choose a check-out date after your check-in date."; return;
+    }
+    if (guestCount < 1 || guestCount > Number(selectedVillaPackage.max_guests)) {
+      status.textContent = `This package allows up to ${selectedVillaPackage.max_guests} guests.`; return;
+    }
+    button.disabled = true; button.textContent = "Submitting..."; status.textContent = "Sending your availability request...";
+    try {
+      const { data, error } = await SourceStays.supabase
+        .from("villa_booking_requests")
+        .insert({
+          property_id: Number(p.id),
+          package_id: selectedVillaPackage.id,
+          customer_name: String(fd.get("customer_name") || "").trim(),
+          customer_phone: String(fd.get("customer_phone") || "").trim(),
+          customer_email: String(fd.get("customer_email") || "").trim() || null,
+          preferred_start_date: startDate,
+          preferred_end_date: endDate || null,
+          guest_count: guestCount,
+          message: String(fd.get("message") || "").trim() || null
+        });
+      if (error) throw error;
+      status.textContent = "Your request has been received. Source Stays will contact you after checking availability with the partner. This is not yet a confirmed booking.";
+      requestForm.reset();
+      selectedVillaPackage = null;
+      requestPanel.hidden = true;
+    } catch (error) {
+      console.error("Villa availability request failed:", error);
+      status.textContent = error.message || "We could not submit your request. Please try again.";
+    } finally {
+      button.disabled = false; button.textContent = "Submit Availability Request";
+    }
+  });
+
+  const eventButton = document.getElementById("openVillaEventEnquiry");
+  const eventPanel = document.getElementById("villaEventEnquiryPanel");
+  const eventForm = document.getElementById("villaEventEnquiryForm");
+  eventButton.addEventListener("click", () => {
+    eventPanel.hidden = !eventPanel.hidden;
+    if (!eventPanel.hidden) eventPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  eventForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = document.getElementById("submitVillaEventEnquiry");
+    const status = document.getElementById("villaEventEnquiryStatus");
+    const fd = new FormData(eventForm);
+    const customerName = String(fd.get("customer_name") || "").trim();
+    const customerPhone = String(fd.get("customer_phone") || "").trim();
+    const eventDate = String(fd.get("event_date") || "");
+    const details = String(fd.get("message") || "").trim();
+    button.disabled = true; button.textContent = "Sending..."; status.textContent = "Submitting your event enquiry...";
+    try {
+      await SourceStays.submitEnquiry({
+        property_id: Number(p.id),
+        customer_name: customerName,
+        customer_phone: customerPhone,
+        customer_email: String(fd.get("customer_email") || "").trim() || null,
+        subject: `Special event quotation request: ${p.title}`,
+        message: `Special Events enquiry for ${p.title}. Preferred event date: ${eventDate}. ${details}`,
+        status: "new"
+      });
+      status.textContent = "Thank you. Your special event enquiry has been received. Source Stays will contact you to discuss requirements and a quotation.";
+      eventForm.reset();
+    } catch (error) {
+      console.error("Villa special event enquiry failed:", error);
+      status.textContent = error.message || "We could not submit your enquiry. Please try again.";
+    } finally {
+      button.disabled = false; button.textContent = "Send Event Enquiry";
+    }
+  });
+}
 
 const enquiryButton = document.getElementById("openPropertyEnquiry");
 const enquiryPanel = document.getElementById("propertyEnquiryPanel");
@@ -1433,6 +1596,20 @@ setPropertySeo(property, propertyImages[0] || "");
 
 
 
+        let villaPackages = [];
+        if (String(property.category || "").toLowerCase() === "shortlet") {
+          const { data: villaData, error: villaError } = await SourceStays.supabase
+            .from("villa_packages_public")
+            .select("id, property_id, package_name, package_type, boat_included, description, boat_description, customer_rate, max_guests, sort_order")
+            .eq("property_id", propertyId)
+            .order("sort_order", { ascending: true });
+          if (villaError) {
+            console.error("Could not load villa getaway packages:", villaError);
+          } else {
+            villaPackages = villaData || [];
+          }
+        }
+
         let hotelRooms = [];
         if (String(property.category || "").toLowerCase() === "hotel") {
           const { data: roomData, error: roomError } = await SourceStays.supabase
@@ -1447,7 +1624,7 @@ setPropertySeo(property, propertyImages[0] || "");
           }
         }
 
-        renderProperty(property, hotelRooms);
+        renderProperty(property, hotelRooms, villaPackages);
 
       } catch (error) {
         console.error("Could not load property:", error);
