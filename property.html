@@ -1600,7 +1600,18 @@ if (!galleryImages.length) {
           throw new Error("Property not found");
         }
 
-    
+        // Build a customer-facing copy; keep internal partner details in admin only.
+        const publicProperty = property.hide_partner_identity ? {
+          ...property,
+          title: property.public_title || "Luxury Private Getaway",
+          location: property.public_location || "Lagos",
+          description: property.public_description || "Enjoy a private luxury getaway with premium accommodation and recreational facilities.",
+          amenities: "Premium amenities and recreational facilities",
+          bedrooms: 0,
+          guests: 0,
+          exact_address: null,
+          google_maps_url: null
+        } : property;
 
         let propertyImages = [];
 
@@ -1618,7 +1629,7 @@ if (!galleryImages.length) {
         if (!propertyImages.length && property.image_url) {
           propertyImages = [property.image_url];
         }
-setPropertySeo(property, propertyImages[0] || "");
+setPropertySeo(publicProperty, propertyImages[0] || "");
         galleryImages = propertyImages;
         currentImageIndex = 0;
 
@@ -1652,7 +1663,7 @@ setPropertySeo(property, propertyImages[0] || "");
           }
         }
 
-        renderProperty(property, hotelRooms, villaPackages);
+        renderProperty(publicProperty, hotelRooms, villaPackages);
 
       } catch (error) {
         console.error("Could not load property:", error);
