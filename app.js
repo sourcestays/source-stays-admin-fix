@@ -48,6 +48,9 @@ async function loadListings(){
   const hotelIds = items
     .filter(p => String(p.category || '').toLowerCase() === 'hotel')
     .map(p => p.id);
+  const hiddenVillaIds = items
+    .filter(p => p.hide_partner_identity)
+    .map(p => p.id);
 
   const renderVisibleListings = () => {
    const visibleItems = items.slice(0, listingsVisibleCount);
@@ -58,10 +61,10 @@ async function loadListings(){
     const publicPriceAvailable = isHotel || !p.hide_partner_identity;
     const priceLabel = isHotel
       ? 'View room rates'
-      : (publicPriceAvailable && Number(p.price) > 0 ? '₦' + money(p.price) + ' / ' + esc(p.price_period || 'per night') : 'View Packages');
+      : (publicPriceAvailable && Number(p.price) > 0 ? '₦' + money(p.price) + ' / ' + esc(p.price_period || 'per night') : 'Loading package price…');
 
     const imageUrl = optimizedPropertyImageUrl(p.image_url);
-    return `<article class="card"><div class="photo"><img src="${esc(imageUrl)}" alt="${esc(publicTitle || 'Source Stays property')}" width="640" height="420" loading="lazy" decoding="async"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(publicTitle)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(publicLocation||'Lagos')}${p.category === 'land' ? ' • Land' : (p.hide_partner_identity ? '' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)')}</div><div class="price"${isHotel ? ' data-hotel-price-for="' + esc(p.id) + '"' : ''}>${priceLabel}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`;
+    return `<article class="card"><div class="photo"><img src="${esc(imageUrl)}" alt="${esc(publicTitle || 'Source Stays property')}" width="640" height="420" loading="lazy" decoding="async"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(publicTitle)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(publicLocation||'Lagos')}${p.category === 'land' ? ' • Land' : (p.hide_partner_identity ? '' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)')}</div><div class="price"${isHotel ? ' data-hotel-price-for="' + esc(p.id) + '"' : (p.hide_partner_identity ? ' data-villa-price-for="' + esc(p.id) + '"' : '')}>${priceLabel}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`;
   }).join('') : '<p>No matching listings yet. Try another location or contact Source Stays.';
    const moreButton = document.getElementById('loadMoreListings');
    if (moreButton) moreButton.hidden = listingsVisibleCount >= items.length;
@@ -72,6 +75,39 @@ async function loadListings(){
    listingsVisibleCount = Math.min(listingsVisibleCount + LISTINGS_PAGE_SIZE, items.length);
    renderVisibleListings();
   };
+
+  // Show the first customer-facing villa package price on hidden-identity listings.
+  if (hiddenVillaIds.length) {
+    supabaseClient
+      .from('villa_packages_public')
+      .select('property_id,weekday_customer_rate,sort_order')
+      .in('property_id', hiddenVillaIds)
+      .order('sort_order', { ascending: true })
+      .then(({ data: packages, error: packageError }) => {
+        if (packageError) {
+          console.error('Could not load public villa package prices:', packageError);
+          hiddenVillaIds.forEach(propertyId => {
+            const priceElement = box.querySelector('[data-villa-price-for="' + CSS.escape(String(propertyId)) + '"]');
+            if (priceElement) priceElement.textContent = 'Enquire for rates';
+          });
+          return;
+        }
+        const firstPrices = new Map();
+        (packages || []).forEach(pkg => {
+          const rate = Number(pkg.weekday_customer_rate);
+          const key = String(pkg.property_id);
+          if (!firstPrices.has(key) && Number.isFinite(rate) && rate > 0) firstPrices.set(key, rate);
+        });
+        hiddenVillaIds.forEach(propertyId => {
+          const priceElement = box.querySelector('[data-villa-price-for="' + CSS.escape(String(propertyId)) + '"]');
+          if (!priceElement) return;
+          const rate = firstPrices.get(String(propertyId));
+          priceElement.textContent = rate
+            ? 'Starting from ₦' + money(rate)
+            : 'Enquire for rates';
+        });
+      });
+  }
 
   // Update hotel cards when customer-safe room rates arrive; never expose partner net rates.
   if (hotelIds.length) {
