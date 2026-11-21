@@ -834,6 +834,7 @@ ${hasPricingBreakdown || hasPaymentPlan || (isSaleListing && feesDueLater) ? `
                       <p style="margin:0 0 8px;color:#68736c;font-size:13px;">${pkg.package_type === 'day_getaway' ? 'Day Getaway' : 'Overnight Getaway'} · ${pkg.boat_included ? 'Boat Inclusive' : 'Boat Exclusive'}</p>
                       <strong style="display:block;color:#123f32;font-size:21px;margin-bottom:8px;">₦${SourceStays.money(pkg.customer_rate)}</strong>
                       <p style="margin:0 0 8px;font-size:13px;">${pkg.boat_included ? 'Includes one 15-seater boat for a round trip.' : 'Boat not included.'}</p>
+                      <p style="margin:0 0 12px;font-size:13px;color:#68736c;">${pkg.package_type === 'day_getaway' ? 'Access hours' : 'Check-in / check-out'}: ${String(pkg.start_time || '').slice(0,5)} – ${String(pkg.end_time || '').slice(0,5)}</p>
                       <p style="margin:0 0 12px;font-size:13px;color:#68736c;">Maximum ${Number(pkg.max_guests)} guests</p>
                       ${pkg.description ? `<p style="margin:0 0 12px;font-size:13px;line-height:1.5;">${SourceStays.esc(pkg.description)}</p>` : ''}
                       <button type="button" class="btn dark villa-select-package" data-package-id="${SourceStays.esc(pkg.id)}" style="width:100%;">Request this getaway</button>
@@ -1600,7 +1601,7 @@ setPropertySeo(property, propertyImages[0] || "");
         if (String(property.category || "").toLowerCase() === "shortlet") {
           const { data: villaData, error: villaError } = await SourceStays.supabase
             .from("villa_packages_public")
-            .select("id, property_id, package_name, package_type, boat_included, description, boat_description, customer_rate, max_guests, sort_order")
+            .select("id, property_id, package_name, package_type, boat_included, description, boat_description, customer_rate, max_guests, sort_order, start_time, end_time")
             .eq("property_id", propertyId)
             .order("sort_order", { ascending: true });
           if (villaError) {
