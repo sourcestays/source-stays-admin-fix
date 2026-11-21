@@ -464,10 +464,19 @@
     </div>
     <p class="muted" id="villaTimeHelp">Set the guest access hours for this package. These times will be shown to customers.</p>
     <div class="field"><label>Description (optional)</label><textarea name="description" maxlength="1000" placeholder="Describe what is included in this whole-villa package"></textarea></div>
+    <h4>Weekday pricing (Monday–Thursday)</h4>
     <div class="grid">
-      <div class="field"><label>Partner net rate (₦) — private</label><input name="partner_net_rate" type="number" min="0.01" step="0.01" required></div>
-      <div class="field"><label>Markup type</label><select name="markup_type"><option value="fixed">Fixed amount (₦)</option><option value="percentage">Percentage (%)</option></select></div>
-      <div class="field"><label>Markup value</label><input name="markup_value" type="number" min="0" step="0.01" value="0" required></div>
+      <div class="field"><label>Weekday partner net rate (₦) — private</label><input name="weekday_partner_net_rate" type="number" min="0.01" step="0.01" required></div>
+      <div class="field"><label>Weekday markup type</label><select name="weekday_markup_type"><option value="fixed">Fixed amount (₦)</option><option value="percentage">Percentage (%)</option></select></div>
+      <div class="field"><label>Weekday markup value</label><input name="weekday_markup_value" type="number" min="0" step="0.01" value="0" required></div>
+    </div>
+    <h4>Weekend pricing (Friday–Sunday)</h4>
+    <div class="grid">
+      <div class="field"><label>Weekend partner net rate (₦) — private</label><input name="weekend_partner_net_rate" type="number" min="0.01" step="0.01" required></div>
+      <div class="field"><label>Weekend markup type</label><select name="weekend_markup_type"><option value="fixed">Fixed amount (₦)</option><option value="percentage">Percentage (%)</option></select></div>
+      <div class="field"><label>Weekend markup value</label><input name="weekend_markup_value" type="number" min="0" step="0.01" value="0" required></div>
+    </div>
+    <div class="grid">
       <div class="field"><label>Maximum guests for this package</label><input name="max_guests" type="number" min="1" max="500" value="15" required></div>
       <div class="field"><label>Display order</label><input name="sort_order" type="number" step="1" value="0"></div>
     </div>
@@ -1641,13 +1650,15 @@ function updateVillaTimeLabels() {
 }
 function updateVillaPackagePreview() {
   if (!villaPackageForm) return;
-  const net = Number(villaPackageForm.elements.partner_net_rate.value) || 0;
-  const type = villaPackageForm.elements.markup_type.value;
-  const value = Number(villaPackageForm.elements.markup_value.value) || 0;
-  const retail = villaRetail(net, type, value);
-  document.getElementById('villaPackagePreview').textContent = net > 0
-    ? 'Customer selling price: ₦' + money(retail) + '. This preview is admin-only.'
-    : 'Enter the partner net rate and markup to preview the customer selling price.';
+  const wn = Number(villaPackageForm.elements.weekday_partner_net_rate.value) || 0;
+  const wm = Number(villaPackageForm.elements.weekday_markup_value.value) || 0;
+  const wt = villaPackageForm.elements.weekday_markup_type.value;
+  const en = Number(villaPackageForm.elements.weekend_partner_net_rate.value) || 0;
+  const em = Number(villaPackageForm.elements.weekend_markup_value.value) || 0;
+  const et = villaPackageForm.elements.weekend_markup_type.value;
+  document.getElementById('villaPackagePreview').textContent = wn > 0 && en > 0
+    ? 'Admin-only preview — Mon–Thu: ₦' + money(villaRetail(wn, wt, wm)) + ' | Fri–Sun: ₦' + money(villaRetail(en, et, em))
+    : 'Enter both weekday and weekend partner rates and markups to preview customer prices.';
 }
 function resetVillaPackageForm() {
   if (!villaPackageForm) return;
@@ -1655,8 +1666,10 @@ function resetVillaPackageForm() {
   villaPackageForm.elements.id.value = '';
   villaPackageForm.elements.package_type.value = 'day_getaway';
   villaPackageForm.elements.boat_included.value = 'false';
-  villaPackageForm.elements.markup_type.value = 'fixed';
-  villaPackageForm.elements.markup_value.value = '0';
+  villaPackageForm.elements.weekday_markup_type.value = 'fixed';
+  villaPackageForm.elements.weekday_markup_value.value = '0';
+  villaPackageForm.elements.weekend_markup_type.value = 'fixed';
+  villaPackageForm.elements.weekend_markup_value.value = '0';
   villaPackageForm.elements.max_guests.value = '15';
   villaPackageForm.elements.sort_order.value = '0';
   villaPackageForm.elements.start_time.value = '';
@@ -1707,12 +1720,12 @@ async function renderVillaPackages() {
       villaPackageList.innerHTML = '<p class="muted">No getaway packages added for this villa yet.</p>';
       return;
     }
-    villaPackageList.innerHTML = '<table class="table"><thead><tr><th>Package</th><th>Partner net</th><th>Markup</th><th>Customer price</th><th>Hours</th><th>Guests</th><th>Status</th><th>Actions</th></tr></thead><tbody>' + data.map(row => {
-      const retail = villaRetail(Number(row.partner_net_rate), row.markup_type, Number(row.markup_value));
-      const markup = row.markup_type === 'percentage' ? Number(row.markup_value) + '%' : '₦' + money(row.markup_value);
+    villaPackageList.innerHTML = '<table class="table"><thead><tr><th>Package</th><th>Weekday net / selling</th><th>Weekend net / selling</th><th>Hours</th><th>Guests</th><th>Status</th><th>Actions</th></tr></thead><tbody>' + data.map(row => {
+      const wr = villaRetail(Number(row.weekday_partner_net_rate), row.weekday_markup_type, Number(row.weekday_markup_value));
+      const er = villaRetail(Number(row.weekend_partner_net_rate), row.weekend_markup_type, Number(row.weekend_markup_value));
       const typeLabel = row.package_type === 'day_getaway' ? 'Day Getaway' : 'Overnight Getaway';
       const boatLabel = row.boat_included ? 'Boat Inclusive — 15-seater round trip' : 'Boat Exclusive';
-      return '<tr><td><b>' + esc(typeLabel) + '</b><br>' + esc(boatLabel) + '<br><small>' + esc(row.package_name) + '</small></td><td>₦' + money(row.partner_net_rate) + '</td><td>' + esc(markup) + '</td><td><b>₦' + money(retail) + '</b></td><td>' + (row.package_type === 'day_getaway' ? 'Access ' : 'In / out ') + esc(String(row.start_time || '').slice(0,5)) + ' – ' + esc(String(row.end_time || '').slice(0,5)) + '</td><td>' + Number(row.max_guests) + '</td><td>' + (row.is_active ? 'Active' : 'Hidden') + '</td><td><button type="button" onclick="editVillaPackage(\'' + row.id + '\')">Edit</button> <button type="button" onclick="toggleVillaPackage(\'' + row.id + '\',' + (!row.is_active) + ')">' + (row.is_active ? 'Hide' : 'Activate') + '</button></td></tr>';
+      return '<tr><td><b>' + esc(typeLabel) + '</b><br>' + esc(boatLabel) + '<br><small>' + esc(row.package_name) + '</small></td><td>Net ₦' + money(row.weekday_partner_net_rate) + '<br><b>Sell ₦' + money(wr) + '</b></td><td>Net ₦' + money(row.weekend_partner_net_rate) + '<br><b>Sell ₦' + money(er) + '</b></td><td>' + (row.package_type === 'day_getaway' ? 'Access ' : 'In / out ') + esc(String(row.start_time || '').slice(0,5)) + ' – ' + esc(String(row.end_time || '').slice(0,5)) + '</td><td>' + Number(row.max_guests) + '</td><td>' + (row.is_active ? 'Active' : 'Hidden') + '</td><td><button type="button" onclick="editVillaPackage(\'' + row.id + '\')">Edit</button> <button type="button" onclick="toggleVillaPackage(\'' + row.id + '\',' + (!row.is_active) + ')">' + (row.is_active ? 'Hide' : 'Activate') + '</button></td></tr>';
     }).join('') + '</tbody></table>';
   } catch (error) {
     console.error(error);
@@ -1722,7 +1735,7 @@ async function renderVillaPackages() {
 window.editVillaPackage = function(id) {
   const row = villaPackageCache.get(id);
   if (!row) return;
-  for (const key of ['id','package_name','package_type','description','partner_net_rate','markup_type','markup_value','max_guests','sort_order','start_time','end_time']) {
+  for (const key of ['id','package_name','package_type','description','weekday_partner_net_rate','weekday_markup_type','weekday_markup_value','weekend_partner_net_rate','weekend_markup_type','weekend_markup_value','max_guests','sort_order','start_time','end_time']) {
     villaPackageForm.elements[key].value = row[key] ?? '';
   }
   villaPackageForm.elements.boat_included.value = String(!!row.boat_included);
@@ -1741,21 +1754,24 @@ window.toggleVillaPackage = async function(id, isActive) {
   } catch (error) { alert('Could not update villa package: ' + (error.message || error)); }
 };
 villaPackageProperty?.addEventListener('change', renderVillaPackages);
-['partner_net_rate','markup_type','markup_value'].forEach(key => villaPackageForm?.elements[key]?.addEventListener('input', updateVillaPackagePreview));
+['weekday_partner_net_rate','weekday_markup_type','weekday_markup_value','weekend_partner_net_rate','weekend_markup_type','weekend_markup_value'].forEach(key => villaPackageForm?.elements[key]?.addEventListener('input', updateVillaPackagePreview));
 villaPackageForm?.elements.package_type?.addEventListener('change', updateVillaTimeLabels);
 villaPackageForm?.addEventListener('submit', async function(event) {
   event.preventDefault();
   const button = document.getElementById('saveVillaPackageButton');
   const propertyId = Number(villaPackageProperty.value);
   const fd = new FormData(villaPackageForm);
-  const net = Number(fd.get('partner_net_rate'));
-  const markup = Number(fd.get('markup_value'));
-  const type = String(fd.get('markup_type'));
+  const weekdayNet = Number(fd.get('weekday_partner_net_rate'));
+  const weekdayMarkup = Number(fd.get('weekday_markup_value'));
+  const weekdayType = String(fd.get('weekday_markup_type'));
+  const weekendNet = Number(fd.get('weekend_partner_net_rate'));
+  const weekendMarkup = Number(fd.get('weekend_markup_value'));
+  const weekendType = String(fd.get('weekend_markup_type'));
   const guests = Number(fd.get('max_guests'));
   const packageType = String(fd.get('package_type'));
   if (!propertyId) { villaPackageMessage.textContent = 'Select a villa first.'; return; }
-  if (!Number.isFinite(net) || net <= 0 || !Number.isFinite(markup) || markup < 0 || (type === 'percentage' && markup > 100)) {
-    villaPackageMessage.textContent = 'Enter a valid partner rate and markup. Percentage markup cannot exceed 100%.'; return;
+  if (![weekdayNet, weekendNet].every(v => Number.isFinite(v) && v > 0) || ![weekdayMarkup, weekendMarkup].every(v => Number.isFinite(v) && v >= 0) || (weekdayType === 'percentage' && weekdayMarkup > 100) || (weekendType === 'percentage' && weekendMarkup > 100)) {
+    villaPackageMessage.textContent = 'Enter valid weekday and weekend partner rates and markups. Percentage markup cannot exceed 100%.'; return;
   }
   if (!fd.get('start_time') || !fd.get('end_time') || (packageType === 'day_getaway' && String(fd.get('end_time')) <= String(fd.get('start_time')))) { villaPackageMessage.textContent = packageType === 'day_getaway' ? 'Enter a day access end time later than its start time.' : 'Enter both overnight check-in and check-out times.'; return; }
   if (!Number.isInteger(guests) || guests < 1 || guests > 500) { villaPackageMessage.textContent = 'Maximum guests must be between 1 and 500.'; return; }
@@ -1768,9 +1784,15 @@ villaPackageForm?.addEventListener('submit', async function(event) {
     start_time: String(fd.get('start_time') || ''),
     end_time: String(fd.get('end_time') || ''),
     description: String(fd.get('description') || '').trim() || null,
-    partner_net_rate: net,
-    markup_type: type,
-    markup_value: markup,
+    weekday_partner_net_rate: weekdayNet,
+    weekday_markup_type: weekdayType,
+    weekday_markup_value: weekdayMarkup,
+    weekend_partner_net_rate: weekendNet,
+    weekend_markup_type: weekendType,
+    weekend_markup_value: weekendMarkup,
+    partner_net_rate: weekdayNet,
+    markup_type: weekdayType,
+    markup_value: weekdayMarkup,
     max_guests: guests,
     sort_order: Number(fd.get('sort_order')) || 0
   };
@@ -1785,7 +1807,7 @@ villaPackageForm?.addEventListener('submit', async function(event) {
       const { error } = await sb.from('villa_packages').insert(payload);
       if (error) throw error;
     }
-    villaPackageMessage.textContent = 'Package saved. Customer selling price: ₦' + money(villaRetail(net, type, markup)) + '.';
+    villaPackageMessage.textContent = 'Package saved. Weekday selling price: ₦' + money(villaRetail(weekdayNet, weekdayType, weekdayMarkup)) + '; weekend selling price: ₦' + money(villaRetail(weekendNet, weekendType, weekendMarkup)) + '.';
     resetVillaPackageForm();
     await renderVillaPackages();
   } catch (error) {
