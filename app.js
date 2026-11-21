@@ -80,9 +80,8 @@ async function loadListings(){
   if (hiddenVillaIds.length) {
     supabaseClient
       .from('villa_packages_public')
-      .select('property_id,weekday_customer_rate,sort_order')
+      .select('property_id,weekday_customer_rate')
       .in('property_id', hiddenVillaIds)
-      .order('sort_order', { ascending: true })
       .then(({ data: packages, error: packageError }) => {
         if (packageError) {
           console.error('Could not load public villa package prices:', packageError);
