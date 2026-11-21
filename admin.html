@@ -458,6 +458,11 @@
       <div class="field"><label>Boat option</label><select name="boat_included" required><option value="false">Boat Exclusive — without boat</option><option value="true">Boat Inclusive — 15-seater round trip</option></select></div>
     </div>
     <div class="field"><label>Package name</label><input name="package_name" maxlength="120" required placeholder="e.g. Day Getaway — Boat Inclusive"></div>
+    <div class="grid">
+      <div class="field"><label id="villaStartTimeLabel">Day access starts</label><input name="start_time" type="time" required></div>
+      <div class="field"><label id="villaEndTimeLabel">Day access ends</label><input name="end_time" type="time" required></div>
+    </div>
+    <p class="muted" id="villaTimeHelp">Set the guest access hours for this package. These times will be shown to customers.</p>
     <div class="field"><label>Description (optional)</label><textarea name="description" maxlength="1000" placeholder="Describe what is included in this whole-villa package"></textarea></div>
     <div class="grid">
       <div class="field"><label>Partner net rate (₦) — private</label><input name="partner_net_rate" type="number" min="0.01" step="0.01" required></div>
@@ -1625,6 +1630,15 @@ let villaPackageCache = new Map();
 function villaRetail(net, type, value) {
   return Math.round((type === 'percentage' ? net * (1 + value / 100) : net + value) * 100) / 100;
 }
+function updateVillaTimeLabels() {
+  if (!villaPackageForm) return;
+  const overnight = villaPackageForm.elements.package_type.value === 'overnight_getaway';
+  document.getElementById('villaStartTimeLabel').textContent = overnight ? 'Check-in time' : 'Day access starts';
+  document.getElementById('villaEndTimeLabel').textContent = overnight ? 'Check-out time' : 'Day access ends';
+  document.getElementById('villaTimeHelp').textContent = overnight
+    ? 'Set the overnight check-in and check-out times shown to customers.'
+    : 'Set the day getaway access hours shown to customers.';
+}
 function updateVillaPackagePreview() {
   if (!villaPackageForm) return;
   const net = Number(villaPackageForm.elements.partner_net_rate.value) || 0;
@@ -1645,6 +1659,9 @@ function resetVillaPackageForm() {
   villaPackageForm.elements.markup_value.value = '0';
   villaPackageForm.elements.max_guests.value = '15';
   villaPackageForm.elements.sort_order.value = '0';
+  villaPackageForm.elements.start_time.value = '';
+  villaPackageForm.elements.end_time.value = '';
+  updateVillaTimeLabels();
   document.getElementById('saveVillaPackageButton').textContent = 'Save getaway package';
   document.getElementById('cancelVillaPackageEdit').classList.add('hidden');
   updateVillaPackagePreview();
@@ -1690,12 +1707,12 @@ async function renderVillaPackages() {
       villaPackageList.innerHTML = '<p class="muted">No getaway packages added for this villa yet.</p>';
       return;
     }
-    villaPackageList.innerHTML = '<table class="table"><thead><tr><th>Package</th><th>Partner net</th><th>Markup</th><th>Customer price</th><th>Guests</th><th>Status</th><th>Actions</th></tr></thead><tbody>' + data.map(row => {
+    villaPackageList.innerHTML = '<table class="table"><thead><tr><th>Package</th><th>Partner net</th><th>Markup</th><th>Customer price</th><th>Hours</th><th>Guests</th><th>Status</th><th>Actions</th></tr></thead><tbody>' + data.map(row => {
       const retail = villaRetail(Number(row.partner_net_rate), row.markup_type, Number(row.markup_value));
       const markup = row.markup_type === 'percentage' ? Number(row.markup_value) + '%' : '₦' + money(row.markup_value);
       const typeLabel = row.package_type === 'day_getaway' ? 'Day Getaway' : 'Overnight Getaway';
       const boatLabel = row.boat_included ? 'Boat Inclusive — 15-seater round trip' : 'Boat Exclusive';
-      return '<tr><td><b>' + esc(typeLabel) + '</b><br>' + esc(boatLabel) + '<br><small>' + esc(row.package_name) + '</small></td><td>₦' + money(row.partner_net_rate) + '</td><td>' + esc(markup) + '</td><td><b>₦' + money(retail) + '</b></td><td>' + Number(row.max_guests) + '</td><td>' + (row.is_active ? 'Active' : 'Hidden') + '</td><td><button type="button" onclick="editVillaPackage(\'' + row.id + '\')">Edit</button> <button type="button" onclick="toggleVillaPackage(\'' + row.id + '\',' + (!row.is_active) + ')">' + (row.is_active ? 'Hide' : 'Activate') + '</button></td></tr>';
+      return '<tr><td><b>' + esc(typeLabel) + '</b><br>' + esc(boatLabel) + '<br><small>' + esc(row.package_name) + '</small></td><td>₦' + money(row.partner_net_rate) + '</td><td>' + esc(markup) + '</td><td><b>₦' + money(retail) + '</b></td><td>' + (row.package_type === 'day_getaway' ? 'Access ' : 'In / out ') + esc(String(row.start_time || '').slice(0,5)) + ' – ' + esc(String(row.end_time || '').slice(0,5)) + '</td><td>' + Number(row.max_guests) + '</td><td>' + (row.is_active ? 'Active' : 'Hidden') + '</td><td><button type="button" onclick="editVillaPackage(\'' + row.id + '\')">Edit</button> <button type="button" onclick="toggleVillaPackage(\'' + row.id + '\',' + (!row.is_active) + ')">' + (row.is_active ? 'Hide' : 'Activate') + '</button></td></tr>';
     }).join('') + '</tbody></table>';
   } catch (error) {
     console.error(error);
@@ -1705,10 +1722,11 @@ async function renderVillaPackages() {
 window.editVillaPackage = function(id) {
   const row = villaPackageCache.get(id);
   if (!row) return;
-  for (const key of ['id','package_name','package_type','description','partner_net_rate','markup_type','markup_value','max_guests','sort_order']) {
+  for (const key of ['id','package_name','package_type','description','partner_net_rate','markup_type','markup_value','max_guests','sort_order','start_time','end_time']) {
     villaPackageForm.elements[key].value = row[key] ?? '';
   }
   villaPackageForm.elements.boat_included.value = String(!!row.boat_included);
+  updateVillaTimeLabels();
   document.getElementById('saveVillaPackageButton').textContent = 'Update getaway package';
   document.getElementById('cancelVillaPackageEdit').classList.remove('hidden');
   updateVillaPackagePreview();
@@ -1724,6 +1742,7 @@ window.toggleVillaPackage = async function(id, isActive) {
 };
 villaPackageProperty?.addEventListener('change', renderVillaPackages);
 ['partner_net_rate','markup_type','markup_value'].forEach(key => villaPackageForm?.elements[key]?.addEventListener('input', updateVillaPackagePreview));
+villaPackageForm?.elements.package_type?.addEventListener('change', updateVillaTimeLabels);
 villaPackageForm?.addEventListener('submit', async function(event) {
   event.preventDefault();
   const button = document.getElementById('saveVillaPackageButton');
@@ -1738,6 +1757,7 @@ villaPackageForm?.addEventListener('submit', async function(event) {
   if (!Number.isFinite(net) || net <= 0 || !Number.isFinite(markup) || markup < 0 || (type === 'percentage' && markup > 100)) {
     villaPackageMessage.textContent = 'Enter a valid partner rate and markup. Percentage markup cannot exceed 100%.'; return;
   }
+  if (!fd.get('start_time') || !fd.get('end_time') || (packageType === 'day_getaway' && String(fd.get('end_time')) <= String(fd.get('start_time')))) { villaPackageMessage.textContent = packageType === 'day_getaway' ? 'Enter a day access end time later than its start time.' : 'Enter both overnight check-in and check-out times.'; return; }
   if (!Number.isInteger(guests) || guests < 1 || guests > 500) { villaPackageMessage.textContent = 'Maximum guests must be between 1 and 500.'; return; }
   const boatIncluded = String(fd.get('boat_included')) === 'true';
   const payload = {
@@ -1745,6 +1765,8 @@ villaPackageForm?.addEventListener('submit', async function(event) {
     package_name: String(fd.get('package_name') || '').trim(),
     package_type: packageType,
     boat_included: boatIncluded,
+    start_time: String(fd.get('start_time') || ''),
+    end_time: String(fd.get('end_time') || ''),
     description: String(fd.get('description') || '').trim() || null,
     partner_net_rate: net,
     markup_type: type,
