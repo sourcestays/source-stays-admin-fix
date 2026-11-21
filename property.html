@@ -1093,7 +1093,7 @@ if (isVillaWithPackages) {
       if (!selectedVillaPackage) return;
       requestForm.elements.package_id.value = selectedVillaPackage.id;
       document.getElementById("villaSelectedPackageLabel").textContent =
-        `${selectedVillaPackage.package_name} — weekday ₦${SourceStays.money(selectedVillaPackage.weekday_customer_rate)"} / weekend ₦${SourceStays.money(selectedVillaPackage.weekend_customer_rate)"}`;
+        `${selectedVillaPackage.package_name} — weekday ₦${SourceStays.money(selectedVillaPackage.weekday_customer_rate)} / weekend ₦${SourceStays.money(selectedVillaPackage.weekend_customer_rate)}`;
       const isOvernight = selectedVillaPackage.package_type === "overnight_getaway";
       endDateField.hidden = !isOvernight;
       endDateInput.required = isOvernight;
@@ -1127,7 +1127,7 @@ if (isVillaWithPackages) {
         lines.push(label(date) + ": ₦" + SourceStays.money(rate));
       }
     }
-    villaPricePreview.textContent = "Estimated total: ₦" + SourceStays.money(total) + "\\n" + lines.join("\\n") + "\\nFinal availability and price are subject to Source Stays confirmation.";
+    villaPricePreview.textContent = "Estimated total: ₦" + SourceStays.money(total) + "\n" + lines.join("\n") + "\nFinal availability and price are subject to Source Stays confirmation.";
   }
   startDateInput.addEventListener("change", () => {
     endDateInput.min = startDateInput.value;
