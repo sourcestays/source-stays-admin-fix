@@ -832,7 +832,7 @@ ${hasPricingBreakdown || hasPaymentPlan || (isSaleListing && feesDueLater) ? `
                     <article style="padding:16px;background:#fff;border:1px solid #e1e8e1;border-radius:12px;">
                       <h4 style="margin:0 0 7px;color:#123f32;">${SourceStays.esc(pkg.package_name)}</h4>
                       <p style="margin:0 0 8px;color:#68736c;font-size:13px;">${pkg.package_type === 'day_getaway' ? 'Day Getaway' : 'Overnight Getaway'} · ${pkg.boat_included ? 'Boat Inclusive' : 'Boat Exclusive'}</p>
-                      <strong style="display:block;color:#123f32;font-size:21px;margin-bottom:8px;">₦${SourceStays.money(pkg.customer_rate)}</strong>
+                      <div style="display:grid;gap:4px;margin:0 0 10px;color:#123f32;"><strong>Mon–Thu: ₦${SourceStays.money(pkg.weekday_customer_rate)}</strong><strong>Fri–Sun: ₦${SourceStays.money(pkg.weekend_customer_rate)}</strong></div>
                       <p style="margin:0 0 8px;font-size:13px;">${pkg.boat_included ? 'Includes one 15-seater boat for a round trip.' : 'Boat not included.'}</p>
                       <p style="margin:0 0 12px;font-size:13px;color:#68736c;">${pkg.package_type === 'day_getaway' ? 'Access hours' : 'Check-in / check-out'}: ${String(pkg.start_time || '').slice(0,5)} – ${String(pkg.end_time || '').slice(0,5)}</p>
                       <p style="margin:0 0 12px;font-size:13px;color:#68736c;">Maximum ${Number(pkg.max_guests)} guests</p>
@@ -1093,21 +1093,48 @@ if (isVillaWithPackages) {
       if (!selectedVillaPackage) return;
       requestForm.elements.package_id.value = selectedVillaPackage.id;
       document.getElementById("villaSelectedPackageLabel").textContent =
-        `${selectedVillaPackage.package_name} — ₦${SourceStays.money(selectedVillaPackage.customer_rate)}`;
+        `${selectedVillaPackage.package_name} — weekday ₦${SourceStays.money(selectedVillaPackage.weekday_customer_rate)"} / weekend ₦${SourceStays.money(selectedVillaPackage.weekend_customer_rate)"}`;
       const isOvernight = selectedVillaPackage.package_type === "overnight_getaway";
       endDateField.hidden = !isOvernight;
       endDateInput.required = isOvernight;
       endDateInput.value = "";
       endDateInput.min = startDateInput.value || startDateInput.min;
       requestPanel.hidden = false;
+      calculateVillaEstimate();
       requestPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
   });
 
+  const villaPricePreview = document.createElement("p");
+  villaPricePreview.id = "villaPricePreview";
+  villaPricePreview.className = "muted";
+  villaPricePreview.style.cssText = "padding:12px;background:#f3f6f2;border-radius:8px;white-space:pre-line;";
+  endDateField.insertAdjacentElement("afterend", villaPricePreview);
+  function calculateVillaEstimate() {
+    if (!selectedVillaPackage || !startDateInput.value) { villaPricePreview.textContent = "Choose your date(s) to see an estimated price."; return; }
+    const pkg = selectedVillaPackage, weekday = Number(pkg.weekday_customer_rate), weekend = Number(pkg.weekend_customer_rate);
+    if (!(weekday > 0) || !(weekend > 0)) { villaPricePreview.textContent = "Pricing is being updated. Please contact Source Stays for a quotation."; return; }
+    const parse = value => { const parts = value.split("-").map(Number); return new Date(parts[0], parts[1]-1, parts[2]); };
+    const label = date => date.toLocaleDateString("en-NG",{weekday:"short",day:"numeric",month:"short"});
+    const lines = []; let total = 0;
+    if (pkg.package_type === "day_getaway") {
+      const date = parse(startDateInput.value), rate = date.getDay() >= 5 ? weekend : weekday;
+      total = rate; lines.push(label(date) + ": ₦" + SourceStays.money(rate));
+    } else {
+      if (!endDateInput.value || endDateInput.value <= startDateInput.value) { villaPricePreview.textContent = "Choose a check-out date after check-in to calculate the total."; return; }
+      for (let date = parse(startDateInput.value); date < parse(endDateInput.value); date.setDate(date.getDate()+1)) {
+        const rate = date.getDay() >= 5 ? weekend : weekday; total += rate;
+        lines.push(label(date) + ": ₦" + SourceStays.money(rate));
+      }
+    }
+    villaPricePreview.textContent = "Estimated total: ₦" + SourceStays.money(total) + "\\n" + lines.join("\\n") + "\\nFinal availability and price are subject to Source Stays confirmation.";
+  }
   startDateInput.addEventListener("change", () => {
     endDateInput.min = startDateInput.value;
     if (endDateInput.value && endDateInput.value <= startDateInput.value) endDateInput.value = "";
+    calculateVillaEstimate();
   });
+  endDateInput.addEventListener("change", calculateVillaEstimate);
 
   requestForm.addEventListener("submit", async event => {
     event.preventDefault();
@@ -1601,7 +1628,7 @@ setPropertySeo(property, propertyImages[0] || "");
         if (String(property.category || "").toLowerCase() === "shortlet") {
           const { data: villaData, error: villaError } = await SourceStays.supabase
             .from("villa_packages_public")
-            .select("id, property_id, package_name, package_type, boat_included, description, boat_description, customer_rate, max_guests, sort_order, start_time, end_time")
+            .select("id, property_id, package_name, package_type, boat_included, description, boat_description, weekday_customer_rate, weekend_customer_rate, max_guests, sort_order, start_time, end_time")
             .eq("property_id", propertyId)
             .order("sort_order", { ascending: true });
           if (villaError) {
