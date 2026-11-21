@@ -17,7 +17,7 @@ function optimizedPropertyImageUrl(value, width=720, quality=72){
 }
 async function getListings(){
  const type=document.getElementById('type')?.value||'all', locationValue=document.getElementById('location')?.value||'';
- let q=supabaseClient.from('properties').select('id,title,category,price,price_period,location,bedrooms,guests,amenities,image_url,featured,published,owner_identity_verified,physical_inspection_verified').eq('published',true).order('featured',{ascending:false}).order('id',{ascending:false});
+ let q=supabaseClient.from('properties').select('id,title,public_title,category,price,price_period,location,public_location,bedrooms,guests,amenities,image_url,featured,published,owner_identity_verified,physical_inspection_verified,hide_partner_identity').eq('published',true).order('featured',{ascending:false}).order('id',{ascending:false});
  if(type==='realestate') q=q.in('category',['sale','land','rent']);
  else if(type!=='all') q=q.eq('category',type);
  if(locationValue) q=q.ilike('location',`%${locationValue}%`);
@@ -53,12 +53,15 @@ async function loadListings(){
    const visibleItems = items.slice(0, listingsVisibleCount);
    box.innerHTML = visibleItems.length ? visibleItems.map(p => {
     const isHotel = String(p.category || '').toLowerCase() === 'hotel';
+    const publicTitle = p.hide_partner_identity ? (p.public_title || 'Luxury Private Getaway') : p.title;
+    const publicLocation = p.hide_partner_identity ? (p.public_location || 'Lagos') : p.location;
+    const publicPriceAvailable = isHotel || !p.hide_partner_identity;
     const priceLabel = isHotel
       ? 'View room rates'
-      : '₦' + money(p.price) + ' / ' + esc(p.price_period || 'per night');
+      : (publicPriceAvailable && Number(p.price) > 0 ? '₦' + money(p.price) + ' / ' + esc(p.price_period || 'per night') : 'View Packages');
 
     const imageUrl = optimizedPropertyImageUrl(p.image_url);
-    return `<article class="card"><div class="photo"><img src="${esc(imageUrl)}" alt="${esc(p.title || 'Source Stays property')}" width="640" height="420" loading="lazy" decoding="async"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(p.title)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(p.location||'Lagos')}${p.category === 'land' ? ' • Land' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)'}</div><div class="price"${isHotel ? ' data-hotel-price-for="' + esc(p.id) + '"' : ''}>${priceLabel}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`;
+    return `<article class="card"><div class="photo"><img src="${esc(imageUrl)}" alt="${esc(publicTitle || 'Source Stays property')}" width="640" height="420" loading="lazy" decoding="async"></div><div class="body"><div class="eyebrow">${esc(p.category||'shortlet')}</div><h3>${esc(publicTitle)}</h3><div class="verification-badges">${p.owner_identity_verified?'<span class="verification-badge">✓ Source Verified</span>':''}${p.physical_inspection_verified?'<span class="verification-badge">✓ Physical Inspection Completed</span>':''}</div><div class="meta">${esc(publicLocation||'Lagos')}${p.category === 'land' ? ' • Land' : (p.hide_partner_identity ? '' : ' • ' + (p.bedrooms||0) + ' bedroom(s) • ' + (p.guests||0) + ' guest(s)')}</div><div class="price"${isHotel ? ' data-hotel-price-for="' + esc(p.id) + '"' : ''}>${priceLabel}</div><div class="row"><span class="muted">${esc(p.amenities||'Quality service')}</span><a class="btn dark" href="property.html?id=${p.id}">View</a></div></div></article>`;
   }).join('') : '<p>No matching listings yet. Try another location or contact Source Stays.';
    const moreButton = document.getElementById('loadMoreListings');
    if (moreButton) moreButton.hidden = listingsVisibleCount >= items.length;
