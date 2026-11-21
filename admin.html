@@ -442,6 +442,46 @@
 <button class="btn gold">Save property</button>
 </form></section></div>
   
+
+<section class="box" id="villaPackageManagement">
+  <h3>Villa Getaway Packages</h3>
+  <p class="muted">Manage whole-villa Day Getaway and Overnight Getaway prices. Bedrooms are facilities within the villa, not separately bookable rooms. Partner net rates and markup are private to Source Stays.</p>
+  <div class="notice">Only select actual villa listings here. Boat Inclusive includes one 15-seater boat for a round trip. Special Events are quotation-only and are not priced in this section.</div>
+  <div class="field">
+    <label for="villaPackageProperty">Select villa</label>
+    <select id="villaPackageProperty"><option value="">Loading shortlet properties...</option></select>
+  </div>
+  <form id="villaPackageForm" class="hidden">
+    <input type="hidden" name="id">
+    <div class="grid">
+      <div class="field"><label>Getaway type</label><select name="package_type" required><option value="day_getaway">Day Getaway</option><option value="overnight_getaway">Overnight Getaway</option></select></div>
+      <div class="field"><label>Boat option</label><select name="boat_included" required><option value="false">Boat Exclusive — without boat</option><option value="true">Boat Inclusive — 15-seater round trip</option></select></div>
+    </div>
+    <div class="field"><label>Package name</label><input name="package_name" maxlength="120" required placeholder="e.g. Day Getaway — Boat Inclusive"></div>
+    <div class="field"><label>Description (optional)</label><textarea name="description" maxlength="1000" placeholder="Describe what is included in this whole-villa package"></textarea></div>
+    <div class="grid">
+      <div class="field"><label>Partner net rate (₦) — private</label><input name="partner_net_rate" type="number" min="0.01" step="0.01" required></div>
+      <div class="field"><label>Markup type</label><select name="markup_type"><option value="fixed">Fixed amount (₦)</option><option value="percentage">Percentage (%)</option></select></div>
+      <div class="field"><label>Markup value</label><input name="markup_value" type="number" min="0" step="0.01" value="0" required></div>
+      <div class="field"><label>Maximum guests for this package</label><input name="max_guests" type="number" min="1" max="500" value="15" required></div>
+      <div class="field"><label>Display order</label><input name="sort_order" type="number" step="1" value="0"></div>
+    </div>
+    <p id="villaPackagePreview" class="notice">Customer selling price preview will appear here.</p>
+    <button class="btn gold" type="submit" id="saveVillaPackageButton">Save getaway package</button>
+    <button class="btn hidden" type="button" id="cancelVillaPackageEdit">Cancel edit</button>
+    <p id="villaPackageMessage" class="muted" aria-live="polite"></p>
+  </form>
+  <hr>
+  <div id="villaPackageList"><p class="muted">Select a villa to manage its getaway packages.</p></div>
+</section>
+
+<section class="box" id="villaRequestManagement">
+  <h3>Villa Getaway Enquiries</h3>
+  <p class="muted">Review Day Getaway and Overnight Getaway requests. Confirm availability with the partner before offering payment instructions. Changing a request to availability confirmed does not collect payment or confirm a booking.</p>
+  <button type="button" class="btn dark" id="refreshVillaRequests">Refresh Villa Enquiries</button>
+  <div id="villaRequestList" style="margin-top:14px"><p class="muted">Villa enquiries will appear here.</p></div>
+</section>
+
 <section class="box" id="hotelRoomManagement">
   <h3>Hotel Room Categories & Rates</h3>
   <p class="muted">Manage each hotel's room classes separately. Hotel net rates and markup are private to Source Stays admins; only the calculated customer rate will be shown publicly.</p>
@@ -625,6 +665,8 @@ function showDash(){
   loadPartnerSaleProperties();
   loadPartnerSales();
   loadHotelRoomCategories();
+  loadVillaPackages();
+  loadVillaBookingRequests();
   loadHotelAvailabilityRequests();
 }
 function getClient(){
@@ -1569,6 +1611,207 @@ hotelRoomForm?.addEventListener('submit',async function(event){
   }finally{button.disabled=false;button.textContent=id?'Update room category':'Save room category';}
 });
 document.getElementById('cancelHotelRoomEdit')?.addEventListener('click',resetHotelRoomForm);
+
+
+// =====================================================
+// VILLA GETAWAY PACKAGE MANAGEMENT
+// =====================================================
+const villaPackageProperty = document.getElementById('villaPackageProperty');
+const villaPackageForm = document.getElementById('villaPackageForm');
+const villaPackageList = document.getElementById('villaPackageList');
+const villaPackageMessage = document.getElementById('villaPackageMessage');
+let villaPackageCache = new Map();
+
+function villaRetail(net, type, value) {
+  return Math.round((type === 'percentage' ? net * (1 + value / 100) : net + value) * 100) / 100;
+}
+function updateVillaPackagePreview() {
+  if (!villaPackageForm) return;
+  const net = Number(villaPackageForm.elements.partner_net_rate.value) || 0;
+  const type = villaPackageForm.elements.markup_type.value;
+  const value = Number(villaPackageForm.elements.markup_value.value) || 0;
+  const retail = villaRetail(net, type, value);
+  document.getElementById('villaPackagePreview').textContent = net > 0
+    ? 'Customer selling price: ₦' + money(retail) + '. This preview is admin-only.'
+    : 'Enter the partner net rate and markup to preview the customer selling price.';
+}
+function resetVillaPackageForm() {
+  if (!villaPackageForm) return;
+  villaPackageForm.reset();
+  villaPackageForm.elements.id.value = '';
+  villaPackageForm.elements.package_type.value = 'day_getaway';
+  villaPackageForm.elements.boat_included.value = 'false';
+  villaPackageForm.elements.markup_type.value = 'fixed';
+  villaPackageForm.elements.markup_value.value = '0';
+  villaPackageForm.elements.max_guests.value = '15';
+  villaPackageForm.elements.sort_order.value = '0';
+  document.getElementById('saveVillaPackageButton').textContent = 'Save getaway package';
+  document.getElementById('cancelVillaPackageEdit').classList.add('hidden');
+  updateVillaPackagePreview();
+}
+function populateVillaPropertySelect(properties) {
+  if (!villaPackageProperty) return;
+  const previous = villaPackageProperty.value;
+  const candidates = (properties || []).filter(p => String(p.category || '').toLowerCase() === 'shortlet');
+  villaPackageProperty.innerHTML = '<option value="">Choose a villa listing</option>' + candidates.map(p =>
+    '<option value="' + Number(p.id) + '">' + esc(p.title || ('Property #' + p.id)) + ' — ' + esc(p.location || '') + '</option>'
+  ).join('');
+  if (previous && candidates.some(p => String(p.id) === previous)) villaPackageProperty.value = previous;
+}
+async function loadVillaPackages() {
+  if (!villaPackageProperty) return;
+  try {
+    const { data, error } = await getClient().from('properties')
+      .select('id,title,location,category').eq('category', 'shortlet')
+      .order('id', { ascending: false });
+    if (error) throw error;
+    populateVillaPropertySelect(data || []);
+    await renderVillaPackages();
+  } catch (error) {
+    console.error('Villa property list failed:', error);
+    villaPackageList.innerHTML = '<p class="danger">Could not load villa listings: ' + esc(error.message || error) + '</p>';
+  }
+}
+async function renderVillaPackages() {
+  const propertyId = Number(villaPackageProperty.value);
+  resetVillaPackageForm();
+  villaPackageForm.classList.toggle('hidden', !propertyId);
+  if (!propertyId) {
+    villaPackageList.innerHTML = '<p class="muted">Select a villa listing to manage its packages.</p>';
+    return;
+  }
+  villaPackageList.innerHTML = '<p class="muted">Loading getaway packages…</p>';
+  try {
+    const { data, error } = await getClient().from('villa_packages').select('*')
+      .eq('property_id', propertyId).order('sort_order').order('created_at');
+    if (error) throw error;
+    villaPackageCache = new Map((data || []).map(row => [row.id, row]));
+    if (!data?.length) {
+      villaPackageList.innerHTML = '<p class="muted">No getaway packages added for this villa yet.</p>';
+      return;
+    }
+    villaPackageList.innerHTML = '<table class="table"><thead><tr><th>Package</th><th>Partner net</th><th>Markup</th><th>Customer price</th><th>Guests</th><th>Status</th><th>Actions</th></tr></thead><tbody>' + data.map(row => {
+      const retail = villaRetail(Number(row.partner_net_rate), row.markup_type, Number(row.markup_value));
+      const markup = row.markup_type === 'percentage' ? Number(row.markup_value) + '%' : '₦' + money(row.markup_value);
+      const typeLabel = row.package_type === 'day_getaway' ? 'Day Getaway' : 'Overnight Getaway';
+      const boatLabel = row.boat_included ? 'Boat Inclusive — 15-seater round trip' : 'Boat Exclusive';
+      return '<tr><td><b>' + esc(typeLabel) + '</b><br>' + esc(boatLabel) + '<br><small>' + esc(row.package_name) + '</small></td><td>₦' + money(row.partner_net_rate) + '</td><td>' + esc(markup) + '</td><td><b>₦' + money(retail) + '</b></td><td>' + Number(row.max_guests) + '</td><td>' + (row.is_active ? 'Active' : 'Hidden') + '</td><td><button type="button" onclick="editVillaPackage(\'' + row.id + '\')">Edit</button> <button type="button" onclick="toggleVillaPackage(\'' + row.id + '\',' + (!row.is_active) + ')">' + (row.is_active ? 'Hide' : 'Activate') + '</button></td></tr>';
+    }).join('') + '</tbody></table>';
+  } catch (error) {
+    console.error(error);
+    villaPackageList.innerHTML = '<p class="danger">Could not load villa packages: ' + esc(error.message || error) + '</p>';
+  }
+}
+window.editVillaPackage = function(id) {
+  const row = villaPackageCache.get(id);
+  if (!row) return;
+  for (const key of ['id','package_name','package_type','description','partner_net_rate','markup_type','markup_value','max_guests','sort_order']) {
+    villaPackageForm.elements[key].value = row[key] ?? '';
+  }
+  villaPackageForm.elements.boat_included.value = String(!!row.boat_included);
+  document.getElementById('saveVillaPackageButton').textContent = 'Update getaway package';
+  document.getElementById('cancelVillaPackageEdit').classList.remove('hidden');
+  updateVillaPackagePreview();
+  villaPackageForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+window.toggleVillaPackage = async function(id, isActive) {
+  if (!confirm((isActive ? 'Activate' : 'Hide') + ' this villa package?')) return;
+  try {
+    const { error } = await getClient().from('villa_packages').update({ is_active: isActive }).eq('id', id);
+    if (error) throw error;
+    await renderVillaPackages();
+  } catch (error) { alert('Could not update villa package: ' + (error.message || error)); }
+};
+villaPackageProperty?.addEventListener('change', renderVillaPackages);
+['partner_net_rate','markup_type','markup_value'].forEach(key => villaPackageForm?.elements[key]?.addEventListener('input', updateVillaPackagePreview));
+villaPackageForm?.addEventListener('submit', async function(event) {
+  event.preventDefault();
+  const button = document.getElementById('saveVillaPackageButton');
+  const propertyId = Number(villaPackageProperty.value);
+  const fd = new FormData(villaPackageForm);
+  const net = Number(fd.get('partner_net_rate'));
+  const markup = Number(fd.get('markup_value'));
+  const type = String(fd.get('markup_type'));
+  const guests = Number(fd.get('max_guests'));
+  const packageType = String(fd.get('package_type'));
+  if (!propertyId) { villaPackageMessage.textContent = 'Select a villa first.'; return; }
+  if (!Number.isFinite(net) || net <= 0 || !Number.isFinite(markup) || markup < 0 || (type === 'percentage' && markup > 100)) {
+    villaPackageMessage.textContent = 'Enter a valid partner rate and markup. Percentage markup cannot exceed 100%.'; return;
+  }
+  if (!Number.isInteger(guests) || guests < 1 || guests > 500) { villaPackageMessage.textContent = 'Maximum guests must be between 1 and 500.'; return; }
+  const boatIncluded = String(fd.get('boat_included')) === 'true';
+  const payload = {
+    property_id: propertyId,
+    package_name: String(fd.get('package_name') || '').trim(),
+    package_type: packageType,
+    boat_included: boatIncluded,
+    description: String(fd.get('description') || '').trim() || null,
+    partner_net_rate: net,
+    markup_type: type,
+    markup_value: markup,
+    max_guests: guests,
+    sort_order: Number(fd.get('sort_order')) || 0
+  };
+  const id = String(fd.get('id') || '').trim();
+  button.disabled = true; button.textContent = 'Saving…'; villaPackageMessage.textContent = '';
+  try {
+    const sb = getClient();
+    if (id) {
+      const { error } = await sb.from('villa_packages').update(payload).eq('id', id);
+      if (error) throw error;
+    } else {
+      const { error } = await sb.from('villa_packages').insert(payload);
+      if (error) throw error;
+    }
+    villaPackageMessage.textContent = 'Package saved. Customer selling price: ₦' + money(villaRetail(net, type, markup)) + '.';
+    resetVillaPackageForm();
+    await renderVillaPackages();
+  } catch (error) {
+    console.error(error);
+    villaPackageMessage.textContent = 'Could not save villa package: ' + (error.message || error);
+  } finally {
+    button.disabled = false;
+    button.textContent = id ? 'Update getaway package' : 'Save getaway package';
+  }
+});
+document.getElementById('cancelVillaPackageEdit')?.addEventListener('click', resetVillaPackageForm);
+
+async function loadVillaBookingRequests() {
+  const container = document.getElementById('villaRequestList');
+  if (!container) return;
+  container.innerHTML = '<p class="muted">Loading villa enquiries…</p>';
+  try {
+    const { data, error } = await getClient().from('villa_booking_requests').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    const ids = [...new Set((data || []).map(row => Number(row.property_id)).filter(Boolean))];
+    let properties = [];
+    if (ids.length) {
+      const { data: p, error: pe } = await getClient().from('properties').select('id,title,location').in('id', ids);
+      if (pe) throw pe;
+      properties = p || [];
+    }
+    const propertyMap = new Map(properties.map(p => [Number(p.id), p]));
+    if (!data?.length) { container.innerHTML = '<p class="muted">No villa enquiries yet.</p>'; return; }
+    container.innerHTML = '<table class="table"><thead><tr><th>Customer</th><th>Villa / package</th><th>Dates</th><th>Guests</th><th>Message</th><th>Status / admin notes</th></tr></thead><tbody>' + data.map(row => {
+      const property = propertyMap.get(Number(row.property_id));
+      return '<tr><td><b>' + esc(row.customer_name) + '</b><br>' + esc(row.customer_phone) + (row.customer_email ? '<br>' + esc(row.customer_email) : '') + '<br><a target="_blank" rel="noopener" href="https://wa.me/' + phoneForWhatsApp(row.customer_phone) + '">WhatsApp</a></td><td><b>' + esc(property?.title || ('Property #' + row.property_id)) + '</b><br><small>' + esc(property?.location || '') + '</small><br><small>Package ID: ' + esc(row.package_id) + '</small></td><td>' + esc(row.preferred_start_date) + (row.preferred_end_date ? ' → ' + esc(row.preferred_end_date) : ' (day use)') + '</td><td>' + Number(row.guest_count) + '</td><td>' + esc(row.message || '—') + '</td><td><select data-villa-status="' + Number(row.id) + '"><option value="pending" ' + (row.status === 'pending' ? 'selected' : '') + '>Pending</option><option value="availability_confirmed" ' + (row.status === 'availability_confirmed' ? 'selected' : '') + '>Availability confirmed</option><option value="declined" ' + (row.status === 'declined' ? 'selected' : '') + '>Declined</option><option value="cancelled" ' + (row.status === 'cancelled' ? 'selected' : '') + '>Cancelled</option><option value="completed" ' + (row.status === 'completed' ? 'selected' : '') + '>Completed</option></select><textarea data-villa-notes="' + Number(row.id) + '" rows="2" placeholder="Private admin notes">' + esc(row.admin_notes || '') + '</textarea><button type="button" class="btn" onclick="saveVillaRequest(' + Number(row.id) + ')">Save</button></td></tr>';
+    }).join('') + '</tbody></table>';
+  } catch (error) {
+    console.error(error);
+    container.innerHTML = '<p class="danger">Could not load villa enquiries: ' + esc(error.message || error) + '</p>';
+  }
+}
+window.saveVillaRequest = async function(id) {
+  const status = document.querySelector('[data-villa-status="' + id + '"]')?.value;
+  const admin_notes = document.querySelector('[data-villa-notes="' + id + '"]')?.value || null;
+  if (!status) return;
+  try {
+    const { error } = await getClient().from('villa_booking_requests').update({ status, admin_notes, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) throw error;
+    await loadVillaBookingRequests();
+  } catch (error) { alert('Could not update villa enquiry: ' + (error.message || error)); }
+};
+document.getElementById('refreshVillaRequests')?.addEventListener('click', loadVillaBookingRequests);
 
 async function load(){
  try{
