@@ -25,6 +25,7 @@ export default function DivisionScreen() {
   const [error, setError] = useState("");
   const [location, setLocation] = useState("");
   const [filter, setFilter] = useState("all");
+  const [startingPrices, setStartingPrices] = useState<Record<string, number>>({});
 
   useEffect(() => {
     let active = true;
@@ -42,8 +43,22 @@ export default function DivisionScreen() {
       } else query = query.eq("category", type);
       const { data, error: queryError } = await query;
       if (!active) return;
-      if (queryError) setError("We couldn't load listings right now. Please try again later.");
-      else setItems((data || []) as Listing[]);
+      if (queryError) setError("Unable to load listings right now. Please try again later.");
+      else {
+        const rows = (data || []) as Listing[];
+        setItems(rows);
+        const hotelIds = rows.filter(p => p.category === "hotel").map(p => p.id);
+        const packageIds = rows.filter(p => p.category !== "hotel" && Number(p.price) <= 0).map(p => p.id);
+        const [hotelRates, packageRates] = await Promise.all([
+          hotelIds.length ? supabase.from("hotel_room_categories_public").select("property_id,customer_rate").in("property_id", hotelIds) : Promise.resolve({ data: [], error: null }),
+          packageIds.length ? supabase.from("villa_packages_public").select("property_id,weekday_customer_rate").in("property_id", packageIds) : Promise.resolve({ data: [], error: null })
+        ]);
+        if (!active) return;
+        const prices: Record<string, number> = {};
+        (hotelRates.data || []).forEach((row: any) => { const key = String(row.property_id), value = Number(row.customer_rate); if (Number.isFinite(value) && value > 0) prices[key] = prices[key] ? Math.min(prices[key], value) : value; });
+        (packageRates.data || []).forEach((row: any) => { const key = String(row.property_id), value = Number(row.weekday_customer_rate); if (Number.isFinite(value) && value > 0) prices[key] = prices[key] ? Math.min(prices[key], value) : value; });
+        setStartingPrices(prices);
+      }
       setLoading(false);
     }
     load();
@@ -86,7 +101,7 @@ export default function DivisionScreen() {
                     <Text style={styles.location}>{place}{!hidden && item.bedrooms ? " · " + item.bedrooms + " bedroom(s)" : ""}</Text>
                     {!!item.owner_identity_verified && <Text style={styles.verified}>✓ Source Verified</Text>}
                     {!!item.physical_inspection_verified && <Text style={styles.verified}>✓ Physical inspection completed</Text>}
-                    <Text style={styles.price}>{type === "hotel" ? "View room rates" : Number(item.price) > 0 ? "₦" + Number(item.price).toLocaleString("en-NG") + " / " + (item.price_period || "night") : "Enquire for rates"}</Text>
+                    <Text style={styles.price}>{type === "hotel" ? (startingPrices[String(item.id)] ? "From ₦" + startingPrices[String(item.id)].toLocaleString("en-NG") + " / night" : "View room rates") : Number(item.price) > 0 ? "₦" + Number(item.price).toLocaleString("en-NG") + " / " + (item.price_period || "night") : startingPrices[String(item.id)] ? "From ₦" + startingPrices[String(item.id)].toLocaleString("en-NG") + " / night" : "Enquire for rates"}</Text>
                     <Text style={styles.open}>View details  →</Text>
                   </View>
                 </Pressable>
