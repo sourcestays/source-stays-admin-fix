@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { isSupabaseConfigured, supabase } from "@/src/lib/supabase";
 
@@ -44,7 +44,7 @@ export default function HomeScreen() {
             <Text style={styles.brand}>SOURCE <Text style={styles.gold}>STAYS</Text></Text>
             <Text style={styles.tagline}>STAYS · SPACES · OPPORTUNITIES</Text>
           </View>
-          <Pressable accessibilityRole="button" style={styles.account}><Text style={styles.accountText}>Sign in</Text></Pressable>
+          <View style={styles.account}><Text style={styles.accountText}>Sign in</Text></View>
         </View>
 
         <View style={styles.hero}>
@@ -61,7 +61,7 @@ export default function HomeScreen() {
 
         <View style={styles.grid}>
           {divisions.map((item) => (
-            <Pressable key={item.category} style={styles.tile} accessibilityRole="button" accessibilityLabel={item.title}>
+            <View key={item.category} style={styles.tile}>
               <View style={styles.tileIcon}><Text style={styles.tileIconText}>{item.icon}</Text></View>
               <Text style={styles.tileTitle}>{item.title}</Text>
               <Text style={styles.tileCopy}>{item.subtitle}</Text>
