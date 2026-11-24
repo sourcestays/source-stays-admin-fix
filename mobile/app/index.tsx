@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link } from "expo-router";
 import { isSupabaseConfigured, supabase } from "@/src/lib/supabase";
@@ -45,7 +45,7 @@ export default function HomeScreen() {
             <Text style={styles.brand}>SOURCE <Text style={styles.gold}>STAYS</Text></Text>
             <Text style={styles.tagline}>STAYS · SPACES · OPPORTUNITIES</Text>
           </View>
-          <View style={styles.account}><Text style={styles.accountText}>Sign in</Text></View>
+          <Link href="/account" asChild><Pressable style={styles.account}><Text style={styles.accountText}>Sign in</Text></Pressable></Link>
         </View>
 
         <View style={styles.hero}>
@@ -62,12 +62,12 @@ export default function HomeScreen() {
 
         <View style={styles.grid}>
           {divisions.map((item) => (
-            <Link key={item.category} href={item.category === "rewards" ? "/rewards" : { pathname: "/division/[type]", params: { type: item.category } }} asChild><View style={styles.tile}>
+            <Link key={item.category} href={item.category === "rewards" ? "/rewards" : { pathname: "/division/[type]", params: { type: item.category } }} asChild><Pressable style={styles.tile}>
               <View style={styles.tileIcon}><Text style={styles.tileIconText}>{item.icon}</Text></View>
               <Text style={styles.tileTitle}>{item.title}</Text>
               <Text style={styles.tileCopy}>{item.subtitle}</Text>
               <Text style={styles.arrow}>Explore  →</Text>
-            </View></Link>
+            </Pressable></Link>
           ))}
         </View>
 
