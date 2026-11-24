@@ -66,7 +66,7 @@ export default function HomeScreen() {
               <Text style={styles.tileTitle}>{item.title}</Text>
               <Text style={styles.tileCopy}>{item.subtitle}</Text>
               <Text style={styles.arrow}>Explore  →</Text>
-            </Pressable>
+            </View>
           ))}
         </View>
 
