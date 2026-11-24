@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Link } from "expo-router";
 import { isSupabaseConfigured, supabase } from "@/src/lib/supabase";
 
 const divisions = [
@@ -61,12 +62,12 @@ export default function HomeScreen() {
 
         <View style={styles.grid}>
           {divisions.map((item) => (
-            <View key={item.category} style={styles.tile}>
+            <Link key={item.category} href={item.category === "rewards" ? "/rewards" : { pathname: "/division/[type]", params: { type: item.category } }} asChild><View style={styles.tile}>
               <View style={styles.tileIcon}><Text style={styles.tileIconText}>{item.icon}</Text></View>
               <Text style={styles.tileTitle}>{item.title}</Text>
               <Text style={styles.tileCopy}>{item.subtitle}</Text>
               <Text style={styles.arrow}>Explore  →</Text>
-            </View>
+            </View></Link>
           ))}
         </View>
 
