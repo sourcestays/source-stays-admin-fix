@@ -34,6 +34,17 @@ export default function PropertyScreen() {
 
   useEffect(() => {
     let active = true;
+    async function loadProfile() {
+      if (!supabase) return;
+      const { data } = await supabase.auth.getUser();
+      if (!data.user || !active) return;
+      const { data: profile } = await supabase.from("customer_profiles")
+        .select("full_name,phone").eq("id", data.user.id).maybeSingle();
+      if (!active) return;
+      setCustomerName(current => current || String(profile?.full_name || data.user.user_metadata?.full_name || ""));
+      setCustomerPhone(current => current || String(profile?.phone || data.user.user_metadata?.phone || ""));
+    }
+    loadProfile();
     async function load() {
       if (!supabase) {
         setError("Connect the Source Stays backend to view this listing.");
@@ -109,29 +120,34 @@ export default function PropertyScreen() {
         customer_phone: customerPhone.trim(),
         room_category_id: selectedRoomId,
         room_category: rooms.find(room => room.id === selectedRoomId)?.room_name || "Selected room",
-        check_in: checkIn,
-        check_out: checkOut,
+        check_in: normalizedCheckIn,
+        check_out: normalizedCheckOut,
         rooms_requested: roomsRequested,
         guests,
         customer_note: customerNote.trim() || null,
       }).select("request_ref").single();
       if (insertError) throw insertError;
+      let notificationWarning = "";
+      try {
+        const { error: notificationError } = await supabase.functions.invoke(
+          "notify-hotel-availability-request",
+          { body: { request_ref: data.request_ref } }
+        );
+        if (notificationError) {
+          console.warn("Hotel request saved, but admin email notification failed:", notificationError);
+          notificationWarning = " Your request is saved, but our email alert could not be sent. Our team can still review it in the admin dashboard.";
+        }
+      } catch (notificationError) {
+        console.warn("Hotel request saved, but admin email notification failed:", notificationError);
+        notificationWarning = " Your request is saved, but our email alert could not be sent. Our team can still review it in the admin dashboard.";
+      }
       setRequestSuccess(true);
-      setRequestMessage("Availability request submitted. Your reference is " + data.request_ref + ". Source Stays will confirm with the hotel before any payment is requested.");
+      setRequestMessage("Availability request submitted. Your reference is " + data.request_ref + ". Source Stays will confirm with the hotel before any payment is requested." + notificationWarning);
     } catch (e) {
       setRequestMessage(e instanceof Error ? e.message : "Unable to submit your request. Please try again.");
     } finally {
       setRequestBusy(false);
     }
-  }
-
-  async function prepareHotelRequest() {
-    if (!supabase) return;
-    const { data } = await supabase.auth.getUser();
-    if (!data.user) return;
-    const { data: profile } = await supabase.from("customer_profiles").select("full_name,phone").eq("id", data.user.id).maybeSingle();
-    setCustomerName(String(profile?.full_name || data.user.user_metadata?.full_name || ""));
-    setCustomerPhone(String(profile?.phone || data.user.user_metadata?.phone || ""));
   }
 
   const whatsapp = () => Linking.openURL("https://wa.me/2347085404814?text=" + encodeURIComponent("Hello Source Stays, I am interested in " + title + " (listing " + id + "). Please assist me."));
@@ -172,7 +188,7 @@ export default function PropertyScreen() {
                 <View style={styles.half}><Text style={styles.label}>Guests</Text><TextInput value={guestCount} onChangeText={setGuestCount} keyboardType="number-pad" style={styles.input} /></View>
               </View>
               <Text style={styles.label}>Your full name</Text>
-              <TextInput value={customerName} onChangeText={setCustomerName} placeholder="Full name" style={styles.input} onFocus={prepareHotelRequest} />
+              <TextInput value={customerName} onChangeText={setCustomerName} placeholder="Full name" style={styles.input} />
               <Text style={styles.label}>Phone number</Text>
               <TextInput value={customerPhone} onChangeText={setCustomerPhone} placeholder="e.g. 08012345678" keyboardType="phone-pad" style={styles.input} />
               <Text style={styles.label}>Additional note (optional)</Text>
