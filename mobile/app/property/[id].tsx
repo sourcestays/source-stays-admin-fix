@@ -404,7 +404,7 @@ export default function PropertyScreen() {
       if (availabilityError) throw availabilityError;
       if (available !== true) throw new Error("These dates are not available. Please choose other dates.");
       const price = Number(item.price || 0);
-      if (price <= 0) throw new Error("Please contact Source Stays for this property's current rate.");
+      if (price <= 0 && !(item.event_enabled && bookingOption === "event" && Number(item.event_price || 0) > 0)) throw new Error("Please contact Source Stays for this property's current rate.");
       const extraGuest = Math.max(0, guests - 1) * Number(item.extra_guest_fee || 0);
       const cleaning = Number(item.cleaning_fee || 0);
       const service = Number(item.service_fee || 0);
@@ -610,7 +610,7 @@ export default function PropertyScreen() {
               <TextInput value={bookingPhone} onChangeText={setBookingPhone} placeholder="e.g. 08012345678" keyboardType="phone-pad" style={styles.input} />
               <Text style={styles.label}>Special request (optional)</Text>
               <TextInput value={bookingNote} onChangeText={setBookingNote} placeholder="Any special requirements?" style={[styles.input, styles.noteInput]} multiline />
-              {bookingNights > 0 && bookingPrice > 0 && Number.isInteger(bookingGuestNumber) && bookingGuestNumber > 0 && <View style={styles.breakdownCard}>
+              {bookingNights > 0 && (isEventBooking ? bookingBaseRate > 0 : bookingPrice > 0) && Number.isInteger(bookingGuestNumber) && bookingGuestNumber > 0 && <View style={styles.breakdownCard}>
                 <Text style={styles.breakdownTitle}>Estimated price breakdown</Text>
                 {isEventBooking ? <><View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Private indoor event (one-time)</Text><Text style={styles.breakdownValue}>{money(bookingBaseRate)}</Text></View></> : <>
                 <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Accommodation ({bookingNights} night{bookingNights === 1 ? "" : "s"})</Text><Text style={styles.breakdownValue}>{money(bookingAccommodation)}</Text></View>
@@ -618,8 +618,8 @@ export default function PropertyScreen() {
                 {bookingService > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Service fee</Text><Text style={styles.breakdownValue}>{money(bookingService)}</Text></View>}
                 {bookingExtraGuest > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Additional guest fee ({Math.max(0, bookingGuestNumber - 1)} extra)</Text><Text style={styles.breakdownValue}>{money(bookingExtraGuest)}</Text></View>}
                 {bookingOther > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Other charge</Text><Text style={styles.breakdownValue}>{money(bookingOther)}</Text></View>}
-                {bookingCaution > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Refundable caution deposit</Text><Text style={styles.breakdownValue}>{money(bookingCaution)}</Text></View>}
                 </>}
+                {bookingCaution > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Refundable caution deposit</Text><Text style={styles.breakdownValue}>{money(bookingCaution)}</Text></View>}
                 <View style={styles.breakdownTotal}><Text style={styles.breakdownTotalLabel}>Estimated amount due</Text><Text style={styles.breakdownTotalValue}>{money(bookingEstimate)}</Text></View>
                 <Text style={styles.breakdownNote}>{isEventBooking ? "Event pricing is charged once per booking, not per night. " : ""}This is an estimate based on the listing fees. Source Stays will confirm the final amount before payment.</Text>
               </View>}
