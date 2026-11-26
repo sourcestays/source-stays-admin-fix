@@ -83,7 +83,12 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#F8F7F2" },
   content: { padding: 22, paddingBottom: 42 },
   topline: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 },
-  logo: { width: 120, height: 90, alignSelf: "flex-start", marginLeft: -62 },
+ logo: {
+  width: 120,
+  height: 90,
+  alignSelf: "flex-start",
+  marginLeft: 0,
+},
   account: { borderWidth: 1, borderColor: "#D8D9CF", borderRadius: 24, paddingHorizontal: 17, paddingVertical: 9, marginTop: 10 },
   accountText: { color: "#123D2B", fontWeight: "700", fontSize: 12 },
   hero: { backgroundColor: "#123D2B", borderRadius: 24, padding: 23, marginBottom: 29 },
