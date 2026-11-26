@@ -82,7 +82,7 @@ export default function ReviewsScreen() {
         <View style={s.ratingRow}>{[1,2,3,4,5].map(n => <Pressable key={n} onPress={() => setRating(n)} accessibilityRole="button" accessibilityLabel={n + " stars"}><Text style={[s.ratingStar, { color: n <= rating ? gold : "#C9CEC7" }]}>★</Text></Pressable>)}</View>
         <Text style={s.ratingCaption}>{["","Poor","Fair","Good","Very good","Excellent"][rating]}</Text>
         <Text style={s.label}>YOUR REVIEW</Text>
-        <TextInput value={comment} onChangeText={setComment} multiline maxLength={2000} minLength={10} placeholder="Tell us about your genuine experience..." textAlignVertical="top" style={[s.input, s.textarea]} />
+        <TextInput value={comment} onChangeText={setComment} multiline maxLength={2000} placeholder="Tell us about your genuine experience..." textAlignVertical="top" style={[s.input, s.textarea]} />
         <Text style={s.counter}>{comment.trim().length}/2000 characters (minimum 10)</Text>
         <Pressable onPress={submitReview} disabled={busy} style={[s.button, busy && { opacity: .65 }]}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={s.buttonText}>Submit review</Text>}</Pressable>
         {!!message && <Text style={[s.message, success && s.success]}>{message}</Text>}
