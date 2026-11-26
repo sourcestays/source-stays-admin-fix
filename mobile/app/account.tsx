@@ -74,6 +74,7 @@ export default function AccountScreen() {
     if (!supabase) return;
     setDashboardLoading(true);
     setDashboardError("");
+    try {
     const [bookingResult, hotelResult] = await Promise.all([
       supabase.from("bookings")
         .select("id, property_id, check_in, check_out, guests, status, payment_status, amount_due, currency, created_at")
@@ -110,7 +111,11 @@ export default function AccountScreen() {
       return [request.request_ref, data as HotelDetails] as const;
     }));
     setHotelDetails(Object.fromEntries(detailPairs));
-    setDashboardLoading(false);
+    } catch (error) {
+      setDashboardError(error instanceof Error ? error.message : "Your account dashboard could not be refreshed.");
+    } finally {
+      setDashboardLoading(false);
+    }
   }, []);
 
   useEffect(() => {
