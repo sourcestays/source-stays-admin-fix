@@ -171,16 +171,17 @@ function calculateTotal() {
     const eventPrice = Number(property.event_price || 0);
     const eventCaution = Number(property.event_caution_fee || 0);
 
-    bookingTotal = eventPrice + eventCaution;
+    const eventAccommodation = eventPrice * nights;
+    bookingTotal = eventAccommodation + eventCaution;
 
     totalBox.style.display = 'block';
     totalBox.innerHTML = `
-      <div>Private Indoor Event: ₦${money(eventPrice)}</div>
+      <div>Private Indoor Event: ₦${money(eventPrice)} × ${nights} night${nights === 1 ? '' : 's'} = ₦${money(eventAccommodation)}</div>
       <div>Refundable caution deposit: ₦${money(eventCaution)}</div>
       <div style="border-top:1px solid #ddd;margin-top:10px;padding-top:10px">
         <strong style="font-size:20px">Estimated amount due: ₦${money(bookingTotal)}</strong>
       </div>
-      <p style="font-weight:400">Event pricing is charged once per booking, not per night.</p>
+      <p style="font-weight:400">Event pricing is charged per night. The caution deposit is charged once per booking.</p>
     `;
     return;
   }
@@ -518,7 +519,9 @@ form.onsubmit = async e => {
     const isEvent = property.event_enabled && bookingOption.value === 'event';
 
 b.booking_option = isEvent ? 'event' : 'accommodation';
-b.booking_option_label = isEvent ? 'Private Indoor Event' : 'Entire 4-Bedroom Duplex';
+b.booking_option_label = isEvent
+  ? 'Private Indoor Event'
+  : (property.public_title || property.title || 'Accommodation');
 b.booking_base_price = isEvent
   ? Number(property.event_price || 0)
   : Number(property.price || 0);
