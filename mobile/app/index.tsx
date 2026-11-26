@@ -68,6 +68,11 @@ export default function HomeScreen() {
           ))}
         </View>
 
+        <Link href="/recb" asChild><Pressable style={styles.recbCard}>
+          <Text style={styles.recbEyebrow}>SOURCE STAYS × ZYLUS GROUP INTERNATIONAL</Text>
+          <Text style={styles.recbTitle}>Real Estate Cashback Programme</Text>
+          <Text style={styles.recbCopy}>Explore RECB information and official registration guidance. →</Text>
+        </Pressable></Link>
         <View style={styles.note}>
           {!isSupabaseConfigured && <Text style={styles.noteTitle}>App foundation is ready</Text>}
           <Text style={styles.noteText}>{status}</Text>
@@ -109,6 +114,10 @@ const styles = StyleSheet.create({
   tileTitle: { color: "#183F2E", fontSize: 15, fontWeight: "800" },
   tileCopy: { color: "#777D76", fontSize: 10, lineHeight: 15, marginTop: 5 },
   arrow: { color: "#A77D31", fontSize: 10, fontWeight: "800", marginTop: "auto", paddingTop: 13 },
+  recbCard: { backgroundColor: "#123D2B", borderRadius: 16, padding: 18, marginTop: 20 },
+  recbEyebrow: { color: "#D6B66E", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
+  recbTitle: { color: "#FFFFFF", fontSize: 17, fontWeight: "900", marginTop: 7 },
+  recbCopy: { color: "#E0E8E1", fontSize: 11, lineHeight: 17, marginTop: 5 },
   note: { backgroundColor: "#F0EEE5", borderRadius: 15, padding: 15, marginTop: 23 },
   noteTitle: { color: "#173E2D", fontSize: 12, fontWeight: "800", marginBottom: 5 },
   noteText: { color: "#626B62", fontSize: 11, lineHeight: 17 },
