@@ -220,7 +220,7 @@ export default function PropertyScreen() {
     setBookingMessage("");
     setBookingSuccess(false);
     if (!supabase || !item) return setBookingMessage("The Source Stays service is not connected.");
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(bookingCheckIn) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(bookingCheckOut)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingCheckIn) || !/^\d{4}-\d{2}-\d{2}$/.test(bookingCheckOut)) {
       return setBookingMessage("Enter check-in and check-out dates as YYYY-MM-DD.");
     }
     const start = Date.parse(bookingCheckIn + "T00:00:00Z");
