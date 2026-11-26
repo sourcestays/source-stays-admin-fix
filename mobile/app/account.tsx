@@ -255,6 +255,7 @@ export default function AccountScreen() {
           <Text style={s.copy}>{user.email || "Your Source Stays account"}</Text>
           <View style={s.heroActions}>
             <Link href="/rewards" asChild><Pressable style={s.goldButton}><Text style={s.goldButtonText}>View my Credits</Text></Pressable></Link>
+            <Link href="/verify" asChild><Pressable style={s.outlineButton}><Text style={s.outlineText}>Guest verification</Text></Pressable></Link>
             <Pressable onPress={signOut} disabled={busy} style={s.outlineButton}><Text style={s.outlineText}>{busy ? "Please wait…" : "Sign out"}</Text></Pressable>
           </View>
         </View>
