@@ -133,12 +133,12 @@ export default function AccountScreen() {
       supabase.from("bookings").select("id,check_in,check_out,amount_due,status,payment_status,created_at")
         .eq("customer_user_id", userId).in("status", ["pending", "approved", "confirmed"])
         .eq("payment_status", "unpaid").gt("amount_due", 0).order("created_at", { ascending: false }),
-      supabase.from("source_stays_credit_redemptions").select("booking_id,status")
+      supabase.from("source_stays_credit_redemptions").select("id,booking_id,amount,status,customer_note,created_at")
         .eq("customer_user_id", userId).in("status", ["pending", "approved"]),
       supabase.from("hotel_availability_requests").select("id,request_ref,room_category,check_in,check_out,rooms_requested,status,payment_status,availability_expires_at,room_category_id,property_id")
         .eq("customer_user_id", userId).in("status", ["available", "awaiting_payment"])
         .in("payment_status", ["not_started", "failed"]).order("created_at", { ascending: false }),
-      supabase.from("hotel_source_stays_credit_redemptions").select("request_id,status")
+      supabase.from("hotel_source_stays_credit_redemptions").select("id,request_id,amount,status,customer_note,created_at")
         .eq("customer_user_id", userId).in("status", ["pending", "approved"])
     ]);
     if ([bookingResult.error, redemptionResult.error, hotelResult.error, hotelRedemptionResult.error].some(Boolean)) {
