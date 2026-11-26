@@ -78,7 +78,7 @@ export default function RewardsScreen() {
       <View style={s.balance}>
         <Text style={s.balanceLabel}>AVAILABLE CREDIT</Text>
         <Text style={s.amount}>{money(balance)}</Text>
-        <Text style={s.balanceHint}>Calculated using the same earn, redeem and adjustment rules as the Source Stays website.</Text>
+        <Text style={s.balanceHint}>This balance reflects credit entries currently posted to your account. The Source Stays website states that the wider rewards programme becomes active only after its terms, tracking and redemption process are implemented. Credits are not cash-withdrawable.</Text>
       </View>
       <View style={s.sectionRow}>
         <Text style={s.section}>Credit history</Text>
