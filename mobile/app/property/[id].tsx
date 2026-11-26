@@ -60,6 +60,16 @@ export default function PropertyScreen() {
       if (!active) return;
       setCustomerName(current => current || String(profile?.full_name || data.user.user_metadata?.full_name || ""));
       setCustomerPhone(current => current || String(profile?.phone || data.user.user_metadata?.phone || ""));
+      const { data: latestHotelRequest } = await supabase.from("hotel_availability_requests")
+        .select("request_ref,status,payment_status,availability_expires_at")
+        .eq("property_id", Number(id)).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (!active) return;
+      if (latestHotelRequest) {
+        setHotelRequestRef(String(latestHotelRequest.request_ref || ""));
+        setHotelRequestStatus(String(latestHotelRequest.status || ""));
+        setHotelPaymentStatus(String(latestHotelRequest.payment_status || "not_started"));
+        setHotelAvailabilityExpiry(String(latestHotelRequest.availability_expires_at || ""));
+      }
     }
     loadProfile();
     async function load() {
