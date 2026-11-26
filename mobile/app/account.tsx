@@ -180,6 +180,15 @@ export default function AccountScreen() {
             <Pressable onPress={signOut} disabled={busy} style={s.outlineButton}><Text style={s.outlineText}>{busy ? "Please wait…" : "Sign out"}</Text></Pressable>
           </View>
         </View>
+        <View style={s.profileCard}>
+          <Text style={s.sectionTitle}>My Profile</Text>
+          <Text style={s.profileLabel}>FULL NAME</Text>
+          <Text style={s.profileValue}>{user.user_metadata?.full_name || "Not provided"}</Text>
+          <Text style={s.profileLabel}>EMAIL ADDRESS</Text>
+          <Text style={s.profileValue}>{user.email || "Not available"}</Text>
+          <Text style={s.profileLabel}>PHONE NUMBER</Text>
+          <Text style={s.profileValue}>{user.user_metadata?.phone || "Not provided"}</Text>
+        </View>
         <View style={s.sectionHead}><Text style={s.sectionTitle}>My bookings</Text><Pressable onPress={() => loadDashboard(user.id)}><Text style={s.refresh}>Refresh</Text></Pressable></View>
         {dashboardLoading ? <ActivityIndicator color="#123D2B" style={{ marginVertical: 24 }} /> : <>
           {!!dashboardError && <Text style={s.warning}>{dashboardError}</Text>}
@@ -254,6 +263,9 @@ const s = StyleSheet.create({
   goldButtonText: { color: "#173E2D", fontSize: 11, fontWeight: "900" },
   outlineButton: { borderWidth: 1, borderColor: "#D6B66E", paddingHorizontal: 15, paddingVertical: 10, borderRadius: 9 },
   outlineText: { color: "#fff", fontSize: 11, fontWeight: "800" },
+  profileCard: { backgroundColor: "#fff", borderRadius: 13, padding: 16, borderWidth: 1, borderColor: "#E9E8E0", marginBottom: 18 },
+  profileLabel: { color: "#A77D31", fontSize: 9, fontWeight: "900", letterSpacing: 1, marginTop: 13 },
+  profileValue: { color: "#173E2D", fontSize: 13, fontWeight: "700", marginTop: 4 },
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 9, marginBottom: 13 },
   sectionTitle: { color: "#173E2D", fontSize: 21, fontWeight: "900" },
   refresh: { color: "#A77D31", fontSize: 12, fontWeight: "900" },
