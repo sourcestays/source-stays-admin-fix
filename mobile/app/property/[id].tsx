@@ -122,6 +122,23 @@ export default function PropertyScreen() {
   const isHotel = String(item?.category || "").toLowerCase() === "hotel";
   const isShortlet = String(item?.category || "").toLowerCase() === "shortlet";
   const isRealEstate = ["sale", "land", "rent"].includes(String(item?.category || "").toLowerCase());
+  const bookingNights = (() => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(bookingCheckIn) || !/^\d{4}-\d{2}-\d{2}$/.test(bookingCheckOut)) return 0;
+    const start = Date.parse(bookingCheckIn + "T00:00:00Z");
+    const end = Date.parse(bookingCheckOut + "T00:00:00Z");
+    const count = Math.round((end - start) / 86400000);
+    return Number.isFinite(count) && count > 0 ? count : 0;
+  })();
+  const bookingGuestNumber = Number(bookingGuests);
+  const bookingPrice = Number(item?.price || 0);
+  const bookingAccommodation = bookingPrice * bookingNights;
+  const bookingExtraGuest = Math.max(0, (Number.isInteger(bookingGuestNumber) ? bookingGuestNumber : 1) - 1) * Number(item?.extra_guest_fee || 0);
+  const bookingCleaning = Number(item?.cleaning_fee || 0);
+  const bookingService = Number(item?.service_fee || 0);
+  const bookingOther = Number(item?.other_fee || 0);
+  const bookingCaution = Number(item?.caution_fee || 0);
+  const bookingEstimate = bookingAccommodation + bookingExtraGuest + bookingCleaning + bookingService + bookingOther + bookingCaution;
+  const money = (value: number) => "₦" + Math.round(value).toLocaleString("en-NG");
 
   async function refreshHotelRequest(ref = hotelRequestRef) {
     if (!supabase || !ref) return;
@@ -401,6 +418,17 @@ export default function PropertyScreen() {
               <TextInput value={bookingPhone} onChangeText={setBookingPhone} placeholder="e.g. 08012345678" keyboardType="phone-pad" style={styles.input} />
               <Text style={styles.label}>Special request (optional)</Text>
               <TextInput value={bookingNote} onChangeText={setBookingNote} placeholder="Any special requirements?" style={[styles.input, styles.noteInput]} multiline />
+              {bookingNights > 0 && bookingPrice > 0 && Number.isInteger(bookingGuestNumber) && bookingGuestNumber > 0 && <View style={styles.breakdownCard}>
+                <Text style={styles.breakdownTitle}>Estimated price breakdown</Text>
+                <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Accommodation ({bookingNights} night{bookingNights === 1 ? "" : "s"})</Text><Text style={styles.breakdownValue}>{money(bookingAccommodation)}</Text></View>
+                {bookingCleaning > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Cleaning fee</Text><Text style={styles.breakdownValue}>{money(bookingCleaning)}</Text></View>}
+                {bookingService > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Service fee</Text><Text style={styles.breakdownValue}>{money(bookingService)}</Text></View>}
+                {bookingExtraGuest > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Additional guest fee ({Math.max(0, bookingGuestNumber - 1)} extra)</Text><Text style={styles.breakdownValue}>{money(bookingExtraGuest)}</Text></View>}
+                {bookingOther > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Other charge</Text><Text style={styles.breakdownValue}>{money(bookingOther)}</Text></View>}
+                {bookingCaution > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Refundable caution deposit</Text><Text style={styles.breakdownValue}>{money(bookingCaution)}</Text></View>}
+                <View style={styles.breakdownTotal}><Text style={styles.breakdownTotalLabel}>Estimated amount due</Text><Text style={styles.breakdownTotalValue}>{money(bookingEstimate)}</Text></View>
+                <Text style={styles.breakdownNote}>This is an estimate based on the listing fees. Source Stays will confirm the final amount before payment.</Text>
+              </View>}
               <Pressable onPress={() => setRefundPolicyAccepted(v => !v)} style={styles.policyRow}>
                 <View style={[styles.policyCheck, refundPolicyAccepted && styles.policyCheckOn]}><Text style={styles.policyCheckText}>{refundPolicyAccepted ? "✓" : ""}</Text></View>
                 <Text style={styles.policyText}>I have read and agree to the Source Stays booking payment policy. Payments are non-refundable once a booking is confirmed and payment has been received.</Text>
@@ -470,6 +498,15 @@ const styles = StyleSheet.create({
   policyCheckOn: { backgroundColor: "#123D2B", borderColor: "#123D2B" },
   policyCheckText: { color: "#fff", fontWeight: "900" },
   policyText: { flex: 1, fontSize: 11, color: "#566157", lineHeight: 17 },
+  breakdownCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E3E6DD", borderRadius: 13, padding: 15, marginTop: 18 },
+  breakdownTitle: { color: "#173E2D", fontSize: 15, fontWeight: "900", marginBottom: 10 },
+  breakdownRow: { flexDirection: "row", justifyContent: "space-between", gap: 12, paddingVertical: 6 },
+  breakdownLabel: { flex: 1, color: "#5D685F", fontSize: 12 },
+  breakdownValue: { color: "#173E2D", fontSize: 12, fontWeight: "700" },
+  breakdownTotal: { borderTopWidth: 1, borderTopColor: "#E5E8E0", marginTop: 8, paddingTop: 12, flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  breakdownTotalLabel: { color: "#173E2D", fontSize: 13, fontWeight: "900", flex: 1 },
+  breakdownTotalValue: { color: "#123D2B", fontSize: 16, fontWeight: "900" },
+  breakdownNote: { color: "#777F76", fontSize: 10, lineHeight: 15, marginTop: 9 },
   disabled: { opacity: 0.6 }, requestMessage: { fontSize: 12, lineHeight: 19, marginTop: 12 }, success: { color: "#247343" },
   notice: { fontSize: 11, color: "#777D76", lineHeight: 17, marginTop: 18 }, error: { color: "#9B3025", textAlign: "center", marginTop: 40 },
 });
