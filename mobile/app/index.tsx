@@ -41,7 +41,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.topline}>
-          <Image source={require("../../source-stays-logo-green-gold.png")} style={styles.logo} resizeMode="contain" accessibilityLabel="Source Stays logo" />
+          <Image source={{ uri: "https://raw.githubusercontent.com/sourcestays/source-stays-admin-fix/mobile-app-foundation/source-stays-logo-green-gold.png" }} style={styles.logo} resizeMode="contain" accessibilityLabel="Source Stays logo" />
           <Link href="/account" asChild><Pressable style={styles.account}><Text style={styles.accountText}>Sign in</Text></Pressable></Link>
         </View>
 
