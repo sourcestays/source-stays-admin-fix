@@ -13,6 +13,7 @@ type Property = {
   owner_identity_verified: boolean | null; physical_inspection_verified: boolean | null;
   extra_guest_fee?: number | null; cleaning_fee?: number | null; service_fee?: number | null;
   other_fee?: number | null; caution_fee?: number | null;
+  event_enabled?: boolean | null; event_price?: number | null; event_caution_fee?: number | null;
 };
 type Room = { id: string; room_name: string; description: string | null; customer_rate: number; max_guests: number | null; photo_urls: string[] | null };
 type VillaPackage = { id: string | number; package_name: string; package_type: "day_getaway" | "overnight_getaway"; boat_included: boolean; description: string | null; boat_description: string | null; weekday_customer_rate: number; weekend_customer_rate: number; max_guests: number; start_time: string | null; end_time: string | null };
@@ -59,6 +60,7 @@ export default function PropertyScreen() {
   const [bookingCheckIn, setBookingCheckIn] = useState("");
   const [bookingCheckOut, setBookingCheckOut] = useState("");
   const [bookingGuests, setBookingGuests] = useState("1");
+  const [bookingOption, setBookingOption] = useState<"accommodation" | "event">("accommodation");
   const [bookingName, setBookingName] = useState("");
   const [bookingPhone, setBookingPhone] = useState("");
   const [bookingNote, setBookingNote] = useState("");
@@ -107,7 +109,7 @@ export default function PropertyScreen() {
         return;
       }
       const { data, error: propertyError } = await supabase.from("properties")
-        .select("id,title,public_title,category,price,price_period,location,public_location,bedrooms,guests,amenities,image_url,hide_partner_identity,is_zylus_group,owner_identity_verified,physical_inspection_verified,extra_guest_fee,cleaning_fee,service_fee,other_fee,caution_fee")
+        .select("id,title,public_title,category,price,price_period,location,public_location,bedrooms,guests,amenities,image_url,hide_partner_identity,is_zylus_group,owner_identity_verified,physical_inspection_verified,extra_guest_fee,cleaning_fee,service_fee,other_fee,caution_fee,event_enabled,event_price,event_caution_fee")
         .eq("id", Number(id)).eq("published", true).maybeSingle();
       if (!active) return;
       if (propertyError || !data) {
@@ -155,13 +157,16 @@ export default function PropertyScreen() {
   })();
   const bookingGuestNumber = Number(bookingGuests);
   const bookingPrice = Number(item?.price || 0);
-  const bookingAccommodation = bookingPrice * bookingNights;
+  const isEventBooking = Boolean(item?.event_enabled) && bookingOption === "event";
+  const bookingBaseRate = isEventBooking ? Number(item?.event_price || 0) : bookingPrice;
+  const bookingDeposit = isEventBooking ? Number(item?.event_caution_fee || 0) : Number(item?.caution_fee || 0);
+  const bookingAccommodation = isEventBooking ? bookingBaseRate : bookingPrice * bookingNights;
   const bookingExtraGuest = Math.max(0, (Number.isInteger(bookingGuestNumber) ? bookingGuestNumber : 1) - 1) * Number(item?.extra_guest_fee || 0);
   const bookingCleaning = Number(item?.cleaning_fee || 0);
   const bookingService = Number(item?.service_fee || 0);
   const bookingOther = Number(item?.other_fee || 0);
-  const bookingCaution = Number(item?.caution_fee || 0);
-  const bookingEstimate = bookingAccommodation + bookingExtraGuest + bookingCleaning + bookingService + bookingOther + bookingCaution;
+  const bookingCaution = bookingDeposit;
+  const bookingEstimate = isEventBooking ? bookingBaseRate + bookingCaution : bookingAccommodation + bookingExtraGuest + bookingCleaning + bookingService + bookingOther + bookingCaution;
   const money = (value: number) => "₦" + Math.round(value).toLocaleString("en-NG");
   const selectedVillaPackage = villaPackages.find(pkg => String(pkg.id) === selectedVillaPackageId) || null;
   const validVillaDate = (value: string) => {
@@ -405,7 +410,10 @@ export default function PropertyScreen() {
       const service = Number(item.service_fee || 0);
       const other = Number(item.other_fee || 0);
       const caution = Number(item.caution_fee || 0);
-      const amountDue = price * nights + extraGuest + cleaning + service + other + caution;
+      const isEvent = Boolean(item.event_enabled) && bookingOption === "event";
+      const eventPrice = Number(item.event_price || 0);
+      const eventCaution = Number(item.event_caution_fee || 0);
+      const amountDue = isEvent ? eventPrice + eventCaution : price * nights + extraGuest + cleaning + service + other + caution;
       const payload: Record<string, unknown> = {
         customer_user_id: user.id,
         property_id: Number(id),
@@ -417,8 +425,10 @@ export default function PropertyScreen() {
         guests,
         message: bookingNote.trim(),
         amount_due: amountDue,
-        booking_base_price: price,
-        booking_caution_fee: caution,
+        booking_option: isEvent ? "event" : "accommodation",
+        booking_option_label: isEvent ? "Private Indoor Event" : "Accommodation",
+        booking_base_price: isEvent ? eventPrice : price,
+        booking_caution_fee: isEvent ? eventCaution : caution,
         currency: "NGN",
         payment_status: "unpaid"
       };
@@ -579,6 +589,13 @@ export default function PropertyScreen() {
                 <Pressable disabled={eventBusy} onPress={submitVillaEventEnquiry} style={[styles.secondaryCta, eventBusy && styles.disabled]}><Text style={styles.secondaryCtaText}>{eventBusy ? "Sending..." : "Send special-event enquiry"}</Text></Pressable>
                 {!!eventMessage && <Text style={styles.requestMessage}>{eventMessage}</Text>}
               </View>}
+              {item.event_enabled && <>
+                <Text style={styles.label}>Booking option</Text>
+                <View style={styles.timeOptions}>
+                  <Pressable onPress={() => setBookingOption("accommodation")} style={[styles.timeOption, bookingOption === "accommodation" && styles.timeOptionActive]}><Text style={[styles.timeOptionText, bookingOption === "accommodation" && styles.timeOptionTextActive]}>Accommodation</Text></Pressable>
+                  <Pressable onPress={() => setBookingOption("event")} style={[styles.timeOption, bookingOption === "event" && styles.timeOptionActive]}><Text style={[styles.timeOptionText, bookingOption === "event" && styles.timeOptionTextActive]}>Private indoor event</Text></Pressable>
+                </View>
+              </>}
               <Text style={styles.section}>Book this shortlet</Text>
               <Text style={styles.formHint}>Choose your dates and guest count. We will check availability before saving your booking request. Payment is not taken at this stage.</Text>
               <Text style={styles.label}>Check-in date (YYYY-MM-DD)</Text>
@@ -595,14 +612,16 @@ export default function PropertyScreen() {
               <TextInput value={bookingNote} onChangeText={setBookingNote} placeholder="Any special requirements?" style={[styles.input, styles.noteInput]} multiline />
               {bookingNights > 0 && bookingPrice > 0 && Number.isInteger(bookingGuestNumber) && bookingGuestNumber > 0 && <View style={styles.breakdownCard}>
                 <Text style={styles.breakdownTitle}>Estimated price breakdown</Text>
+                {isEventBooking ? <><View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Private indoor event (one-time)</Text><Text style={styles.breakdownValue}>{money(bookingBaseRate)}</Text></View></> : <>
                 <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Accommodation ({bookingNights} night{bookingNights === 1 ? "" : "s"})</Text><Text style={styles.breakdownValue}>{money(bookingAccommodation)}</Text></View>
                 {bookingCleaning > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Cleaning fee</Text><Text style={styles.breakdownValue}>{money(bookingCleaning)}</Text></View>}
                 {bookingService > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Service fee</Text><Text style={styles.breakdownValue}>{money(bookingService)}</Text></View>}
                 {bookingExtraGuest > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Additional guest fee ({Math.max(0, bookingGuestNumber - 1)} extra)</Text><Text style={styles.breakdownValue}>{money(bookingExtraGuest)}</Text></View>}
                 {bookingOther > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Other charge</Text><Text style={styles.breakdownValue}>{money(bookingOther)}</Text></View>}
                 {bookingCaution > 0 && <View style={styles.breakdownRow}><Text style={styles.breakdownLabel}>Refundable caution deposit</Text><Text style={styles.breakdownValue}>{money(bookingCaution)}</Text></View>}
+                </>}
                 <View style={styles.breakdownTotal}><Text style={styles.breakdownTotalLabel}>Estimated amount due</Text><Text style={styles.breakdownTotalValue}>{money(bookingEstimate)}</Text></View>
-                <Text style={styles.breakdownNote}>This is an estimate based on the listing fees. Source Stays will confirm the final amount before payment.</Text>
+                <Text style={styles.breakdownNote}>{isEventBooking ? "Event pricing is charged once per booking, not per night. " : ""}This is an estimate based on the listing fees. Source Stays will confirm the final amount before payment.</Text>
               </View>}
               <Pressable onPress={() => setRefundPolicyAccepted(v => !v)} style={styles.policyRow}>
                 <View style={[styles.policyCheck, refundPolicyAccepted && styles.policyCheckOn]}><Text style={styles.policyCheckText}>{refundPolicyAccepted ? "✓" : ""}</Text></View>
