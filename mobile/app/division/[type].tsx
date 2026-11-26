@@ -80,6 +80,11 @@ export default function DivisionScreen() {
         <Text style={styles.eyebrow}>DISCOVER WITH SOURCE STAYS</Text>
         <Text style={styles.heading}>{title}</Text>
         <Text style={styles.sub}>Explore available opportunities from our published listings.</Text>
+        {type === "realestate" && <Link href="/recb" asChild><Pressable style={styles.recbBanner}>
+          <Text style={styles.recbEyebrow}>SOURCE STAYS × ZYLUS GROUP</Text>
+          <Text style={styles.recbTitle}>Real Estate Cashback (RECB)</Text>
+          <Text style={styles.recbCopy}>Explore the programme, consultant details and official registration guidance →</Text>
+        </Pressable></Link>}
         {type === "realestate" && <View style={styles.filters}>
           {["all", "sale", "land", "rent"].map(v => <Pressable key={v} onPress={() => setFilter(v)} style={[styles.filter, filter === v && styles.filterActive]}><Text style={[styles.filterText, filter === v && styles.filterTextActive]}>{v === "all" ? "All" : v === "sale" ? "For sale" : v === "land" ? "Land" : "For rent"}</Text></Pressable>)}
         </View>}
@@ -114,4 +119,5 @@ export default function DivisionScreen() {
 }
 
 const styles = StyleSheet.create({
+  recbBanner:{backgroundColor:"#123D2B",borderRadius:14,padding:16,marginBottom:16},recbEyebrow:{color:"#D6B66E",fontSize:9,fontWeight:"900",letterSpacing:1},recbTitle:{color:"#fff",fontSize:16,fontWeight:"900",marginTop:6},recbCopy:{color:"#E0E8E1",fontSize:11,lineHeight:17,marginTop:5},
   safe:{flex:1,backgroundColor:"#F8F7F2"},content:{padding:20,paddingBottom:40},back:{color:"#123D2B",fontWeight:"700",marginBottom:25},eyebrow:{color:"#A77D31",fontSize:10,fontWeight:"800",letterSpacing:1.6},heading:{fontSize:30,fontWeight:"900",color:"#123D2B",marginTop:7},sub:{fontSize:13,color:"#747B73",lineHeight:20,marginTop:7,marginBottom:18},search:{backgroundColor:"#fff",borderColor:"#E2E4DC",borderWidth:1,borderRadius:12,padding:14,color:"#173E2D",marginBottom:17},filters:{flexDirection:"row",flexWrap:"wrap",gap:8,marginBottom:14},filter:{borderWidth:1,borderColor:"#DADDD4",borderRadius:20,paddingHorizontal:13,paddingVertical:8},filterActive:{backgroundColor:"#123D2B",borderColor:"#123D2B"},filterText:{fontSize:11,color:"#526057",fontWeight:"700"},filterTextActive:{color:"#fff"},list:{gap:15},card:{backgroundColor:"#fff",borderRadius:17,overflow:"hidden",borderWidth:1,borderColor:"#E9E8E0"},photo:{width:"100%",height:190,backgroundColor:"#E9ECE5"},placeholder:{alignItems:"center",justifyContent:"center"},placeholderText:{color:"#A77D31",fontWeight:"900",letterSpacing:2},cardBody:{padding:15},category:{fontSize:9,color:"#A77D31",fontWeight:"900",letterSpacing:1.4},cardTitle:{fontSize:17,fontWeight:"800",color:"#183F2E",marginTop:5},location:{fontSize:11,color:"#747B73",marginTop:5},verified:{fontSize:10,color:"#247343",marginTop:5,fontWeight:"700"},price:{fontSize:14,color:"#173E2D",fontWeight:"900",marginTop:12},open:{fontSize:11,color:"#A77D31",fontWeight:"800",marginTop:9},message:{textAlign:"center",color:"#747B73",padding:25,lineHeight:21}});
