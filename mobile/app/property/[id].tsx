@@ -15,11 +15,28 @@ type Property = {
   other_fee?: number | null; caution_fee?: number | null;
 };
 type Room = { id: string; room_name: string; description: string | null; customer_rate: number; max_guests: number | null; photo_urls: string[] | null };
+type VillaPackage = { id: string | number; package_name: string; package_type: "day_getaway" | "overnight_getaway"; boat_included: boolean; description: string | null; boat_description: string | null; weekday_customer_rate: number; weekend_customer_rate: number; max_guests: number; start_time: string | null; end_time: string | null };
 
 export default function PropertyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [item, setItem] = useState<Property | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [villaPackages, setVillaPackages] = useState<VillaPackage[]>([]);
+  const [selectedVillaPackageId, setSelectedVillaPackageId] = useState<string>("");
+  const [villaStartDate, setVillaStartDate] = useState("");
+  const [villaEndDate, setVillaEndDate] = useState("");
+  const [villaGuests, setVillaGuests] = useState("2");
+  const [villaName, setVillaName] = useState("");
+  const [villaPhone, setVillaPhone] = useState("");
+  const [villaEmail, setVillaEmail] = useState("");
+  const [villaNote, setVillaNote] = useState("");
+  const [villaBusy, setVillaBusy] = useState(false);
+  const [villaMessage, setVillaMessage] = useState("");
+  const [villaSuccess, setVillaSuccess] = useState(false);
+  const [eventDate, setEventDate] = useState("");
+  const [eventDetails, setEventDetails] = useState("");
+  const [eventBusy, setEventBusy] = useState(false);
+  const [eventMessage, setEventMessage] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -99,10 +116,13 @@ export default function PropertyScreen() {
         return;
       }
       setItem(data as Property);
-      const [photoResult, roomResult] = await Promise.all([
+      const [photoResult, roomResult, villaResult] = await Promise.all([
         supabase.from("property_images").select("image_url").eq("property_id", Number(id)).order("id"),
         String(data.category).toLowerCase() === "hotel"
           ? supabase.from("hotel_room_categories_public").select("id,room_name,description,customer_rate,max_guests,photo_urls").eq("property_id", Number(id)).order("sort_order")
+          : Promise.resolve({ data: [], error: null }),
+        String(data.category).toLowerCase() === "shortlet"
+          ? supabase.from("villa_packages_public").select("id,property_id,package_name,package_type,boat_included,description,boat_description,weekday_customer_rate,weekend_customer_rate,max_guests,sort_order,start_time,end_time").eq("property_id", Number(id)).order("sort_order", { ascending: true })
           : Promise.resolve({ data: [], error: null }),
       ]);
       if (!active) return;
@@ -110,6 +130,10 @@ export default function PropertyScreen() {
       const loadedRooms = (roomResult.data || []) as Room[];
       setRooms(loadedRooms);
       if (loadedRooms.length) setSelectedRoomId(loadedRooms[0].id);
+      const loadedVillaPackages = (villaResult.data || []) as VillaPackage[];
+      setVillaPackages(loadedVillaPackages);
+      if (loadedVillaPackages.length) setSelectedVillaPackageId(String(loadedVillaPackages[0].id));
+      if (villaResult.error) console.warn("Villa getaway packages could not be loaded:", villaResult.error);
       setLoading(false);
     }
     load();
@@ -139,6 +163,108 @@ export default function PropertyScreen() {
   const bookingCaution = Number(item?.caution_fee || 0);
   const bookingEstimate = bookingAccommodation + bookingExtraGuest + bookingCleaning + bookingService + bookingOther + bookingCaution;
   const money = (value: number) => "₦" + Math.round(value).toLocaleString("en-NG");
+  const selectedVillaPackage = villaPackages.find(pkg => String(pkg.id) === selectedVillaPackageId) || null;
+  const validVillaDate = (value: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(value + "T00:00:00");
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  };
+  const villaNights = (() => {
+    if (!selectedVillaPackage || selectedVillaPackage.package_type !== "overnight_getaway" ||
+        !validVillaDate(villaStartDate) || !validVillaDate(villaEndDate)) return 0;
+    const days = Math.round((Date.parse(villaEndDate + "T00:00:00Z") - Date.parse(villaStartDate + "T00:00:00Z")) / 86400000);
+    return days > 0 ? days : 0;
+  })();
+  const villaEstimate = (() => {
+    if (!selectedVillaPackage || !validVillaDate(villaStartDate)) return 0;
+    const rateFor = (date: Date) => date.getUTCDay() >= 5
+      ? Number(selectedVillaPackage.weekend_customer_rate || 0)
+      : Number(selectedVillaPackage.weekday_customer_rate || 0);
+    if (selectedVillaPackage.package_type === "day_getaway") {
+      const date = new Date(villaStartDate + "T00:00:00Z");
+      return rateFor(date);
+    }
+    if (!villaNights) return 0;
+    let total = 0;
+    for (let i = 0; i < villaNights; i++) {
+      const date = new Date(Date.parse(villaStartDate + "T00:00:00Z") + i * 86400000);
+      total += rateFor(date);
+    }
+    return total;
+  })();
+
+  async function submitVillaRequest() {
+    setVillaMessage("");
+    setVillaSuccess(false);
+    if (!supabase || !item || !selectedVillaPackage) return setVillaMessage("Please select an available getaway package.");
+    if (!validVillaDate(villaStartDate)) return setVillaMessage("Enter a valid preferred date in YYYY-MM-DD format.");
+    if (selectedVillaPackage.package_type === "overnight_getaway" && (!validVillaDate(villaEndDate) || villaNights < 1)) {
+      return setVillaMessage("Choose a check-out date after your check-in date.");
+    }
+    const guests = Number(villaGuests);
+    if (!Number.isInteger(guests) || guests < 1 || guests > Number(selectedVillaPackage.max_guests)) {
+      return setVillaMessage("Guest count must be between 1 and " + selectedVillaPackage.max_guests + ".");
+    }
+    if (villaName.trim().length < 2 || villaPhone.trim().length < 7 || villaName.trim().length > 100 || villaPhone.trim().length > 30) {
+      return setVillaMessage("Enter your name (2–100 characters) and phone number (7–30 characters).");
+    }
+    if (villaEmail.trim().length > 254 || (villaEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(villaEmail.trim()))) {
+      return setVillaMessage("Enter a valid email address or leave it blank.");
+    }
+    if (villaNote.trim().length > 1000) return setVillaMessage("Your message must be 1,000 characters or fewer.");
+    setVillaBusy(true);
+    try {
+      const { error } = await supabase.from("villa_booking_requests").insert({
+        property_id: Number(id),
+        package_id: selectedVillaPackage.id,
+        customer_name: villaName.trim(),
+        customer_phone: villaPhone.trim(),
+        customer_email: villaEmail.trim() || null,
+        preferred_start_date: villaStartDate,
+        preferred_end_date: selectedVillaPackage.package_type === "overnight_getaway" ? villaEndDate : null,
+        guest_count: guests,
+        message: villaNote.trim() || null
+      });
+      if (error) throw error;
+      setVillaSuccess(true);
+      setVillaMessage("Your getaway request has been received. Source Stays will check availability with the partner and contact you. This is not yet a confirmed booking and no payment has been taken.");
+      setVillaNote("");
+    } catch (e) {
+      setVillaMessage(e instanceof Error ? e.message : "We could not submit your request. Please try again.");
+    } finally {
+      setVillaBusy(false);
+    }
+  }
+
+  async function submitVillaEventEnquiry() {
+    setEventMessage("");
+    if (!supabase || !item) return setEventMessage("The Source Stays service is not connected.");
+    if (!villaName.trim() || villaName.trim().length > 100 || villaPhone.trim().length < 7 || villaPhone.trim().length > 30) {
+      return setEventMessage("Please enter your name and phone number.");
+    }
+    if (!validVillaDate(eventDate)) return setEventMessage("Enter a valid event date in YYYY-MM-DD format.");
+    if (eventDetails.trim().length > 1000) return setEventMessage("Event details must be 1,000 characters or fewer.");
+    setEventBusy(true);
+    try {
+      const { error } = await supabase.from("enquiries").insert({
+        property_id: Number(id),
+        customer_name: villaName.trim(),
+        customer_phone: villaPhone.trim(),
+        customer_email: villaEmail.trim() || null,
+        subject: "Special event quotation request: " + item.title,
+        message: "Special Events enquiry for " + item.title + ". Preferred event date: " + eventDate + ". " + eventDetails.trim(),
+        status: "new"
+      });
+      if (error) throw error;
+      setEventMessage("Thank you. Your special-event enquiry has been received. Source Stays will contact you to discuss your requirements and quotation.");
+      setEventDetails("");
+    } catch (e) {
+      setEventMessage(e instanceof Error ? e.message : "We could not submit your enquiry. Please try again.");
+    } finally {
+      setEventBusy(false);
+    }
+  }
+
 
   async function refreshHotelRequest(ref = hotelRequestRef) {
     if (!supabase || !ref) return;
@@ -404,6 +530,55 @@ export default function PropertyScreen() {
               <Text style={styles.notice}>Source Stays will contact the hotel first. Payment is only arranged after availability is confirmed. Hotel identity remains protected until reservation confirmation.</Text>
             </> : isShortlet ? <>
               {Number(item.price) > 0 && <Text style={styles.rate}>₦{Number(item.price).toLocaleString("en-NG")} / {item.price_period || "night"}</Text>}
+
+              {villaPackages.length > 0 && <View style={styles.villaPanel}>
+                <Text style={styles.section}>Choose Your Villa Getaway</Text>
+                <Text style={styles.formHint}>These packages reserve the entire villa, including its bedrooms. Choose a package to view the weekday and weekend rates.</Text>
+                {villaPackages.map(pkg => <Pressable key={String(pkg.id)} onPress={() => setSelectedVillaPackageId(String(pkg.id))} style={[styles.room, selectedVillaPackageId === String(pkg.id) && styles.roomSelected]}>
+                  <View style={styles.roomHeading}>
+                    <Text style={styles.roomName}>{pkg.package_name}</Text>
+                    <Text style={styles.selectText}>{selectedVillaPackageId === String(pkg.id) ? "SELECTED ✓" : "SELECT"}</Text>
+                  </View>
+                  <Text style={styles.details}>{pkg.package_type === "day_getaway" ? "Day getaway" : "Overnight getaway"} · Up to {pkg.max_guests} guests</Text>
+                  {!!pkg.description && <Text style={styles.details}>{pkg.description}</Text>}
+                  <Text style={styles.rate}>Weekday {money(Number(pkg.weekday_customer_rate || 0))} · Weekend {money(Number(pkg.weekend_customer_rate || 0))}</Text>
+                  <Text style={styles.details}>{pkg.boat_included ? (pkg.boat_description || "Includes one 15-seater boat for a round trip.") : (pkg.boat_description || "Boat not included.")}</Text>
+                  {!!(pkg.start_time || pkg.end_time) && <Text style={styles.location}>Access: {pkg.start_time || "—"}{pkg.end_time ? " – " + pkg.end_time : ""}</Text>}
+                </Pressable>)}
+                {!!selectedVillaPackage && <>
+                  <Text style={styles.label}>Preferred {selectedVillaPackage.package_type === "day_getaway" ? "date" : "check-in date"} (YYYY-MM-DD)</Text>
+                  <TextInput value={villaStartDate} onChangeText={setVillaStartDate} placeholder="2026-12-20" style={styles.input} />
+                  {selectedVillaPackage.package_type === "overnight_getaway" && <>
+                    <Text style={styles.label}>Check-out date (YYYY-MM-DD)</Text>
+                    <TextInput value={villaEndDate} onChangeText={setVillaEndDate} placeholder="2026-12-22" style={styles.input} />
+                  </>}
+                  <Text style={styles.label}>Number of guests (maximum {selectedVillaPackage.max_guests})</Text>
+                  <TextInput value={villaGuests} onChangeText={setVillaGuests} keyboardType="number-pad" style={styles.input} />
+                  {villaEstimate > 0 && <View style={styles.breakdownCard}>
+                    <Text style={styles.breakdownTitle}>Indicative package estimate</Text>
+                    <Text style={styles.breakdownValue}>{money(villaEstimate)}{selectedVillaPackage.package_type === "overnight_getaway" ? " for " + villaNights + " night(s)" : " for the selected day"}</Text>
+                    <Text style={styles.breakdownNote}>Based on the package weekday/weekend rates. Final availability and quotation are subject to partner confirmation.</Text>
+                  </View>}
+                  <Text style={styles.label}>Full name</Text>
+                  <TextInput value={villaName} onChangeText={setVillaName} placeholder="Your full name" style={styles.input} maxLength={100} />
+                  <Text style={styles.label}>Phone number</Text>
+                  <TextInput value={villaPhone} onChangeText={setVillaPhone} placeholder="e.g. 08012345678" keyboardType="phone-pad" style={styles.input} maxLength={30} />
+                  <Text style={styles.label}>Email address (optional)</Text>
+                  <TextInput value={villaEmail} onChangeText={setVillaEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" style={styles.input} maxLength={254} />
+                  <Text style={styles.label}>Additional message (optional)</Text>
+                  <TextInput value={villaNote} onChangeText={setVillaNote} placeholder="Tell us about any special requirements" style={[styles.input, styles.noteInput]} multiline maxLength={1000} />
+                  <Pressable disabled={villaBusy} onPress={submitVillaRequest} style={[styles.cta, villaBusy && styles.disabled]}><Text style={styles.ctaText}>{villaBusy ? "Submitting..." : "Submit getaway availability request"}</Text></Pressable>
+                  {!!villaMessage && <Text style={[styles.requestMessage, villaSuccess ? styles.success : styles.error]}>{villaMessage}</Text>}
+                </>}
+                <Text style={styles.section}>Special event enquiry</Text>
+                <Text style={styles.formHint}>For parties or other special events, send a separate quotation enquiry. This does not create a getaway booking.</Text>
+                <Text style={styles.label}>Preferred event date (YYYY-MM-DD)</Text>
+                <TextInput value={eventDate} onChangeText={setEventDate} placeholder="2026-12-20" style={styles.input} />
+                <Text style={styles.label}>Event requirements</Text>
+                <TextInput value={eventDetails} onChangeText={setEventDetails} placeholder="Describe your event, expected guests and requirements" style={[styles.input, styles.noteInput]} multiline maxLength={1000} />
+                <Pressable disabled={eventBusy} onPress={submitVillaEventEnquiry} style={[styles.secondaryCta, eventBusy && styles.disabled]}><Text style={styles.secondaryCtaText}>{eventBusy ? "Sending..." : "Send special-event enquiry"}</Text></Pressable>
+                {!!eventMessage && <Text style={styles.requestMessage}>{eventMessage}</Text>}
+              </View>}
               <Text style={styles.section}>Book this shortlet</Text>
               <Text style={styles.formHint}>Choose your dates and guest count. We will check availability before saving your booking request. Payment is not taken at this stage.</Text>
               <Text style={styles.label}>Check-in date (YYYY-MM-DD)</Text>
@@ -507,6 +682,7 @@ const styles = StyleSheet.create({
   breakdownTotalLabel: { color: "#173E2D", fontSize: 13, fontWeight: "900", flex: 1 },
   breakdownTotalValue: { color: "#123D2B", fontSize: 16, fontWeight: "900" },
   breakdownNote: { color: "#777F76", fontSize: 10, lineHeight: 15, marginTop: 9 },
+  villaPanel: { marginTop: 8 }, secondaryCta: { borderWidth: 1, borderColor: "#A77D31", padding: 15, borderRadius: 12, marginTop: 12, alignItems: "center" }, secondaryCtaText: { color: "#173E2D", fontWeight: "800", fontSize: 13 },
   disabled: { opacity: 0.6 }, requestMessage: { fontSize: 12, lineHeight: 19, marginTop: 12 }, success: { color: "#247343" },
   notice: { fontSize: 11, color: "#777D76", lineHeight: 17, marginTop: 18 }, error: { color: "#9B3025", textAlign: "center", marginTop: 40 },
 });
