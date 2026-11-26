@@ -64,7 +64,7 @@ export default function PropertyScreen() {
         return;
       }
       const { data, error: propertyError } = await supabase.from("properties")
-        .select("id,title,public_title,category,price,price_period,location,public_location,bedrooms,guests,amenities,image_url,hide_partner_identity,owner_identity_verified,physical_inspection_verified")
+        .select("id,title,public_title,category,price,price_period,location,public_location,bedrooms,guests,amenities,image_url,hide_partner_identity,owner_identity_verified,physical_inspection_verified,extra_guest_fee,cleaning_fee,service_fee,other_fee,caution_fee")
         .eq("id", Number(id)).eq("published", true).maybeSingle();
       if (!active) return;
       if (propertyError || !data) {
