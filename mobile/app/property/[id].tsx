@@ -33,6 +33,11 @@ export default function PropertyScreen() {
   const [requestBusy, setRequestBusy] = useState(false);
   const [requestMessage, setRequestMessage] = useState("");
   const [requestSuccess, setRequestSuccess] = useState(false);
+  const [hotelRequestRef, setHotelRequestRef] = useState("");
+  const [hotelRequestStatus, setHotelRequestStatus] = useState("");
+  const [hotelPaymentStatus, setHotelPaymentStatus] = useState("not_started");
+  const [hotelAvailabilityExpiry, setHotelAvailabilityExpiry] = useState("");
+  const [hotelPaymentBusy, setHotelPaymentBusy] = useState(false);
   const [bookingCheckIn, setBookingCheckIn] = useState("");
   const [bookingCheckOut, setBookingCheckOut] = useState("");
   const [bookingGuests, setBookingGuests] = useState("1");
@@ -96,6 +101,40 @@ export default function PropertyScreen() {
   const isHotel = String(item?.category || "").toLowerCase() === "hotel";
   const isShortlet = String(item?.category || "").toLowerCase() === "shortlet";
 
+  async function refreshHotelRequest(ref = hotelRequestRef) {
+    if (!supabase || !ref) return;
+    const { data, error } = await supabase.from("hotel_availability_requests")
+      .select("request_ref,status,payment_status,availability_expires_at")
+      .eq("request_ref", ref).maybeSingle();
+    if (error) {
+      console.warn("Could not refresh hotel request status:", error);
+      return;
+    }
+    if (!data) return;
+    setHotelRequestStatus(String(data.status || ""));
+    setHotelPaymentStatus(String(data.payment_status || "not_started"));
+    setHotelAvailabilityExpiry(String(data.availability_expires_at || ""));
+  }
+
+  async function startHotelPayment() {
+    if (!supabase || !hotelRequestRef) return;
+    setHotelPaymentBusy(true);
+    setRequestMessage("");
+    try {
+      const { data, error } = await supabase.functions.invoke("initialize-hotel-payment", {
+        body: { request_ref: hotelRequestRef, callback_url: "https://sourcestays.com.ng/hotel-booking.html" }
+      });
+      if (error) throw error;
+      if (!data?.success || !data?.authorization_url) throw new Error(data?.error || "Payment could not be initialized.");
+      setHotelPaymentStatus("pending");
+      await Linking.openURL(data.authorization_url);
+    } catch (e) {
+      setRequestMessage(e instanceof Error ? e.message : "Unable to start payment. Please try again.");
+    } finally {
+      setHotelPaymentBusy(false);
+    }
+  }
+
   async function submitHotelAvailability() {
     setRequestMessage("");
     setRequestSuccess(false);
@@ -138,8 +177,12 @@ export default function PropertyScreen() {
         rooms_requested: roomsRequested,
         guests,
         customer_note: customerNote.trim() || null,
-      }).select("request_ref").single();
+      }).select("request_ref,status,payment_status,availability_expires_at").single();
       if (insertError) throw insertError;
+      setHotelRequestRef(data.request_ref);
+      setHotelRequestStatus(String(data.status || "pending_availability"));
+      setHotelPaymentStatus(String(data.payment_status || "not_started"));
+      setHotelAvailabilityExpiry(String(data.availability_expires_at || ""));
       let notificationWarning = "";
       try {
         const { error: notificationError } = await supabase.functions.invoke(
@@ -278,7 +321,18 @@ export default function PropertyScreen() {
                 <Text style={styles.ctaText}>{requestBusy ? "Submitting..." : "Request hotel availability"}</Text>
               </Pressable>
               {!!requestMessage && <Text style={[styles.requestMessage, requestSuccess ? styles.success : styles.error]}>{requestMessage}</Text>}
-              <Text style={styles.notice}>Source Stays will contact the hotel first. Payment is only arranged after availability is confirmed.</Text>
+              {!!hotelRequestRef && <View style={styles.requestCard}>
+                <Text style={styles.requestCardTitle}>Your hotel request</Text>
+                <Text style={styles.requestCardRef}>Reference: {hotelRequestRef}</Text>
+                <Text style={styles.requestCardStatus}>Availability: {hotelRequestStatus.replace(/_/g, " ") || "pending"}</Text>
+                <Text style={styles.requestCardStatus}>Payment: {hotelPaymentStatus.replace(/_/g, " ")}</Text>
+                {!!hotelAvailabilityExpiry && <Text style={styles.notice}>Availability valid until {new Date(hotelAvailabilityExpiry).toLocaleString()}</Text>}
+                <Pressable onPress={() => refreshHotelRequest()} style={styles.refreshButton}><Text style={styles.refreshText}>Refresh request status</Text></Pressable>
+                {(hotelRequestStatus === "available" || hotelRequestStatus === "awaiting_payment") && hotelPaymentStatus !== "paid" && !!hotelAvailabilityExpiry && new Date(hotelAvailabilityExpiry).getTime() > Date.now() &&
+                  <Pressable disabled={hotelPaymentBusy} onPress={startHotelPayment} style={[styles.cta, hotelPaymentBusy && styles.disabled]}><Text style={styles.ctaText}>{hotelPaymentBusy ? "Preparing secure payment..." : "Pay securely with Paystack"}</Text></Pressable>}
+                {hotelPaymentStatus === "paid" && <Text style={styles.success}>Payment received. Your hotel reservation is awaiting final confirmation.</Text>}
+              </View>}
+              <Text style={styles.notice}>Source Stays will contact the hotel first. Payment is only arranged after availability is confirmed. Hotel identity remains protected until reservation confirmation.</Text>
             </> : isShortlet ? <>
               {Number(item.price) > 0 && <Text style={styles.rate}>₦{Number(item.price).toLocaleString("en-NG")} / {item.price_period || "night"}</Text>}
               <Text style={styles.section}>Book this shortlet</Text>
@@ -328,6 +382,12 @@ const styles = StyleSheet.create({
   input: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E2E4DC", borderRadius: 11, padding: 13, color: "#173E2D", fontSize: 14 },
   twoFields: { flexDirection: "row", gap: 12 }, half: { flex: 1 }, noteInput: { minHeight: 78, textAlignVertical: "top" },
   cta: { backgroundColor: "#123D2B", padding: 16, borderRadius: 12, marginTop: 18, alignItems: "center" }, ctaText: { color: "#fff", fontWeight: "800", fontSize: 13 },
+  requestCard: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E2E4DC", borderRadius: 13, padding: 15, marginTop: 18 },
+  requestCardTitle: { color: "#173E2D", fontSize: 15, fontWeight: "900" },
+  requestCardRef: { color: "#A77D31", fontSize: 12, fontWeight: "800", marginTop: 8 },
+  requestCardStatus: { color: "#566157", fontSize: 12, marginTop: 6, textTransform: "capitalize" },
+  refreshButton: { alignSelf: "flex-start", paddingVertical: 9, paddingHorizontal: 12, borderRadius: 8, backgroundColor: "#F1F3EE", marginTop: 10 },
+  refreshText: { color: "#173E2D", fontWeight: "800", fontSize: 11 },
   policyRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 18 },
   policyCheck: { width: 22, height: 22, borderWidth: 1, borderColor: "#AEB8AE", borderRadius: 5, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
   policyCheckOn: { backgroundColor: "#123D2B", borderColor: "#123D2B" },
