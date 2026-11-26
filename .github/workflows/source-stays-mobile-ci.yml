@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
       - name: TypeScript check
         run: npm run typecheck
       - name: Export Android JavaScript bundle
