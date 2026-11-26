@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link } from "expo-router";
 import { isSupabaseConfigured, supabase } from "@/src/lib/supabase";
@@ -41,10 +41,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.topline}>
-          <View>
-            <Text style={styles.brand}>SOURCE <Text style={styles.gold}>STAYS</Text></Text>
-            <Text style={styles.tagline}>STAYS · SPACES · OPPORTUNITIES</Text>
-          </View>
+          <Image source={require("../../source-stays-logo-green-gold.png")} style={styles.logo} resizeMode="contain" accessibilityLabel="Source Stays logo" />
           <Link href="/account" asChild><Pressable style={styles.account}><Text style={styles.accountText}>Sign in</Text></Pressable></Link>
         </View>
 
@@ -86,9 +83,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#F8F7F2" },
   content: { padding: 22, paddingBottom: 42 },
   topline: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 28 },
-  brand: { color: "#123D2B", fontSize: 21, fontWeight: "900", letterSpacing: 1.2 },
-  gold: { color: "#B58A3A" },
-  tagline: { color: "#7A8079", fontSize: 8, letterSpacing: 1.7, marginTop: 3, fontWeight: "700" },
+  logo: { width: 205, height: 62, alignSelf: "flex-start" },
   account: { borderWidth: 1, borderColor: "#D8D9CF", borderRadius: 24, paddingHorizontal: 17, paddingVertical: 9 },
   accountText: { color: "#123D2B", fontWeight: "700", fontSize: 12 },
   hero: { backgroundColor: "#123D2B", borderRadius: 24, padding: 23, marginBottom: 29 },
