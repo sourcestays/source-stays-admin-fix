@@ -1,13 +1,284 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Link, router, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/src/lib/supabase";
 
-export default function AccountScreen(){
- const [mode,setMode]=useState<"login"|"signup">("login");const [name,setName]=useState("");const [phone,setPhone]=useState("");const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [confirm,setConfirm]=useState("");const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");const [success,setSuccess]=useState(false);
- async function submit(){setMessage("");setSuccess(false);if(!supabase){setMessage("The app is not connected to Source Stays services yet.");return;}if(!email.trim()||!password){setMessage("Enter your email address and password.");return;}if(mode==="signup"&&(name.trim().length<2||phone.trim().length<7)){setMessage("Enter your full name and a valid mobile number.");return;}if(mode==="signup"&&password!==confirm){setMessage("Your passwords do not match.");return;}setBusy(true);try{if(mode==="login"){const {error}=await supabase.auth.signInWithPassword({email:email.trim(),password});if(error)throw error;router.replace("/");return;}const {data,error}=await supabase.auth.signUp({email:email.trim(),password,options:{data:{full_name:name.trim(),phone:phone.trim()}}});if(error)throw error;if(data.session&&data.user){const {error:profileError}=await supabase.from("customer_profiles").upsert({id:data.user.id,full_name:name.trim(),phone:phone.trim()});if(profileError)throw new Error("Your account was created, but the customer profile could not be saved. Please contact Source Stays support.");setMessage("Your account and customer profile have been created.");}else{setMessage("Registration received. Please confirm your email using the link we sent you.");}setSuccess(true);setMode("login");setPassword("");setConfirm("");}catch(e){setMessage(e instanceof Error?e.message:"Unable to complete your request. Please try again.");}finally{setBusy(false);}}
- async function reset(){if(!supabase||!email.trim()){setMessage("Enter your email address first.");return;}setBusy(true);try{const {error}=await supabase.auth.resetPasswordForEmail(email.trim());if(error)throw error;setMessage("If an account exists for this email, a password reset link has been sent.");setSuccess(true);}catch(e){setMessage(e instanceof Error?e.message:"Unable to send the reset link.");}finally{setBusy(false);}}
- return <SafeAreaView style={s.safe}><Stack.Screen options={{headerShown:false}}/><ScrollView contentContainerStyle={s.content}><Link href="/" style={s.back}>← Source Stays</Link><View style={s.hero}><Text style={s.brand}>SOURCE <Text style={{color:"#D6B66E"}}>STAYS</Text></Text><Text style={s.head}>Your stay. Your rewards.</Text><Text style={s.copy}>Sign in or create an account to manage your Source Stays experience.</Text></View><View style={s.panel}><View style={s.tabs}><Pressable onPress={()=>{setMode("login");setMessage("")}} style={[s.tab,mode==="login"&&s.tabActive]}><Text style={[s.tabText,mode==="login"&&s.tabTextActive]}>Log in</Text></Pressable><Pressable onPress={()=>{setMode("signup");setMessage("")}} style={[s.tab,mode==="signup"&&s.tabActive]}><Text style={[s.tabText,mode==="signup"&&s.tabTextActive]}>Sign up</Text></Pressable></View><Text style={s.title}>{mode==="login"?"Welcome back":"Create your account"}</Text>{mode==="signup"&&<><Text style={s.label}>Full name</Text><TextInput value={name} onChangeText={setName} autoComplete="name" style={s.input} placeholder="Your full name"/><Text style={s.label}>Mobile number</Text><TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" autoComplete="tel" style={s.input} placeholder="+234..."/></>}<Text style={s.label}>Email address</Text><TextInput value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" style={s.input} placeholder="you@example.com"/><Text style={s.label}>Password</Text><TextInput value={password} onChangeText={setPassword} secureTextEntry autoComplete={mode==="login"?"current-password":"new-password"} style={s.input} placeholder="At least 8 characters"/>{mode==="signup"&&<><Text style={s.label}>Confirm password</Text><TextInput value={confirm} onChangeText={setConfirm} secureTextEntry style={s.input} placeholder="Re-enter password"/></>}{mode==="login"&&<Pressable onPress={reset} style={s.reset}><Text style={s.resetText}>Forgot password?</Text></Pressable>}<Pressable disabled={busy} onPress={submit} style={[s.button,busy&&{opacity:.65}]}>{busy?<ActivityIndicator color="#fff"/>:<Text style={s.buttonText}>{mode==="login"?"Log in":"Create my account"}</Text>}</Pressable>{!!message&&<Text style={[s.message,success&&s.success]}>{message}</Text>}</View><Text style={s.foot}>By continuing, you agree to use Source Stays responsibly.</Text></ScrollView></SafeAreaView>
+type Booking = {
+  id: number | string;
+  property_id?: number | null;
+  check_in: string | null;
+  check_out: string | null;
+  guests: number | null;
+  status: string | null;
+  payment_status: string | null;
+  amount_due: number | null;
+  currency: string | null;
+  created_at: string;
+};
+type HotelRequest = {
+  id: string;
+  request_ref: string;
+  room_category: string | null;
+  check_in: string | null;
+  check_out: string | null;
+  rooms_requested: number | null;
+  guests: number | null;
+  status: string | null;
+  payment_status: string | null;
+  hotel_reservation_confirmed_at: string | null;
+  hotel_identity_released_at: string | null;
+  created_at: string;
+};
+type HotelDetails = { hotel_name?: string; hotel_address?: string; hotel_phone?: string };
+
+const pretty = (value: string | null | undefined) => (value || "Pending").replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
+const money = (value: number | null, currency: string | null) => value == null ? "Amount to be confirmed" : `${currency || "NGN"} ${Number(value).toLocaleString("en-NG", { maximumFractionDigits: 2 })}`;
+
+export default function AccountScreen() {
+  const [user, setUser] = useState<User | null>(null);
+  const [checking, setChecking] = useState(true);
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [hotels, setHotels] = useState<HotelRequest[]>([]);
+  const [propertyNames, setPropertyNames] = useState<Record<string, string>>({});
+  const [hotelDetails, setHotelDetails] = useState<Record<string, HotelDetails>>({});
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState("");
+
+  useEffect(() => {
+    if (!supabase) { setChecking(false); return; }
+    let active = true;
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!active) return;
+      if (error) setMessage("Unable to restore your session. Please sign in again.");
+      setUser(data.session?.user ?? null);
+      setChecking(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => { active = false; listener.subscription.unsubscribe(); };
+  }, []);
+
+  const loadDashboard = useCallback(async (userId: string) => {
+    if (!supabase) return;
+    setDashboardLoading(true);
+    setDashboardError("");
+    const [bookingResult, hotelResult] = await Promise.all([
+      supabase.from("bookings")
+        .select("id, property_id, check_in, check_out, guests, status, payment_status, amount_due, currency, created_at")
+        .eq("customer_user_id", userId).order("created_at", { ascending: false }),
+      supabase.from("hotel_availability_requests")
+        .select("id, request_ref, room_category, check_in, check_out, rooms_requested, guests, status, payment_status, hotel_reservation_confirmed_at, hotel_identity_released_at, created_at")
+        .eq("customer_user_id", userId).order("created_at", { ascending: false })
+    ]);
+    if (bookingResult.error) setDashboardError("Some shortlet booking details could not be loaded.");
+    else setBookings((bookingResult.data || []) as Booking[]);
+    if (hotelResult.error) setDashboardError(current => current ? current + " Hotel requests could not be loaded." : "Hotel requests could not be loaded.");
+    else setHotels((hotelResult.data || []) as HotelRequest[]);
+
+    const ids = [...new Set((bookingResult.data || []).map(row => row.property_id).filter((id): id is number => typeof id === "number"))];
+    if (ids.length) {
+      const { data } = await supabase.from("properties").select("id,title,public_title,hide_partner_identity").in("id", ids);
+      if (data) {
+        const names: Record<string, string> = {};
+        data.forEach((property: any) => {
+          names[String(property.id)] = property.hide_partner_identity ? (property.public_title || "Private stay") : property.title;
+        });
+        setPropertyNames(names);
+      }
+    }
+
+    const confirmed = (hotelResult.data || []).filter((request: any) =>
+      request.payment_status === "paid" && request.hotel_reservation_confirmed_at && request.hotel_identity_released_at
+    );
+    const detailPairs = await Promise.all(confirmed.map(async (request: any) => {
+      const { data, error } = await supabase!.functions.invoke("get-confirmed-hotel-details", {
+        body: { request_ref: request.request_ref }
+      });
+      if (error || !data?.confirmed) return [request.request_ref, {}] as const;
+      return [request.request_ref, data as HotelDetails] as const;
+    }));
+    setHotelDetails(Object.fromEntries(detailPairs));
+    setDashboardLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (user?.id) loadDashboard(user.id);
+    else { setBookings([]); setHotels([]); setPropertyNames({}); setHotelDetails({}); }
+  }, [user?.id, loadDashboard]);
+
+  async function submit() {
+    setMessage(""); setSuccess(false);
+    if (!supabase) { setMessage("The app is not connected to Source Stays services yet."); return; }
+    if (!email.trim() || !password) { setMessage("Enter your email address and password."); return; }
+    if (mode === "signup" && (name.trim().length < 2 || phone.trim().length < 7)) { setMessage("Enter your full name and a valid mobile number."); return; }
+    if (mode === "signup" && password.length < 8) { setMessage("Use a password with at least 8 characters."); return; }
+    if (mode === "signup" && password !== confirm) { setMessage("Your passwords do not match."); return; }
+    setBusy(true);
+    try {
+      if (mode === "login") {
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        if (error) throw error;
+        setPassword("");
+        return;
+      }
+      const { data, error } = await supabase.auth.signUp({ email: email.trim(), password, options: { data: { full_name: name.trim(), phone: phone.trim() } } });
+      if (error) throw error;
+      if (data.session && data.user) {
+        const { error: profileError } = await supabase.from("customer_profiles").upsert({ id: data.user.id, full_name: name.trim(), phone: phone.trim() });
+        if (profileError) throw new Error("Your account was created, but the customer profile could not be saved. Please contact Source Stays support.");
+      }
+      setMessage(data.session ? "Your account and customer profile have been created." : "Registration received. Please confirm your email using the link we sent you.");
+      setSuccess(true); setMode("login"); setPassword(""); setConfirm("");
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Unable to complete your request. Please try again.");
+    } finally { setBusy(false); }
+  }
+
+  async function reset() {
+    if (!supabase || !email.trim()) { setMessage("Enter your email address first."); return; }
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+      if (error) throw error;
+      setMessage("If an account exists for this email, a password reset link has been sent."); setSuccess(true);
+    } catch (e) { setMessage(e instanceof Error ? e.message : "Unable to send the reset link."); }
+    finally { setBusy(false); }
+  }
+
+  async function signOut() {
+    if (!supabase) return;
+    setBusy(true);
+    const { error } = await supabase.auth.signOut();
+    setBusy(false);
+    if (error) setMessage(error.message);
+    else { setMessage("You have signed out."); router.replace("/"); }
+  }
+
+  return <SafeAreaView style={s.safe}>
+    <Stack.Screen options={{ headerShown: false }} />
+    <ScrollView contentContainerStyle={s.content}>
+      <Link href="/" style={s.back}>← Source Stays</Link>
+      {checking ? <ActivityIndicator color="#123D2B" style={{ marginTop: 50 }} /> : user ? <>
+        <View style={s.hero}>
+          <Text style={s.brand}>SOURCE <Text style={{ color: "#D6B66E" }}>STAYS</Text></Text>
+          <Text style={s.head}>Welcome{user.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ""}.</Text>
+          <Text style={s.copy}>{user.email || "Your Source Stays account"}</Text>
+          <View style={s.heroActions}>
+            <Link href="/rewards" asChild><Pressable style={s.goldButton}><Text style={s.goldButtonText}>View my Credits</Text></Pressable></Link>
+            <Pressable onPress={signOut} disabled={busy} style={s.outlineButton}><Text style={s.outlineText}>{busy ? "Please wait…" : "Sign out"}</Text></Pressable>
+          </View>
+        </View>
+        <View style={s.sectionHead}><Text style={s.sectionTitle}>My bookings</Text><Pressable onPress={() => loadDashboard(user.id)}><Text style={s.refresh}>Refresh</Text></Pressable></View>
+        {dashboardLoading ? <ActivityIndicator color="#123D2B" style={{ marginVertical: 24 }} /> : <>
+          {!!dashboardError && <Text style={s.warning}>{dashboardError}</Text>}
+          <Text style={s.subhead}>Shortlet bookings</Text>
+          {bookings.length ? bookings.map((booking) => <View key={String(booking.id)} style={s.card}>
+            <Text style={s.cardTitle}>{propertyNames[String(booking.property_id)] || `Booking #${booking.id}`}</Text>
+            <Text style={s.meta}>Reference: {booking.id}</Text>
+            <Text style={s.meta}>Check-in: {booking.check_in || "—"}  ·  Check-out: {booking.check_out || "—"}</Text>
+            <Text style={s.meta}>Guests: {booking.guests ?? "—"}</Text>
+            <View style={s.statusRow}><Text style={s.meta}>Booking: {pretty(booking.status)}</Text><Text style={s.meta}>Payment: {pretty(booking.payment_status)}</Text></View>
+            <Text style={s.amount}>{money(booking.amount_due, booking.currency)}</Text>
+          </View>) : <Text style={s.empty}>No shortlet bookings are linked to your account yet.</Text>}
+
+          <Text style={[s.subhead, { marginTop: 22 }]}>Hotel reservations</Text>
+          {hotels.length ? hotels.map((request) => {
+            const confirmed = request.payment_status === "paid" && !!request.hotel_reservation_confirmed_at && !!request.hotel_identity_released_at;
+            const details = hotelDetails[request.request_ref];
+            return <View key={request.id} style={s.card}>
+              <Text style={s.cardTitle}>Hotel request · {request.request_ref}</Text>
+              <Text style={s.meta}>Room: {request.room_category || "Hotel room"}</Text>
+              <Text style={s.meta}>Check-in: {request.check_in || "—"}  ·  Check-out: {request.check_out || "—"}</Text>
+              <Text style={s.meta}>Rooms: {request.rooms_requested ?? 1}  ·  Guests: {request.guests ?? "—"}</Text>
+              <View style={s.statusRow}><Text style={s.meta}>Request: {pretty(request.status)}</Text><Text style={s.meta}>Payment: {pretty(request.payment_status)}</Text></View>
+              <Text style={[s.confirm, !confirmed && s.pending]}>{confirmed ? "Reservation confirmed" : "Awaiting final hotel confirmation"}</Text>
+              {confirmed && details ? <View style={s.hotelDetails}>
+                <Text style={s.detailTitle}>{details.hotel_name || "Confirmed hotel"}</Text>
+                {!!details.hotel_address && <Text style={s.meta}>Address: {details.hotel_address}</Text>}
+                {!!details.hotel_phone && <Text style={s.meta}>Phone: {details.hotel_phone}</Text>}
+              </View> : confirmed ? <Text style={s.meta}>Your reservation is confirmed. Please refer to your confirmation email for the hotel details.</Text> : <Text style={s.meta}>Hotel identity is kept private until payment and reservation confirmation are complete.</Text>}
+            </View>;
+          }) : <Text style={s.empty}>No hotel requests are linked to your account yet.</Text>}
+        </>}
+        <Link href="/division/realestate" style={s.realEstate}>Explore real estate opportunities →</Link>
+      </> : <>
+        <View style={s.hero}>
+          <Text style={s.brand}>SOURCE <Text style={{ color: "#D6B66E" }}>STAYS</Text></Text>
+          <Text style={s.head}>Your stay. Your rewards.</Text>
+          <Text style={s.copy}>Sign in or create an account to manage your bookings, hotel reservations and Source Stays Credits.</Text>
+        </View>
+        <View style={s.panel}>
+          <View style={s.tabs}>
+            <Pressable onPress={() => { setMode("login"); setMessage(""); }} style={[s.tab, mode === "login" && s.tabActive]}><Text style={[s.tabText, mode === "login" && s.tabTextActive]}>Log in</Text></Pressable>
+            <Pressable onPress={() => { setMode("signup"); setMessage(""); }} style={[s.tab, mode === "signup" && s.tabActive]}><Text style={[s.tabText, mode === "signup" && s.tabTextActive]}>Sign up</Text></Pressable>
+          </View>
+          <Text style={s.title}>{mode === "login" ? "Welcome back" : "Create your account"}</Text>
+          {mode === "signup" && <>
+            <Text style={s.label}>Full name</Text><TextInput value={name} onChangeText={setName} autoComplete="name" style={s.input} placeholder="Your full name" />
+            <Text style={s.label}>Mobile number</Text><TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" autoComplete="tel" style={s.input} placeholder="+234..." />
+          </>}
+          <Text style={s.label}>Email address</Text><TextInput value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" style={s.input} placeholder="you@example.com" />
+          <Text style={s.label}>Password</Text><TextInput value={password} onChangeText={setPassword} secureTextEntry autoComplete={mode === "login" ? "current-password" : "new-password"} style={s.input} placeholder="At least 8 characters" />
+          {mode === "signup" && <><Text style={s.label}>Confirm password</Text><TextInput value={confirm} onChangeText={setConfirm} secureTextEntry style={s.input} placeholder="Re-enter password" /></>}
+          {mode === "login" && <Pressable onPress={reset} style={s.reset}><Text style={s.resetText}>Forgot password?</Text></Pressable>}
+          <Pressable disabled={busy} onPress={submit} style={[s.button, busy && { opacity: .65 }]}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={s.buttonText}>{mode === "login" ? "Log in" : "Create my account"}</Text>}</Pressable>
+          {!!message && <Text style={[s.message, success && s.success]}>{message}</Text>}
+        </View>
+      </>}
+      <Text style={s.foot}>SOURCE STAYS  ·  LAGOS, NIGERIA</Text>
+    </ScrollView>
+  </SafeAreaView>;
 }
-const s=StyleSheet.create({safe:{flex:1,backgroundColor:"#F8F7F2"},content:{padding:20,paddingBottom:40},back:{color:"#123D2B",fontWeight:"700",marginBottom:20},hero:{backgroundColor:"#123D2B",borderRadius:18,padding:22},brand:{color:"#fff",fontSize:18,fontWeight:"900",letterSpacing:1.2},head:{color:"#fff",fontSize:23,fontWeight:"900",marginTop:22},copy:{color:"#E0E8E1",fontSize:12,lineHeight:19,marginTop:8},panel:{backgroundColor:"#fff",padding:18,borderRadius:17,marginTop:17,borderWidth:1,borderColor:"#E9E8E0"},tabs:{flexDirection:"row",backgroundColor:"#F3F1E9",borderRadius:10,padding:4,marginBottom:20},tab:{flex:1,padding:11,alignItems:"center",borderRadius:8},tabActive:{backgroundColor:"#123D2B"},tabText:{color:"#667168",fontWeight:"800",fontSize:12},tabTextActive:{color:"#fff"},title:{fontSize:21,color:"#173E2D",fontWeight:"900",marginBottom:15},label:{fontSize:11,color:"#39483E",fontWeight:"800",marginTop:12,marginBottom:6},input:{borderWidth:1,borderColor:"#DDE1D8",borderRadius:9,padding:13,fontSize:13,color:"#173E2D",backgroundColor:"#fff"},reset:{alignSelf:"flex-end",paddingVertical:12},resetText:{fontSize:11,color:"#A77D31",fontWeight:"800"},button:{backgroundColor:"#123D2B",borderRadius:10,padding:15,alignItems:"center",marginTop:17,minHeight:48,justifyContent:"center"},buttonText:{color:"#fff",fontSize:13,fontWeight:"900"},message:{fontSize:11,lineHeight:17,color:"#A33A2A",marginTop:14},success:{color:"#237443"},foot:{fontSize:10,color:"#858B84",textAlign:"center",marginTop:20}});
+
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: "#F8F7F2" }, content: { padding: 20, paddingBottom: 42 },
+  back: { color: "#123D2B", fontWeight: "700", marginBottom: 20 },
+  hero: { backgroundColor: "#123D2B", borderRadius: 18, padding: 22, marginBottom: 18 },
+  brand: { color: "#fff", fontSize: 18, fontWeight: "900", letterSpacing: 1.2 },
+  head: { color: "#fff", fontSize: 24, fontWeight: "900", marginTop: 19 },
+  copy: { color: "#E0E8E1", fontSize: 12, lineHeight: 19, marginTop: 7 },
+  heroActions: { flexDirection: "row", gap: 9, marginTop: 18, flexWrap: "wrap" },
+  goldButton: { backgroundColor: "#D6B66E", paddingHorizontal: 15, paddingVertical: 11, borderRadius: 9 },
+  goldButtonText: { color: "#173E2D", fontSize: 11, fontWeight: "900" },
+  outlineButton: { borderWidth: 1, borderColor: "#D6B66E", paddingHorizontal: 15, paddingVertical: 10, borderRadius: 9 },
+  outlineText: { color: "#fff", fontSize: 11, fontWeight: "800" },
+  sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 9, marginBottom: 13 },
+  sectionTitle: { color: "#173E2D", fontSize: 21, fontWeight: "900" },
+  refresh: { color: "#A77D31", fontSize: 12, fontWeight: "900" },
+  subhead: { color: "#173E2D", fontSize: 15, fontWeight: "900", marginBottom: 10 },
+  card: { backgroundColor: "#fff", borderRadius: 13, padding: 15, borderWidth: 1, borderColor: "#E9E8E0", marginBottom: 10, gap: 5 },
+  cardTitle: { color: "#173E2D", fontSize: 14, fontWeight: "900", marginBottom: 3 },
+  meta: { color: "#69736B", fontSize: 11, lineHeight: 17 },
+  statusRow: { flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 5, marginTop: 3 },
+  amount: { color: "#173E2D", fontSize: 13, fontWeight: "900", marginTop: 5 },
+  confirm: { color: "#237443", fontSize: 11, fontWeight: "900", marginTop: 5 },
+  pending: { color: "#A77D31" },
+  hotelDetails: { backgroundColor: "#F5F2E9", borderRadius: 9, padding: 11, marginTop: 6, gap: 3 },
+  detailTitle: { color: "#173E2D", fontSize: 12, fontWeight: "900" },
+  empty: { color: "#7B837B", fontSize: 11, lineHeight: 18, backgroundColor: "#fff", padding: 14, borderRadius: 10 },
+  warning: { color: "#9A4A32", fontSize: 11, marginBottom: 12 },
+  realEstate: { color: "#A77D31", fontSize: 12, fontWeight: "900", marginTop: 17 },
+  panel: { backgroundColor: "#fff", padding: 18, borderRadius: 17, marginTop: 17, borderWidth: 1, borderColor: "#E9E8E0" },
+  tabs: { flexDirection: "row", backgroundColor: "#F3F1E9", borderRadius: 10, padding: 4, marginBottom: 20 },
+  tab: { flex: 1, padding: 11, alignItems: "center", borderRadius: 8 }, tabActive: { backgroundColor: "#123D2B" },
+  tabText: { color: "#667168", fontWeight: "800", fontSize: 12 }, tabTextActive: { color: "#fff" },
+  title: { fontSize: 21, color: "#173E2D", fontWeight: "900", marginBottom: 15 },
+  label: { fontSize: 11, color: "#39483E", fontWeight: "800", marginTop: 12, marginBottom: 6 },
+  input: { borderWidth: 1, borderColor: "#DDE1D8", borderRadius: 9, padding: 13, fontSize: 13, color: "#173E2D", backgroundColor: "#fff" },
+  reset: { alignSelf: "flex-end", paddingVertical: 12 }, resetText: { fontSize: 11, color: "#A77D31", fontWeight: "800" },
+  button: { backgroundColor: "#123D2B", borderRadius: 10, padding: 15, alignItems: "center", marginTop: 17, minHeight: 48, justifyContent: "center" },
+  buttonText: { color: "#fff", fontSize: 13, fontWeight: "900" }, message: { fontSize: 11, lineHeight: 17, color: "#A33A2A", marginTop: 14 },
+  success: { color: "#237443" }, foot: { fontSize: 10, color: "#858B84", textAlign: "center", marginTop: 20 }
+});
