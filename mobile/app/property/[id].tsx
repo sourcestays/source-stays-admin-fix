@@ -328,6 +328,11 @@ const styles = StyleSheet.create({
   input: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E2E4DC", borderRadius: 11, padding: 13, color: "#173E2D", fontSize: 14 },
   twoFields: { flexDirection: "row", gap: 12 }, half: { flex: 1 }, noteInput: { minHeight: 78, textAlignVertical: "top" },
   cta: { backgroundColor: "#123D2B", padding: 16, borderRadius: 12, marginTop: 18, alignItems: "center" }, ctaText: { color: "#fff", fontWeight: "800", fontSize: 13 },
+  policyRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 18 },
+  policyCheck: { width: 22, height: 22, borderWidth: 1, borderColor: "#AEB8AE", borderRadius: 5, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
+  policyCheckOn: { backgroundColor: "#123D2B", borderColor: "#123D2B" },
+  policyCheckText: { color: "#fff", fontWeight: "900" },
+  policyText: { flex: 1, fontSize: 11, color: "#566157", lineHeight: 17 },
   disabled: { opacity: 0.6 }, requestMessage: { fontSize: 12, lineHeight: 19, marginTop: 12 }, success: { color: "#247343" },
   notice: { fontSize: 11, color: "#777D76", lineHeight: 17, marginTop: 18 }, error: { color: "#9B3025", textAlign: "center", marginTop: 40 },
 });
