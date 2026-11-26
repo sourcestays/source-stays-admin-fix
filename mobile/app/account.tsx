@@ -32,6 +32,8 @@ type HotelRequest = {
   created_at: string;
 };
 type HotelDetails = { hotel_name?: string; hotel_address?: string; hotel_phone?: string };
+type EligibleRedemption = { value: string; label: string };
+type RedemptionRequest = { id: string | number; booking_id?: number | null; request_id?: string | null; amount: number; status: string; customer_note: string | null; created_at: string; kind: "shortlet" | "hotel" };
 
 const pretty = (value: string | null | undefined) => (value || "Pending").replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
 const money = (value: number | null, currency: string | null) => value == null ? "Amount to be confirmed" : `${currency || "NGN"} ${Number(value).toLocaleString("en-NG", { maximumFractionDigits: 2 })}`;
@@ -54,6 +56,13 @@ export default function AccountScreen() {
   const [hotelDetails, setHotelDetails] = useState<Record<string, HotelDetails>>({});
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState("");
+  const [eligibleRedemptions, setEligibleRedemptions] = useState<EligibleRedemption[]>([]);
+  const [redemptionRequests, setRedemptionRequests] = useState<RedemptionRequest[]>([]);
+  const [selectedRedemption, setSelectedRedemption] = useState("");
+  const [redemptionAmount, setRedemptionAmount] = useState("");
+  const [redemptionNote, setRedemptionNote] = useState("");
+  const [redemptionBusy, setRedemptionBusy] = useState(false);
+  const [redemptionMessage, setRedemptionMessage] = useState("");
 
   useEffect(() => {
     if (!supabase) { setChecking(false); return; }
@@ -118,10 +127,74 @@ export default function AccountScreen() {
     }
   }, []);
 
+  const loadRedemptionData = useCallback(async (userId: string) => {
+    if (!supabase) return;
+    const [bookingResult, redemptionResult, hotelResult, hotelRedemptionResult] = await Promise.all([
+      supabase.from("bookings").select("id,check_in,check_out,amount_due,status,payment_status,created_at")
+        .eq("customer_user_id", userId).in("status", ["pending", "approved", "confirmed"])
+        .eq("payment_status", "unpaid").gt("amount_due", 0).order("created_at", { ascending: false }),
+      supabase.from("source_stays_credit_redemptions").select("booking_id,status")
+        .eq("customer_user_id", userId).in("status", ["pending", "approved"]),
+      supabase.from("hotel_availability_requests").select("id,request_ref,room_category,check_in,check_out,rooms_requested,status,payment_status,availability_expires_at,room_category_id,property_id")
+        .eq("customer_user_id", userId).in("status", ["available", "awaiting_payment"])
+        .in("payment_status", ["not_started", "failed"]).order("created_at", { ascending: false }),
+      supabase.from("hotel_source_stays_credit_redemptions").select("request_id,status")
+        .eq("customer_user_id", userId).in("status", ["pending", "approved"])
+    ]);
+    if ([bookingResult.error, redemptionResult.error, hotelResult.error, hotelRedemptionResult.error].some(Boolean)) {
+      setRedemptionMessage("Eligible reservations or redemption history could not be loaded. Please refresh.");
+      return;
+    }
+    const usedBookingIds = new Set((redemptionResult.data || []).map(row => String(row.booking_id)));
+    const usedHotelIds = new Set((hotelRedemptionResult.data || []).map(row => String(row.request_id)));
+    const options: EligibleRedemption[] = [];
+    (bookingResult.data || []).filter(row => !usedBookingIds.has(String(row.id))).forEach(row => {
+      options.push({ value: "booking:" + row.id, label: "Shortlet booking #" + row.id +
+        (row.check_in && row.check_out ? " (" + row.check_in + " to " + row.check_out + ")" : "") +
+        " — ₦" + Number(row.amount_due).toLocaleString("en-NG") });
+    });
+    (hotelResult.data || []).filter(row => !usedHotelIds.has(String(row.id)) &&
+      row.availability_expires_at && new Date(row.availability_expires_at).getTime() > Date.now()
+    ).forEach(row => {
+      options.push({ value: "hotel:" + row.id, label: "Hotel " + row.request_ref + " — " +
+        (row.room_category || "Room") + " (" + row.check_in + " to " + row.check_out + ")" });
+    });
+    setEligibleRedemptions(options);
+    const shortletRows: RedemptionRequest[] = (redemptionResult.data || []).map((row: any) => ({ ...row, kind: "shortlet" }));
+    const hotelRows: RedemptionRequest[] = (hotelRedemptionResult.data || []).map((row: any) => ({ ...row, kind: "hotel" }));
+    setRedemptionRequests([...shortletRows, ...hotelRows].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+  }, []);
+
+  async function submitRedemption() {
+    setRedemptionMessage("");
+    const amount = Number(redemptionAmount);
+    if (!selectedRedemption) { setRedemptionMessage("Choose an eligible booking or hotel reservation."); return; }
+    if (!Number.isFinite(amount) || amount < 2000 || Math.round(amount * 100) !== amount * 100) {
+      setRedemptionMessage("The minimum credit redemption is ₦2,000. Enter a valid amount to two decimal places."); return;
+    }
+    if (!supabase) { setRedemptionMessage("Rewards services are unavailable right now."); return; }
+    setRedemptionBusy(true);
+    try {
+      const result = selectedRedemption.startsWith("hotel:")
+        ? await supabase.rpc("request_hotel_source_stays_credit_redemption", {
+            p_request_id: selectedRedemption.slice(6), p_amount: amount, p_customer_note: redemptionNote.trim()
+          })
+        : await supabase.rpc("request_source_stays_credit_redemption", {
+            p_booking_id: Number(selectedRedemption.slice(8)), p_amount: amount, p_customer_note: redemptionNote.trim()
+          });
+      if (result.error) throw result.error;
+      setRedemptionMessage("Your redemption request has been submitted and is awaiting administrator review.");
+      setSelectedRedemption(""); setRedemptionAmount(""); setRedemptionNote("");
+      if (user?.id) await loadRedemptionData(user.id);
+    } catch (error) {
+      setRedemptionMessage(error instanceof Error ? error.message : "Could not submit your redemption request.");
+    } finally { setRedemptionBusy(false); }
+  }
+
   useEffect(() => {
-    if (user?.id) loadDashboard(user.id);
-    else { setBookings([]); setHotels([]); setPropertyNames({}); setHotelDetails({}); }
-  }, [user?.id, loadDashboard]);
+    if (user?.id) { loadDashboard(user.id); loadRedemptionData(user.id); }
+    else { setBookings([]); setHotels([]); setPropertyNames({}); setHotelDetails({}); setEligibleRedemptions([]); setRedemptionRequests([]); }
+  }, [user?.id, loadDashboard, loadRedemptionData]);
 
   async function submit() {
     setMessage(""); setSuccess(false);
@@ -226,6 +299,32 @@ export default function AccountScreen() {
             </View>;
           }) : <Text style={s.empty}>No hotel requests are linked to your account yet.</Text>}
         </>}
+        <View style={s.redemptionPanel}>
+          <Text style={s.sectionTitle}>Redeem Source Stays Credits</Text>
+          <Text style={s.redemptionHint}>Use eligible credits toward an unpaid shortlet booking or an available hotel reservation. Minimum request: ₦2,000. All requests require administrator approval.</Text>
+          <Text style={s.label}>Eligible booking or hotel reservation</Text>
+          {eligibleRedemptions.map(option => <Pressable key={option.value} onPress={() => setSelectedRedemption(option.value)} style={[s.eligibleOption, selectedRedemption === option.value && s.eligibleOptionActive]}>
+            <Text style={[s.eligibleOptionText, selectedRedemption === option.value && s.eligibleOptionTextActive]}>{option.label}</Text>
+          </Pressable>)}
+          {!eligibleRedemptions.length && <Text style={s.empty}>No eligible unpaid reservations are currently available.</Text>}
+          <Text style={s.label}>Amount to redeem (₦)</Text>
+          <TextInput value={redemptionAmount} onChangeText={setRedemptionAmount} keyboardType="decimal-pad" placeholder="Minimum ₦2,000" style={s.input} />
+          <Text style={s.label}>Note (optional)</Text>
+          <TextInput value={redemptionNote} onChangeText={setRedemptionNote} maxLength={300} placeholder="Add a note for our team" style={s.input} />
+          <Pressable disabled={redemptionBusy || !eligibleRedemptions.length} onPress={submitRedemption} style={[s.button, (redemptionBusy || !eligibleRedemptions.length) && { opacity: .6 }]}>
+            {redemptionBusy ? <ActivityIndicator color="#fff" /> : <Text style={s.buttonText}>Submit redemption request</Text>}
+          </Pressable>
+          {!!redemptionMessage && <Text style={s.message}>{redemptionMessage}</Text>}
+        </View>
+        <View style={s.redemptionPanel}>
+          <Text style={s.sectionTitle}>My Redemption Requests</Text>
+          {redemptionRequests.length ? redemptionRequests.map(request => <View key={request.kind + "-" + request.id} style={s.redemptionRow}>
+            <Text style={s.cardTitle}>{request.kind === "hotel" ? "Hotel reservation" : "Shortlet booking"} redemption</Text>
+            <Text style={s.meta}>Amount: ₦{Number(request.amount).toLocaleString("en-NG")} · Status: {pretty(request.status)}</Text>
+            {!!request.customer_note && <Text style={s.meta}>Note: {request.customer_note}</Text>}
+            <Text style={s.meta}>{new Date(request.created_at).toLocaleDateString("en-NG")}</Text>
+          </View>) : <Text style={s.empty}>You have not submitted any redemption requests yet.</Text>}
+        </View>
         <Link href="/division/realestate" style={s.realEstate}>Explore real estate opportunities →</Link>
       </> : <>
         <View style={s.hero}>
@@ -268,6 +367,13 @@ const s = StyleSheet.create({
   goldButtonText: { color: "#173E2D", fontSize: 11, fontWeight: "900" },
   outlineButton: { borderWidth: 1, borderColor: "#D6B66E", paddingHorizontal: 15, paddingVertical: 10, borderRadius: 9 },
   outlineText: { color: "#fff", fontSize: 11, fontWeight: "800" },
+  redemptionPanel: { backgroundColor: "#fff", borderRadius: 13, padding: 16, borderWidth: 1, borderColor: "#E9E8E0", marginTop: 18 },
+  redemptionHint: { color: "#69736B", fontSize: 11, lineHeight: 18, marginTop: 7, marginBottom: 12 },
+  eligibleOption: { borderWidth: 1, borderColor: "#E2E5DC", borderRadius: 9, padding: 11, marginBottom: 8 },
+  eligibleOptionActive: { backgroundColor: "#123D2B", borderColor: "#123D2B" },
+  eligibleOptionText: { color: "#173E2D", fontSize: 11, lineHeight: 17 },
+  eligibleOptionTextActive: { color: "#fff" },
+  redemptionRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#E9E8E0", gap: 4 },
   profileCard: { backgroundColor: "#fff", borderRadius: 13, padding: 16, borderWidth: 1, borderColor: "#E9E8E0", marginBottom: 18 },
   profileLabel: { color: "#A77D31", fontSize: 9, fontWeight: "900", letterSpacing: 1, marginTop: 13 },
   profileValue: { color: "#173E2D", fontSize: 13, fontWeight: "700", marginTop: 4 },
