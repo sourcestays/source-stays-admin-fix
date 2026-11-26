@@ -62,7 +62,8 @@ export default function PropertyScreen() {
       setCustomerPhone(current => current || String(profile?.phone || data.user.user_metadata?.phone || ""));
       const { data: latestHotelRequest } = await supabase.from("hotel_availability_requests")
         .select("request_ref,status,payment_status,availability_expires_at")
-        .eq("property_id", Number(id)).order("created_at", { ascending: false }).limit(1).maybeSingle();
+        .eq("property_id", Number(id)).eq("customer_user_id", data.user.id)
+        .order("created_at", { ascending: false }).limit(1).maybeSingle();
       if (!active) return;
       if (latestHotelRequest) {
         setHotelRequestRef(String(latestHotelRequest.request_ref || ""));
