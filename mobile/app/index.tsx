@@ -73,6 +73,10 @@ export default function HomeScreen() {
           <Text style={styles.recbTitle}>Real Estate Cashback Programme</Text>
           <Text style={styles.recbCopy}>Explore RECB information and official registration guidance. →</Text>
         </Pressable></Link>
+        <View style={styles.infoLinks}>
+          <Link href="/about" asChild><Pressable style={styles.infoLink}><Text style={styles.infoLinkTitle}>About Source Stays</Text><Text style={styles.infoLinkCopy}>Our story, mission and vision →</Text></Pressable></Link>
+          <Link href="/reviews" asChild><Pressable style={styles.infoLink}><Text style={styles.infoLinkTitle}>Guest experiences</Text><Text style={styles.infoLinkCopy}>Read and share reviews →</Text></Pressable></Link>
+        </View>
         <View style={styles.note}>
           {!isSupabaseConfigured && <Text style={styles.noteTitle}>App foundation is ready</Text>}
           <Text style={styles.noteText}>{status}</Text>
@@ -118,6 +122,10 @@ const styles = StyleSheet.create({
   recbEyebrow: { color: "#D6B66E", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
   recbTitle: { color: "#FFFFFF", fontSize: 17, fontWeight: "900", marginTop: 7 },
   recbCopy: { color: "#E0E8E1", fontSize: 11, lineHeight: 17, marginTop: 5 },
+  infoLinks: { flexDirection: "row", gap: 10, marginTop: 14 },
+  infoLink: { flex: 1, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E9E8E0", borderRadius: 13, padding: 13 },
+  infoLinkTitle: { color: "#173E2D", fontSize: 12, fontWeight: "900" },
+  infoLinkCopy: { color: "#A77D31", fontSize: 10, marginTop: 7, fontWeight: "700" },
   note: { backgroundColor: "#F0EEE5", borderRadius: 15, padding: 15, marginTop: 23 },
   noteTitle: { color: "#173E2D", fontSize: 12, fontWeight: "800", marginBottom: 5 },
   noteText: { color: "#626B62", fontSize: 11, lineHeight: 17 },
