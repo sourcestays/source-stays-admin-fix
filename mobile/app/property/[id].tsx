@@ -10,6 +10,8 @@ type Property = {
   public_location: string | null; bedrooms: number | null; guests: number | null;
   amenities: string | null; image_url: string | null; hide_partner_identity: boolean | null;
   owner_identity_verified: boolean | null; physical_inspection_verified: boolean | null;
+  extra_guest_fee?: number | null; cleaning_fee?: number | null; service_fee?: number | null;
+  other_fee?: number | null; caution_fee?: number | null;
 };
 type Room = { id: string; room_name: string; description: string | null; customer_rate: number; max_guests: number | null; photo_urls: string[] | null };
 
@@ -31,6 +33,16 @@ export default function PropertyScreen() {
   const [requestBusy, setRequestBusy] = useState(false);
   const [requestMessage, setRequestMessage] = useState("");
   const [requestSuccess, setRequestSuccess] = useState(false);
+  const [bookingCheckIn, setBookingCheckIn] = useState("");
+  const [bookingCheckOut, setBookingCheckOut] = useState("");
+  const [bookingGuests, setBookingGuests] = useState("1");
+  const [bookingName, setBookingName] = useState("");
+  const [bookingPhone, setBookingPhone] = useState("");
+  const [bookingNote, setBookingNote] = useState("");
+  const [refundPolicyAccepted, setRefundPolicyAccepted] = useState(false);
+  const [bookingBusy, setBookingBusy] = useState(false);
+  const [bookingMessage, setBookingMessage] = useState("");
+  const [bookingSuccess, setBookingSuccess] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -82,6 +94,7 @@ export default function PropertyScreen() {
   const title = hidden ? (item?.public_title || "Luxury Private Getaway") : (item?.title || "Property");
   const place = hidden ? (item?.public_location || "Lagos") : (item?.location || "Location on request");
   const isHotel = String(item?.category || "").toLowerCase() === "hotel";
+  const isShortlet = String(item?.category || "").toLowerCase() === "shortlet";
 
   async function submitHotelAvailability() {
     setRequestMessage("");
@@ -150,6 +163,74 @@ export default function PropertyScreen() {
     }
   }
 
+  async function submitShortletBooking() {
+    setBookingMessage("");
+    setBookingSuccess(false);
+    if (!supabase || !item) return setBookingMessage("The Source Stays service is not connected.");
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(bookingCheckIn) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(bookingCheckOut)) {
+      return setBookingMessage("Enter check-in and check-out dates as YYYY-MM-DD.");
+    }
+    const start = Date.parse(bookingCheckIn + "T00:00:00Z");
+    const end = Date.parse(bookingCheckOut + "T00:00:00Z");
+    const nights = Math.round((end - start) / 86400000);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || nights < 1) return setBookingMessage("Check-out must be at least one day after check-in.");
+    const guests = Number(bookingGuests);
+    if (!Number.isInteger(guests) || guests < 1 || guests > 50) return setBookingMessage("Enter a valid number of guests.");
+    if (bookingName.trim().length < 2 || bookingPhone.trim().length < 7) return setBookingMessage("Please enter your full name and phone number.");
+    if (!refundPolicyAccepted) return setBookingMessage("Please accept the booking payment policy before submitting.");
+    setBookingBusy(true);
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      const user = authData.user;
+      if (!user) throw new Error("Please sign in to your Source Stays account before booking.");
+      if (!user.email) throw new Error("Your account needs a valid email address before booking.");
+      const { data: available, error: availabilityError } = await supabase.rpc("check_property_availability", {
+        p_property_id: Number(id), p_check_in: bookingCheckIn, p_check_out: bookingCheckOut
+      });
+      if (availabilityError) throw availabilityError;
+      if (available !== true) throw new Error("These dates are not available. Please choose other dates.");
+      const price = Number(item.price || 0);
+      if (price <= 0) throw new Error("Please contact Source Stays for this property's current rate.");
+      const extraGuest = Math.max(0, guests - 1) * Number(item.extra_guest_fee || 0);
+      const cleaning = Number(item.cleaning_fee || 0);
+      const service = Number(item.service_fee || 0);
+      const other = Number(item.other_fee || 0);
+      const caution = Number(item.caution_fee || 0);
+      const amountDue = price * nights + extraGuest + cleaning + service + other + caution;
+      const payload: Record<string, unknown> = {
+        customer_user_id: user.id,
+        property_id: Number(id),
+        customer_name: bookingName.trim(),
+        customer_phone: bookingPhone.trim(),
+        customer_email: user.email,
+        check_in: bookingCheckIn,
+        check_out: bookingCheckOut,
+        guests,
+        message: bookingNote.trim(),
+        amount_due: amountDue,
+        booking_base_price: price,
+        booking_caution_fee: caution,
+        currency: "NGN",
+        payment_status: "unpaid"
+      };
+      const { data: bookingId, error: bookingError } = await supabase.rpc("create_customer_booking", { p_payload: payload });
+      if (bookingError) throw bookingError;
+      if (!bookingId) throw new Error("The booking request was not confirmed. Please contact Source Stays.");
+      try {
+        await supabase.functions.invoke("notify-new-booking", { body: { booking_id: bookingId } });
+      } catch (notificationError) {
+        console.warn("Booking saved but admin notification could not be sent.", notificationError);
+      }
+      setBookingSuccess(true);
+      setBookingMessage("Your booking request has been received. Reference: " + bookingId + ". Source Stays will confirm the booking and send payment instructions. No payment has been taken yet.");
+    } catch (e) {
+      setBookingMessage(e instanceof Error ? e.message : "Unable to submit your booking request. Please try again.");
+    } finally {
+      setBookingBusy(false);
+    }
+  }
+
   const whatsapp = () => Linking.openURL("https://wa.me/2347085404814?text=" + encodeURIComponent("Hello Source Stays, I am interested in " + title + " (listing " + id + "). Please assist me."));
 
   return (
@@ -198,6 +279,29 @@ export default function PropertyScreen() {
               </Pressable>
               {!!requestMessage && <Text style={[styles.requestMessage, requestSuccess ? styles.success : styles.error]}>{requestMessage}</Text>}
               <Text style={styles.notice}>Source Stays will contact the hotel first. Payment is only arranged after availability is confirmed.</Text>
+            </> : isShortlet ? <>
+              {Number(item.price) > 0 && <Text style={styles.rate}>₦{Number(item.price).toLocaleString("en-NG")} / {item.price_period || "night"}</Text>}
+              <Text style={styles.section}>Book this shortlet</Text>
+              <Text style={styles.formHint}>Choose your dates and guest count. We will check availability before saving your booking request. Payment is not taken at this stage.</Text>
+              <Text style={styles.label}>Check-in date (YYYY-MM-DD)</Text>
+              <TextInput value={bookingCheckIn} onChangeText={setBookingCheckIn} placeholder="2026-12-20" style={styles.input} autoCapitalize="none" />
+              <Text style={styles.label}>Check-out date (YYYY-MM-DD)</Text>
+              <TextInput value={bookingCheckOut} onChangeText={setBookingCheckOut} placeholder="2026-12-22" style={styles.input} autoCapitalize="none" />
+              <Text style={styles.label}>Number of guests</Text>
+              <TextInput value={bookingGuests} onChangeText={setBookingGuests} keyboardType="number-pad" style={styles.input} />
+              <Text style={styles.label}>Your full name</Text>
+              <TextInput value={bookingName} onChangeText={setBookingName} placeholder="Full name" style={styles.input} />
+              <Text style={styles.label}>Phone number</Text>
+              <TextInput value={bookingPhone} onChangeText={setBookingPhone} placeholder="e.g. 08012345678" keyboardType="phone-pad" style={styles.input} />
+              <Text style={styles.label}>Special request (optional)</Text>
+              <TextInput value={bookingNote} onChangeText={setBookingNote} placeholder="Any special requirements?" style={[styles.input, styles.noteInput]} multiline />
+              <Pressable onPress={() => setRefundPolicyAccepted(v => !v)} style={styles.policyRow}>
+                <View style={[styles.policyCheck, refundPolicyAccepted && styles.policyCheckOn]}><Text style={styles.policyCheckText}>{refundPolicyAccepted ? "✓" : ""}</Text></View>
+                <Text style={styles.policyText}>I have read and agree to the Source Stays booking payment policy. Payments are non-refundable once a booking is confirmed and payment has been received.</Text>
+              </Pressable>
+              <Pressable disabled={bookingBusy} onPress={submitShortletBooking} style={[styles.cta, bookingBusy && styles.disabled]}><Text style={styles.ctaText}>{bookingBusy ? "Submitting..." : "Check availability & book"}</Text></Pressable>
+              {!!bookingMessage && <Text style={[styles.requestMessage, bookingSuccess ? styles.success : styles.error]}>{bookingMessage}</Text>}
+              <Text style={styles.notice}>Your request will be linked to your customer account. Source Stays will confirm availability and provide payment instructions.</Text>
             </> : <>
               {Number(item.price) > 0 && <Text style={styles.rate}>₦{Number(item.price).toLocaleString("en-NG")} / {item.price_period || "night"}</Text>}
               <Text style={styles.notice}>Contact our team to confirm details, availability and next steps.</Text>
