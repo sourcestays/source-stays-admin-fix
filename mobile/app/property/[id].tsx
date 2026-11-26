@@ -77,7 +77,7 @@ export default function PropertyScreen() {
     setRequestSuccess(false);
     if (!supabase) return setRequestMessage("The Source Stays service is not connected.");
     if (!selectedRoomId) return setRequestMessage("Please select a room category.");
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(checkIn) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(checkOut)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(checkIn) || !/^\d{4}-\d{2}-\d{2}$/.test(checkOut)) {
       return setRequestMessage("Enter dates in YYYY-MM-DD format.");
     }
     const start = Date.parse(checkIn + "T00:00:00Z");
