@@ -9,6 +9,7 @@ type Property = {
   price: number | null; price_period: string | null; location: string | null;
   public_location: string | null; bedrooms: number | null; guests: number | null;
   amenities: string | null; image_url: string | null; hide_partner_identity: boolean | null;
+  is_zylus_group?: boolean | null;
   owner_identity_verified: boolean | null; physical_inspection_verified: boolean | null;
   extra_guest_fee?: number | null; cleaning_fee?: number | null; service_fee?: number | null;
   other_fee?: number | null; caution_fee?: number | null;
@@ -48,6 +49,15 @@ export default function PropertyScreen() {
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingMessage, setBookingMessage] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [inspectionName, setInspectionName] = useState("");
+  const [inspectionEmail, setInspectionEmail] = useState("");
+  const [inspectionPhone, setInspectionPhone] = useState("");
+  const [inspectionDate, setInspectionDate] = useState("");
+  const [inspectionTime, setInspectionTime] = useState("10:00 AM");
+  const [inspectionNote, setInspectionNote] = useState("");
+  const [inspectionBusy, setInspectionBusy] = useState(false);
+  const [inspectionMessage, setInspectionMessage] = useState("");
+  const [inspectionSuccess, setInspectionSuccess] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -80,7 +90,7 @@ export default function PropertyScreen() {
         return;
       }
       const { data, error: propertyError } = await supabase.from("properties")
-        .select("id,title,public_title,category,price,price_period,location,public_location,bedrooms,guests,amenities,image_url,hide_partner_identity,owner_identity_verified,physical_inspection_verified,extra_guest_fee,cleaning_fee,service_fee,other_fee,caution_fee")
+        .select("id,title,public_title,category,price,price_period,location,public_location,bedrooms,guests,amenities,image_url,hide_partner_identity,is_zylus_group,owner_identity_verified,physical_inspection_verified,extra_guest_fee,cleaning_fee,service_fee,other_fee,caution_fee")
         .eq("id", Number(id)).eq("published", true).maybeSingle();
       if (!active) return;
       if (propertyError || !data) {
@@ -111,6 +121,7 @@ export default function PropertyScreen() {
   const place = hidden ? (item?.public_location || "Lagos") : (item?.location || "Location on request");
   const isHotel = String(item?.category || "").toLowerCase() === "hotel";
   const isShortlet = String(item?.category || "").toLowerCase() === "shortlet";
+  const isRealEstate = ["sale", "land", "rent"].includes(String(item?.category || "").toLowerCase());
 
   async function refreshHotelRequest(ref = hotelRequestRef) {
     if (!supabase || !ref) return;
@@ -285,6 +296,36 @@ export default function PropertyScreen() {
     }
   }
 
+  async function submitInspectionRequest() {
+    setInspectionMessage("");
+    setInspectionSuccess(false);
+    if (!supabase || !item) return setInspectionMessage("The Source Stays service is not connected.");
+    if (inspectionName.trim().length < 2 || inspectionPhone.trim().length < 7 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(inspectionEmail.trim())) {
+      return setInspectionMessage("Enter your full name, valid email address and phone number.");
+    }
+    const match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(inspectionDate);
+    if (!match) return setInspectionMessage("Choose a valid inspection date in YYYY-MM-DD format.");
+    const year = Number(match[1]), month = Number(match[2]), day = Number(match[3]);
+    const selected = new Date(year, month - 1, day);
+    if (selected.getFullYear() !== year || selected.getMonth() !== month - 1 || selected.getDate() !== day) return setInspectionMessage("Choose a valid inspection date.");
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    if (selected < today) return setInspectionMessage("Inspection date cannot be in the past.");
+    if (item.is_zylus_group && selected.getDay() !== 2) return setInspectionMessage("Zylus Group properties are available for inspection on Tuesdays only.");
+    setInspectionBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("submit-inspection-request", {
+        body: { property_id: Number(id), customer_name: inspectionName.trim(), customer_email: inspectionEmail.trim(), customer_phone: inspectionPhone.trim(), preferred_date: inspectionDate, preferred_time: inspectionTime, message: inspectionNote.trim() }
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Could not submit your inspection request.");
+      setInspectionSuccess(true);
+      setInspectionMessage("Your inspection request has been submitted. Our team will contact you to confirm the preferred date and time.");
+      setInspectionNote("");
+    } catch (e) {
+      setInspectionMessage(e instanceof Error ? e.message : "Unable to submit your inspection request. Please try again.");
+    } finally { setInspectionBusy(false); }
+  }
+
   const whatsapp = () => Linking.openURL("https://wa.me/2347085404814?text=" + encodeURIComponent("Hello Source Stays, I am interested in " + title + " (listing " + id + "). Please assist me."));
 
   return (
@@ -369,8 +410,28 @@ export default function PropertyScreen() {
               <Text style={styles.notice}>Your request will be linked to your customer account. Source Stays will confirm availability and provide payment instructions.</Text>
             </> : <>
               {Number(item.price) > 0 && <Text style={styles.rate}>₦{Number(item.price).toLocaleString("en-NG")} / {item.price_period || "night"}</Text>}
-              <Text style={styles.notice}>Contact our team to confirm details, availability and next steps.</Text>
-              <Pressable onPress={whatsapp} style={styles.cta}><Text style={styles.ctaText}>Enquire with Source Stays  →</Text></Pressable>
+              {isRealEstate ? <>
+                <Text style={styles.section}>Request a property inspection</Text>
+                <Text style={styles.formHint}>Choose your preferred inspection date and time. Our team will contact you to confirm the appointment.</Text>
+                <Text style={styles.label}>Full name</Text>
+                <TextInput value={inspectionName} onChangeText={setInspectionName} placeholder="Your full name" style={styles.input} />
+                <Text style={styles.label}>Email address</Text>
+                <TextInput value={inspectionEmail} onChangeText={setInspectionEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" style={styles.input} />
+                <Text style={styles.label}>Phone number</Text>
+                <TextInput value={inspectionPhone} onChangeText={setInspectionPhone} placeholder="e.g. 08012345678" keyboardType="phone-pad" style={styles.input} />
+                <Text style={styles.label}>Preferred inspection date (YYYY-MM-DD)</Text>
+                <TextInput value={inspectionDate} onChangeText={setInspectionDate} placeholder="2026-12-01" style={styles.input} />
+                {item.is_zylus_group && <Text style={styles.notice}>Zylus Group properties are available for inspection on Tuesdays only.</Text>}
+                <Text style={styles.label}>Preferred time</Text>
+                <View style={styles.timeOptions}>{["9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","2:00 PM","3:00 PM","4:00 PM"].map(time => <Pressable key={time} onPress={() => setInspectionTime(time)} style={[styles.timeOption, inspectionTime === time && styles.timeOptionActive]}><Text style={[styles.timeOptionText, inspectionTime === time && styles.timeOptionTextActive]}>{time}</Text></Pressable>)}</View>
+                <Text style={styles.label}>Additional message (optional)</Text>
+                <TextInput value={inspectionNote} onChangeText={setInspectionNote} placeholder="Any additional information?" style={[styles.input, styles.noteInput]} multiline maxLength={1000} />
+                <Pressable disabled={inspectionBusy} onPress={submitInspectionRequest} style={[styles.cta, inspectionBusy && styles.disabled]}><Text style={styles.ctaText}>{inspectionBusy ? "Submitting..." : "Submit inspection request"}</Text></Pressable>
+                {!!inspectionMessage && <Text style={[styles.requestMessage, inspectionSuccess ? styles.success : styles.error]}>{inspectionMessage}</Text>}
+              </> : <>
+                <Text style={styles.notice}>Contact our team to confirm details, availability and next steps.</Text>
+                <Pressable onPress={whatsapp} style={styles.cta}><Text style={styles.ctaText}>Enquire with Source Stays  →</Text></Pressable>
+              </>}
             </>}
           </> : null}
       </ScrollView>
@@ -391,7 +452,12 @@ const styles = StyleSheet.create({
   roomName: { fontSize: 15, fontWeight: "800", color: "#173E2D" }, selectText: { fontSize: 9, color: "#A77D31", fontWeight: "900" },
   formHint: { fontSize: 12, color: "#687269", lineHeight: 19, marginBottom: 12 }, label: { color: "#173E2D", fontSize: 12, fontWeight: "700", marginTop: 12, marginBottom: 6 },
   input: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E2E4DC", borderRadius: 11, padding: 13, color: "#173E2D", fontSize: 14 },
-  twoFields: { flexDirection: "row", gap: 12 }, half: { flex: 1 }, noteInput: { minHeight: 78, textAlignVertical: "top" },
+  twoFields: { flexDirection: "row", gap: 12 }, half: { flex: 1 },
+  timeOptions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 5 },
+  timeOption: { borderWidth: 1, borderColor: "#DADDD4", borderRadius: 18, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: "#fff" },
+  timeOptionActive: { backgroundColor: "#123D2B", borderColor: "#123D2B" },
+  timeOptionText: { color: "#526057", fontSize: 11, fontWeight: "700" },
+  timeOptionTextActive: { color: "#fff" }, noteInput: { minHeight: 78, textAlignVertical: "top" },
   cta: { backgroundColor: "#123D2B", padding: 16, borderRadius: 12, marginTop: 18, alignItems: "center" }, ctaText: { color: "#fff", fontWeight: "800", fontSize: 13 },
   requestCard: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E2E4DC", borderRadius: 13, padding: 15, marginTop: 18 },
   requestCardTitle: { color: "#173E2D", fontSize: 15, fontWeight: "900" },
