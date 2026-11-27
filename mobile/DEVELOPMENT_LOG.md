@@ -108,3 +108,12 @@ Last updated: 2026-11-27
 - Reviewed the hotel customer flow: the app creates an availability request first, tells the customer payment is not taken, and only exposes the Paystack payment action after an availability status and unexpired confirmation are present. The payment initializer is an Edge Function, not a client-side Paystack secret integration.
 - Latest branch-head CI run #100 passed: dependency install, TypeScript check, Android JS bundle export and shortlet payment Edge Function checks. This is automated build validation, not proof of live Supabase policies or real payment behavior.
 - No production SQL, RLS policies or app data queries were changed during this audit. A safe fix requires a read-only inspection of the live Supabase table/view grants, RLS policies, deployed RPC signatures/privileges and Edge Function versions first. After that, implement a customer-safe property view/RPC and update both website and mobile clients together if the live policy permits raw identity fields.
+
+
+## RPC privilege finding and remediation prepared — 2026-11-27
+
+- User supplied the live Supabase result for `create_customer_booking(jsonb)`: `proacl = NULL`, `anon_can_execute = true`, and `authenticated_can_execute = true`.
+- This confirms the function currently inherits PostgreSQL's default function EXECUTE privilege for PUBLIC, which includes anon. The function body rejects calls with a null `auth.uid()`, so this result alone does not prove anonymous booking creation is possible; nevertheless, the anon EXECUTE grant is unnecessary and has been removed in a new migration.
+- Added `supabase/migrations/20261127150000_restrict_customer_booking_rpc.sql`: revoke all privileges from PUBLIC and anon, then grant EXECUTE to authenticated. This preserves the existing signed-in website/mobile RPC flow and does not alter the function body or booking schema.
+- Migration is committed but has **not** been applied to the live Supabase project. Apply only after reviewing the migration; then rerun the function privilege query and confirm anon=false, authenticated=true.
+- Partner identity privacy remains unresolved until the user supplies the properties RLS, table grants and public-view query results. Do not infer those permissions from this RPC result.
