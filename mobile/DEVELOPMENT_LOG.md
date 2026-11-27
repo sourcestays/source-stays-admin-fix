@@ -150,3 +150,10 @@ Last updated: 2026-11-27
 - User supplied test-project results: `anon` and `authenticated` both have USAGE on schema `public`; neither has SELECT on `public.properties`.
 - User's complete `pg_views` inventory for schema `public` returned zero rows.
 - This confirms schema USAGE is present but no public-schema views are available in this project. The customer property-read contract must be added deliberately; do not open direct base-table access.
+
+
+## Public customer-view object existence check — 2026-11-27
+
+- User queried `pg_class` for `hotel_room_categories_public`, `villa_packages_public`, and `properties_public` in schema `public`; zero rows returned.
+- Therefore none of these three named objects currently exists in the Source Stays test project's public schema. This corroborates the earlier empty public-view inventory.
+- Before applying or replaying view migrations, inspect Supabase migration history and the actual underlying hotel/villa tables and columns. Do not assume the migrations have or have not run solely from GitHub source files.
