@@ -170,3 +170,11 @@ Last updated: 2026-11-27
 - User's catalog query found `auth.schema_migrations`, `realtime.schema_migrations`, and `storage.migrations`; it did not find a `supabase_migrations` schema/table.
 - These are Supabase service-schema migration tables and must not be treated as the Source Stays application migration ledger without verifying their purpose. Application SQL may have been applied manually in SQL Editor and not recorded in a CLI migration history.
 - Use Supabase Dashboard's project migration tooling/history if available and compare with actual object definitions; do not query or alter internal auth/realtime/storage migration records.
+
+
+## Test-project base schema inspection — 2026-11-27
+
+- User queried `information_schema.columns` for `properties`, `hotel_room_categories`, and `villa_packages`.
+- Returned rows contain 13 columns for `properties`: `id bigint`, `title text`, `public_title text`, `published boolean`, `price numeric`, `caution_fee numeric`, `extra_guest_fee numeric`, `cleaning_fee numeric`, `service_fee numeric`, `other_fee numeric`, `event_enabled boolean`, `event_price numeric`, `event_caution_fee numeric`.
+- No columns were returned for `hotel_room_categories` or `villa_packages`. This does not conclusively prove those relations are absent (they may be views, use different names/schemas, or the result may be partial); inspect relation existence separately.
+- Compared with current mobile queries, fields such as `category`, `location`, `image_url`, `price_period`, `bedrooms`, `guests`, `amenities`, and partner privacy/verification flags were not present in the supplied result. This is a potentially significant schema drift issue; do not create a property view or grant privileges until the full actual `properties` schema and relation inventory are confirmed.
