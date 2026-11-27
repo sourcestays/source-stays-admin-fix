@@ -202,3 +202,14 @@ Last updated: 2026-11-27
 - User supplied public function inventory: `check_property_availability(p_property_id bigint, p_check_in date, p_check_out date)` with `prosecdef=false` (SECURITY INVOKER), and `create_customer_booking(p_payload jsonb)` with `prosecdef=true` (SECURITY DEFINER).
 - User supplied properties constraints/index inventory: only `properties_pkey PRIMARY KEY (id)` and its unique btree index were returned.
 - Need inspect exact function definitions and EXECUTE privileges, especially whether direct authenticated calls to the availability function are needed and how it reads property/booking data. Do not alter function security mode or grants without reviewing definitions and dependencies.
+
+
+## Live test-project booking function definitions reviewed — 2026-11-27
+
+- User supplied exact definition of `check_property_availability(bigint,date,date)`: SQL, STABLE, SECURITY INVOKER (prosecdef=false), empty search_path, checks overlapping rows in `public.bookings` where `status <> 'declined'`.
+- It is executable by both anon and authenticated according to `has_function_privilege`. Because it is SECURITY INVOKER and queries `public.bookings`, direct calls depend on the caller's SELECT privileges on bookings (and any applicable RLS). Those privileges/policies have not yet been inspected. Its boolean return reveals availability only, but the function could fail for API roles lacking underlying SELECT.
+- User supplied exact definition of `create_customer_booking(jsonb)`: PL/pgSQL SECURITY DEFINER, empty search_path, explicitly requires `auth.uid()`, validates signed-in account email, reads/locks a published property row, derives price and fees server-side, checks availability, inserts pending/unpaid booking, and returns booking id.
+- Its current EXECUTE privileges are anon=false, authenticated=true. This matches the earlier verified RPC permission fix.
+- Inference: when the SECURITY DEFINER booking function calls the invoker availability function, the nested call executes in the current effective definer context, so it can read bookings as the function owner, assuming owner privileges. Confirm owner and grants before relying on this.
+- Potential correctness edge case for later review: `b.status <> 'declined'` does not include rows with NULL status because the predicate evaluates UNKNOWN. Do not change until existing booking status semantics/data are inspected.
+- Next inspect effective SELECT privileges and RLS for `public.bookings`; no changes to function grants or definitions until then.
