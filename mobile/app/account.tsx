@@ -371,7 +371,7 @@ export default function AccountScreen() {
           <Text style={s.profileValue}>{user.user_metadata?.phone || "Not provided"}</Text>
         </View>
         <View style={s.sectionHead}><Text style={s.sectionTitle}>My bookings</Text><Pressable onPress={() => loadDashboard(user.id)}><Text style={s.refresh}>Refresh</Text></Pressable></View>
-        {dashboardLoading ? <ActivityIndicator color="#123D2B" style={{ marginVertical: 24 }} /> : <>
+        {dashboardLoading ? <ActivityIndicator color={colors.gold} style={{ marginVertical: 24 }} /> : <>
           {!!dashboardError && <Text style={s.warning}>{dashboardError}</Text>}{!!paymentMessage && <Text style={s.message}>{paymentMessage}</Text>}
           <Text style={[s.subhead, { color: colors.text }]}>Shortlet bookings</Text>
           {bookings.length ? bookings.map((booking) => <View key={String(booking.id)} style={s.card}>
@@ -423,7 +423,7 @@ export default function AccountScreen() {
           <Text style={s.label}>Note (optional)</Text>
           <TextInput value={redemptionNote} onChangeText={setRedemptionNote} maxLength={300} placeholder="Add a note for our team" style={s.input} />
           <Pressable disabled={redemptionBusy || !eligibleRedemptions.length} onPress={submitRedemption} style={[s.button, (redemptionBusy || !eligibleRedemptions.length) && { opacity: .6 }]}>
-            {redemptionBusy ? <ActivityIndicator color="#fff" /> : <Text style={s.buttonText}>Submit redemption request</Text>}
+            {redemptionBusy ? <ActivityIndicator color={colors.primaryText} /> : <Text style={s.buttonText}>Submit redemption request</Text>}
           </Pressable>
           {!!redemptionMessage && <Text style={s.message}>{redemptionMessage}</Text>}
         </View>
