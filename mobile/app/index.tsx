@@ -3,136 +3,134 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link } from "expo-router";
 import { isSupabaseConfigured, supabase } from "@/src/lib/supabase";
+import { useAppTheme, ThemeMode } from "@/src/theme/ThemeProvider";
+import { SectionIcon } from "@/src/components/SectionIcon";
 
 const divisions = [
-  { title: "Shortlets", subtitle: "Apartments and private stays", category: "shortlet", icon: "⌂" },
-  { title: "Hotels", subtitle: "Rooms for every kind of trip", category: "hotel", icon: "▦" },
-  { title: "Real Estate", subtitle: "Buy, rent and explore property", category: "realestate", icon: "◇" },
-  { title: "Rewards", subtitle: "Your Source Stays credits", category: "rewards", icon: "✧" },
+  { title: "Shortlets", subtitle: "Beautiful spaces for your next stay", category: "shortlet", icon: "shortlets" },
+  { title: "Hotels", subtitle: "Comfort, service and great locations", category: "hotel", icon: "hotels" },
+  { title: "Real Estate", subtitle: "Find a place to call your own", category: "realestate", icon: "realestate" },
+  { title: "Rewards", subtitle: "Enjoy more with Source Stays", category: "rewards", icon: "rewards" },
 ];
 
 export default function HomeScreen() {
   const [listingCount, setListingCount] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [status, setStatus] = useState("Connecting to Source Stays");
+  const [status, setStatus] = useState("Discover stays and property opportunities across Nigeria.");
+  const { mode, setMode, isDark, colors } = useAppTheme();
 
   useEffect(() => {
     let active = true;
     async function load() {
-      if (!supabase) {
-        setStatus("Add your Supabase settings to mobile/.env to connect listings.");
-        return;
-      }
-      const { count, error } = await supabase
-        .from("properties")
-        .select("id", { count: "exact", head: true })
-        .eq("published", true);
+      if (!supabase) { setStatus("Connect to Source Stays to explore live listings."); return; }
+      const { count, error } = await supabase.from("properties").select("id", { count: "exact", head: true }).eq("published", true);
       if (!active) return;
-      if (error) setStatus("Listings will appear here once the connection is ready.");
-      else {
-        setListingCount(count ?? 0);
-        setStatus("Explore stays and property opportunities across Nigeria.");
-      }
+      if (error) setStatus("Explore stays and property opportunities across Nigeria.");
+      else { setListingCount(count ?? 0); setStatus("Discover stays and property opportunities across Nigeria."); }
     }
     load();
     return () => { active = false; };
   }, []);
 
+  const cycleTheme = (next: ThemeMode) => setMode(next);
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.topline}>
-          <Image source={{ uri: "https://raw.githubusercontent.com/sourcestays/source-stays-admin-fix/mobile-app-foundation/source-stays-logo-green-gold.png" }} style={styles.logo} resizeMode="contain" accessibilityLabel="Source Stays logo" />
-          <Link href="/account" asChild><Pressable style={styles.account}><Text style={styles.accountText}>Sign in</Text></Pressable></Link>
+    <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
+      <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+        <View style={s.topline}>
+          <Image source={{ uri: "https://raw.githubusercontent.com/sourcestays/source-stays-admin-fix/mobile-app-foundation/source-stays-logo-green-gold.png" }} style={s.logo} resizeMode="contain" accessibilityLabel="Source Stays logo" />
+          <View style={s.topActions}>
+            <Pressable onPress={() => cycleTheme(mode === "system" ? "dark" : mode === "dark" ? "light" : "system")} style={[s.themeButton, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <SectionIcon name={isDark ? "moon" : "sun"} size={16} color={colors.gold} background="transparent" />
+            </Pressable>
+            <Link href="/account" asChild><Pressable style={[s.account, { backgroundColor: colors.primary }]}><Text style={[s.accountText, { color: colors.primaryText }]}>My Account</Text></Pressable></Link>
+          </View>
         </View>
 
-        <View style={styles.hero}>
-          <Text style={styles.eyebrow}>WELCOME TO SOURCE STAYS</Text>
-          <Text style={styles.headline}>Find a place to stay.{"\n"}Find a place to own.</Text>
-          <Text style={styles.heroCopy}>Discover handpicked shortlets, hotels and real estate opportunities — all in one place.</Text>
-          <View style={styles.searchPill}><Text style={styles.searchIcon}>⌕</Text><TextInput value={searchTerm} onChangeText={setSearchTerm} onSubmitEditing={() => {}} returnKeyType="search" placeholder="Search area: Lekki, Ikeja, Magodo…" placeholderTextColor="#777D76" style={styles.searchInput}/></View>
-          <Link href={{ pathname: "/division/[type]", params: { type: "shortlet", q: searchTerm.trim() } }} asChild><Pressable style={styles.searchButton}><Text style={styles.searchButtonText}>Find a shortlet  →</Text></Pressable></Link>
+        <View style={[s.hero, { backgroundColor: colors.hero }]}>
+          <View pointerEvents="none" style={s.heroGlow} />
+          <Text style={s.eyebrow}>LAGOS  ·  NIGERIA</Text>
+          <Text style={s.headline}>Find a place to stay.{"\n"}Find a place to own.</Text>
+          <Text style={s.heroCopy}>Shortlet apartments, hotel stays and real-estate opportunities — brought together by Source Stays.</Text>
+          <View style={[s.searchPill, { backgroundColor: colors.input }]}>
+            <SectionIcon name="search" size={18} color={colors.gold} background="transparent" />
+            <TextInput value={searchTerm} onChangeText={setSearchTerm} onSubmitEditing={() => {}} returnKeyType="search" placeholder="Location e.g. Lekki, Ikeja, Magodo" placeholderTextColor={colors.muted} style={[s.searchInput, { color: colors.text }]} />
+          </View>
+          <Link href={{ pathname: "/division/[type]", params: { type: "shortlet", q: searchTerm.trim() } }} asChild>
+            <Pressable style={s.searchButton}><Text style={s.searchButtonText}>Explore stays  ↗</Text></Pressable>
+          </Link>
+          <View style={s.heroFoot}><Text style={s.heroFootText}>STAY • DISCOVER • OWN</Text><Text style={s.heroFootText}>SOURCE STAYS</Text></View>
         </View>
 
-        <View style={styles.sectionHeader}>
-          <View><Text style={styles.sectionTitle}>Explore Source Stays</Text><Text style={styles.sectionCopy}>Everything you need, in one place.</Text></View>
-          {listingCount !== null && <Text style={styles.count}>{listingCount} listings</Text>}
+        <View style={s.sectionHeader}>
+          <View><Text style={[s.sectionTitle, { color: colors.text }]}>Explore our world</Text><Text style={[s.sectionCopy, { color: colors.muted }]}>Everything you need, in one place.</Text></View>
+          {listingCount !== null && <Text style={[s.count, { color: colors.gold }]}>{listingCount} listings</Text>}
         </View>
-
-        <View style={styles.grid}>
-          {divisions.map((item) => (
-            <Link key={item.category} href={item.category === "rewards" ? "/rewards" : { pathname: "/division/[type]", params: { type: item.category } }} asChild><Pressable style={styles.tile}>
-              <View style={styles.tileIcon}><Text style={styles.tileIconText}>{item.icon}</Text></View>
-              <Text style={styles.tileTitle}>{item.title}</Text>
-              <Text style={styles.tileCopy}>{item.subtitle}</Text>
-              <Text style={styles.arrow}>Explore  →</Text>
-            </Pressable></Link>
+        <View style={s.grid}>
+          {divisions.map(item => (
+            <Link key={item.category} href={item.category === "rewards" ? "/rewards" : { pathname: "/division/[type]", params: { type: item.category } }} asChild>
+              <Pressable style={[s.tile, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={s.tileTop}><SectionIcon name={item.icon} size={24} color={colors.gold} background={isDark ? "#294638" : "#F5F0E4"} /><Text style={[s.tileArrow, { color: colors.gold }]}>↗</Text></View>
+                <Text style={[s.tileTitle, { color: colors.text }]}>{item.title}</Text>
+                <Text style={[s.tileCopy, { color: colors.muted }]}>{item.subtitle}</Text>
+                <Text style={[s.explore, { color: colors.gold }]}>Explore section</Text>
+              </Pressable>
+            </Link>
           ))}
         </View>
 
-        <Link href="/recb" asChild><Pressable style={styles.recbCard}>
-          <Text style={styles.recbEyebrow}>SOURCE STAYS × ZYLUS GROUP INTERNATIONAL</Text>
-          <Text style={styles.recbTitle}>Real Estate Cashback Programme</Text>
-          <Text style={styles.recbCopy}>Explore RECB information and official registration guidance. →</Text>
+        <Link href="/recb" asChild><Pressable style={[s.recbCard, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+          <Text style={[s.recbEyebrow, { color: colors.gold }]}>SOURCE STAYS × ZYLUS GROUP INTERNATIONAL</Text>
+          <Text style={[s.recbTitle, { color: colors.text }]}>Real Estate Cashback Programme</Text>
+          <Text style={[s.recbCopy, { color: colors.muted }]}>Explore the programme and official registration guidance.  ↗</Text>
         </Pressable></Link>
-        <View style={styles.infoLinks}>
-          <Link href="/about" asChild><Pressable style={styles.infoLink}><Text style={styles.infoLinkTitle}>About Source Stays</Text><Text style={styles.infoLinkCopy}>Our story, mission and vision →</Text></Pressable></Link>
-          <Link href="/reviews" asChild><Pressable style={styles.infoLink}><Text style={styles.infoLinkTitle}>Guest experiences</Text><Text style={styles.infoLinkCopy}>Read and share reviews →</Text></Pressable></Link>
+        <View style={s.infoLinks}>
+          <Link href="/about" asChild><Pressable style={[s.infoLink, { backgroundColor: colors.surface, borderColor: colors.border }]}><Text style={[s.infoLinkTitle, { color: colors.text }]}>About Source Stays</Text><Text style={[s.infoLinkCopy, { color: colors.gold }]}>Our story  ↗</Text></Pressable></Link>
+          <Link href="/reviews" asChild><Pressable style={[s.infoLink, { backgroundColor: colors.surface, borderColor: colors.border }]}><Text style={[s.infoLinkTitle, { color: colors.text }]}>Guest experiences</Text><Text style={[s.infoLinkCopy, { color: colors.gold }]}>Read reviews  ↗</Text></Pressable></Link>
         </View>
-        <View style={styles.note}>
-          {!isSupabaseConfigured && <Text style={styles.noteTitle}>App foundation is ready</Text>}
-          <Text style={styles.noteText}>{status}</Text>
-          {!isSupabaseConfigured && <Text style={styles.noteHint}>The Supabase URL and publishable key are intentionally supplied through local environment variables, never committed to the repository.</Text>}
+
+        <View style={[s.appearance, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={{ flex: 1 }}><Text style={[s.appearanceTitle, { color: colors.text }]}>Appearance</Text><Text style={[s.appearanceCopy, { color: colors.muted }]}>Choose how Source Stays looks.</Text></View>
+          {(["light", "dark", "system"] as ThemeMode[]).map(option => <Pressable key={option} onPress={() => setMode(option)} style={[s.modeChip, { backgroundColor: mode === option ? colors.primary : colors.surfaceAlt }]}><Text style={[s.modeText, { color: mode === option ? colors.primaryText : colors.muted }]}>{option === "light" ? "☼" : option === "dark" ? "☾" : "◐"}</Text></Pressable>)}
         </View>
-        <Text style={styles.footer}>SOURCE STAYS  ·  LAGOS, NIGERIA</Text>
+        <Text style={[s.noteText, { color: colors.muted }]}>{status}{!isSupabaseConfigured ? " Add the test project's public settings to the local build environment to load listings." : ""}</Text>
+        <Text style={[s.footer, { color: colors.muted }]}>SOURCE STAYS  ·  LAGOS, NIGERIA</Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F8F7F2" },
-  content: { padding: 22, paddingBottom: 42 },
-  topline: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 },
- logo: {
-  width: 120,
-  height: 90,
-  alignSelf: "flex-start",
-  marginLeft: 0,
-},
-  account: { borderWidth: 1, borderColor: "#D8D9CF", borderRadius: 24, paddingHorizontal: 17, paddingVertical: 9, marginTop: 10 },
-  accountText: { color: "#123D2B", fontWeight: "700", fontSize: 12 },
-  hero: { backgroundColor: "#123D2B", borderRadius: 24, padding: 23, marginBottom: 29 },
-  eyebrow: { color: "#D6B66E", fontSize: 9, fontWeight: "800", letterSpacing: 1.6, marginBottom: 13 },
-  headline: { color: "#FFFFFF", fontSize: 30, lineHeight: 36, fontWeight: "800", letterSpacing: -0.8 },
-  heroCopy: { color: "#E0E8E1", fontSize: 13, lineHeight: 20, marginTop: 12, maxWidth: 290 },
-  searchPill: { backgroundColor: "#FFFFFF", borderRadius: 14, padding: 14, marginTop: 22, flexDirection: "row", alignItems: "center" },
-  searchIcon: { color: "#B58A3A", fontSize: 23, marginRight: 10 },
-  searchInput: { color: "#173E2D", fontSize: 12, flex: 1, paddingVertical: 2 },
-  searchButton: { alignSelf: "flex-start", backgroundColor: "#D6B66E", borderRadius: 10, paddingHorizontal: 15, paddingVertical: 11, marginTop: 10 },
-  searchButtonText: { color: "#123D2B", fontSize: 11, fontWeight: "900" },
+const s = StyleSheet.create({
+  safe: { flex: 1 }, content: { padding: 20, paddingBottom: 42 },
+  topline: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 18 },
+  logo: { width: 112, height: 72 }, topActions: { flexDirection: "row", alignItems: "center", gap: 9 },
+  themeButton: { width: 42, height: 42, borderRadius: 15, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  account: { borderRadius: 15, paddingHorizontal: 16, paddingVertical: 13 }, accountText: { fontWeight: "900", fontSize: 11 },
+  hero: { borderRadius: 25, padding: 23, marginBottom: 30, overflow: "hidden" },
+  heroGlow: { position: "absolute", width: 240, height: 240, borderRadius: 120, borderWidth: 1, borderColor: "rgba(214,182,110,0.18)", right: -95, top: -95 },
+  eyebrow: { color: "#D6B66E", fontSize: 10, fontWeight: "900", letterSpacing: 2, marginBottom: 15 },
+  headline: { color: "#FFFFFF", fontSize: 34, lineHeight: 39, fontWeight: "900", letterSpacing: -1.2 },
+  heroCopy: { color: "#E0E8E1", fontSize: 13, lineHeight: 21, marginTop: 14, maxWidth: 300 },
+  searchPill: { borderRadius: 15, paddingHorizontal: 12, paddingVertical: 5, marginTop: 23, flexDirection: "row", alignItems: "center", minHeight: 54 },
+  searchInput: { fontSize: 12, flex: 1, paddingVertical: 8, marginLeft: 5 },
+  searchButton: { alignSelf: "flex-start", backgroundColor: "#D6B66E", borderRadius: 12, paddingHorizontal: 18, paddingVertical: 13, marginTop: 11 },
+  searchButtonText: { color: "#123D2B", fontSize: 12, fontWeight: "900" },
+  heroFoot: { borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.17)", marginTop: 23, paddingTop: 13, flexDirection: "row", justifyContent: "space-between" },
+  heroFootText: { color: "#D6B66E", fontSize: 8, fontWeight: "900", letterSpacing: 1.4 },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 15 },
-  sectionTitle: { color: "#173E2D", fontSize: 19, fontWeight: "800" },
-  sectionCopy: { color: "#777D76", fontSize: 11, marginTop: 4 },
-  count: { color: "#9B762F", fontSize: 10, fontWeight: "700" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
-  tile: { width: "48%", flexGrow: 1, backgroundColor: "#FFFFFF", borderRadius: 18, borderWidth: 1, borderColor: "#E9E8E0", padding: 15, minHeight: 164 },
-  tileIcon: { width: 37, height: 37, borderRadius: 12, backgroundColor: "#F5F0E4", alignItems: "center", justifyContent: "center", marginBottom: 13 },
-  tileIconText: { color: "#A77D31", fontSize: 23, fontWeight: "700" },
-  tileTitle: { color: "#183F2E", fontSize: 15, fontWeight: "800" },
-  tileCopy: { color: "#777D76", fontSize: 10, lineHeight: 15, marginTop: 5 },
-  arrow: { color: "#A77D31", fontSize: 10, fontWeight: "800", marginTop: "auto", paddingTop: 13 },
-  recbCard: { backgroundColor: "#123D2B", borderRadius: 16, padding: 18, marginTop: 20 },
-  recbEyebrow: { color: "#D6B66E", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
-  recbTitle: { color: "#FFFFFF", fontSize: 17, fontWeight: "900", marginTop: 7 },
-  recbCopy: { color: "#E0E8E1", fontSize: 11, lineHeight: 17, marginTop: 5 },
-  infoLinks: { flexDirection: "row", gap: 10, marginTop: 14 },
-  infoLink: { flex: 1, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E9E8E0", borderRadius: 13, padding: 13 },
-  infoLinkTitle: { color: "#173E2D", fontSize: 12, fontWeight: "900" },
-  infoLinkCopy: { color: "#A77D31", fontSize: 10, marginTop: 7, fontWeight: "700" },
-  note: { backgroundColor: "#F0EEE5", borderRadius: 15, padding: 15, marginTop: 23 },
-  noteTitle: { color: "#173E2D", fontSize: 12, fontWeight: "800", marginBottom: 5 },
-  noteText: { color: "#626B62", fontSize: 11, lineHeight: 17 },
-  noteHint: { color: "#82877F", fontSize: 10, lineHeight: 15, marginTop: 7 },
-  footer: { textAlign: "center", color: "#9A9C92", fontSize: 9, letterSpacing: 1.5, marginTop: 27 },
+  sectionTitle: { fontSize: 21, fontWeight: "900", letterSpacing: -0.4 }, sectionCopy: { fontSize: 11, marginTop: 5 },
+  count: { fontSize: 10, fontWeight: "800" }, grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  tile: { width: "48%", flexGrow: 1, borderRadius: 19, borderWidth: 1, padding: 15, minHeight: 180 },
+  tileTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 17 },
+  tileArrow: { fontSize: 18, fontWeight: "700" }, tileTitle: { fontSize: 16, fontWeight: "900" },
+  tileCopy: { fontSize: 10, lineHeight: 15, marginTop: 5 }, explore: { fontSize: 10, fontWeight: "900", marginTop: "auto", paddingTop: 15 },
+  recbCard: { borderWidth: 1, borderRadius: 18, padding: 18, marginTop: 20 },
+  recbEyebrow: { fontSize: 9, fontWeight: "900", letterSpacing: 1.1 }, recbTitle: { fontSize: 17, fontWeight: "900", marginTop: 8 },
+  recbCopy: { fontSize: 11, lineHeight: 17, marginTop: 6 },
+  infoLinks: { flexDirection: "row", gap: 10, marginTop: 13 },
+  infoLink: { flex: 1, borderWidth: 1, borderRadius: 15, padding: 14 },
+  infoLinkTitle: { fontSize: 11, fontWeight: "900" }, infoLinkCopy: { fontSize: 10, marginTop: 7, fontWeight: "800" },
+  appearance: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 16, padding: 13, marginTop: 20 },
+  appearanceTitle: { fontSize: 12, fontWeight: "900" }, appearanceCopy: { fontSize: 9, marginTop: 3 },
+  modeChip: { width: 34, height: 34, borderRadius: 11, alignItems: "center", justifyContent: "center" }, modeText: { fontSize: 17, fontWeight: "900" },
+  noteText: { fontSize: 10, lineHeight: 16, marginTop: 17 }, footer: { textAlign: "center", fontSize: 9, letterSpacing: 1.5, marginTop: 24 },
 });
