@@ -64,14 +64,11 @@ Last updated: 2026-11-27
 
 ## Next actions
 
-1. Confirm GitHub Actions run #79 result for commit `b114b910d28f7ece4077eb49a47dbcd9e060c13b`. If it fails, inspect logs and fix before continuing.
-2. Verify the public listing privacy boundary before release. Current app queries read `title` and `location` from `properties` and apply `hide_partner_identity` masking in the UI; if public RLS allows those columns, the raw values are still present in the client response. Do not rely on client-side masking as a security boundary. Inspect live RLS/grants and implement a server-side sanitized public view/RPC before release if needed. The website listing code appears to use a similar client-side masking pattern, so assess both surfaces together.
-3. Review app navigation and customer discovery flows end-to-end.
-4. Review app navigation and customer discovery flows end-to-end.
-5. Test Supabase authentication, published listing reads, pricing, partner privacy, booking requests and payment verification against the existing contracts.
-6. Complete accessibility, loading/error/empty states and mobile layout checks.
-7. Only after the wider app is ready, prepare Android APK and iOS TestFlight/store release steps.
-
+1. Verify the public listing privacy boundary before release. Current app queries read `title` and `location` from `properties` and apply `hide_partner_identity` masking in the UI; if public RLS allows those columns, the raw values are still present in the client response. Do not rely on client-side masking as a security boundary. Inspect live RLS/grants and implement a server-side sanitized public view/RPC before release if needed. The website listing code appears to use a similar client-side masking pattern, so assess both surfaces together.
+2. Review app navigation and customer discovery flows end-to-end.
+3. Test Supabase authentication, published listing reads, pricing, partner privacy, booking requests and payment verification against the existing contracts.
+4. Complete accessibility, loading/error/empty states and mobile layout checks.
+5. Only after the wider app is ready, prepare Android APK and iOS TestFlight/store release steps.
 
 ## Additional work completed (2026-11-27)
 
