@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Link } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -35,6 +35,25 @@ function money(value: number) {
 
 export default function RewardsScreen() {
   const { colors, isDark } = useAppTheme();
+  const s = useMemo(() => StyleSheet.create({
+    safe: { flex: 1 }, content: { padding: 20, paddingBottom: 40 },
+    back: { color: colors.primary, fontWeight: "700", marginBottom: 25 },
+    eyebrow: { color: colors.gold, fontSize: 10, fontWeight: "900", letterSpacing: 1.5 },
+    heading: { color: colors.text, fontSize: 28, fontWeight: "900", marginTop: 8 },
+    balance: { backgroundColor: colors.hero, padding: 22, borderRadius: 18, marginTop: 23 },
+    balanceLabel: { color: colors.gold, fontSize: 10, fontWeight: "800", letterSpacing: 1.3 },
+    amount: { color: colors.heroText, fontSize: 32, fontWeight: "900", marginTop: 8 },
+    balanceHint: { color: isDark ? colors.muted : "#E0E8E1", fontSize: 10, marginTop: 8, lineHeight: 16 },
+    sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 28, marginBottom: 12 },
+    section: { fontSize: 18, color: colors.text, fontWeight: "900" },
+    refresh: { color: colors.success, fontSize: 12, fontWeight: "800" },
+    entry: { backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: "row", alignItems: "center", gap: 10, borderWidth: 1, borderColor: colors.border },
+    entryTitle: { fontSize: 13, color: colors.text, fontWeight: "800" },
+    note: { fontSize: 10, color: colors.muted, marginTop: 4 },
+    entryAmount: { fontSize: 13, fontWeight: "900", color: colors.success },
+    redeemed: { color: colors.gold },
+    message: { fontSize: 12, color: colors.muted, lineHeight: 20, marginTop: 10 }
+  }), [colors, isDark]);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -90,7 +109,7 @@ export default function RewardsScreen() {
         </Pressable>
       </View>
       {loading ? <ActivityIndicator color={colors.gold} style={{ marginTop: 25 }} /> : entries.length ? entries.map((entry, index) =>
-        <View key={`${entry.created_at}-${index}`} style={[s.entry, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
+        <View key={`${entry.created_at}-${index}`} style={s.entry}>
           <View style={{ flex: 1 }}>
             <Text style={[s.entryTitle, { color: colors.text }]}>{entryLabel(entry.entry_type)}</Text>
             <Text style={[s.note, { color: colors.muted }]}>{entry.note || "Source Stays Credits"}</Text>
