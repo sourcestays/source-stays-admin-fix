@@ -31,6 +31,10 @@ Deno.serve(async req => {
     .select("reference,status,authorization_url,amount").eq("booking_id",bookingId).eq("customer_user_id",user.id).eq("status","pending").order("created_at",{ascending:false}).limit(1).maybeSingle();
   if(existingError) throw existingError;
   if(existing?.authorization_url && Number(existing.amount)===amount) return json({success:true,authorization_url:existing.authorization_url,reference:existing.reference,amount,currency:"NGN",reused:true});
+  if(existing && Number(existing.amount)!==amount) {
+   const {error:staleError}=await admin.from("shortlet_payment_transactions").update({status:"failed",updated_at:new Date().toISOString()}).eq("reference",existing.reference).eq("status","pending");
+   if(staleError) throw staleError;
+  }
   const email=String(booking.customer_email||user.email||"").trim();
   if(!email.includes("@")) return json({error:"A valid email address is required for Paystack."},400);
   const reference="SSSHT-"+crypto.randomUUID().replaceAll("-","").toUpperCase();
