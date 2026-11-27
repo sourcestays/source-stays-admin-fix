@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Link, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,10 +6,44 @@ import { supabase } from "@/src/lib/supabase";
 import { useAppTheme } from "@/src/theme/ThemeProvider";
 
 type Review = { reviewer_name: string; reviewer_type: string; rating: number; comment: string; created_at: string };
-const gold = "#B08A36";
 
 export default function ReviewsScreen() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
+  const gold = colors.gold;
+  const s = useMemo(() => StyleSheet.create({
+    safe: { flex: 1 }, content: { padding: 20, paddingBottom: 42 },
+    back: { color: colors.primary, fontWeight: "800", marginBottom: 18 },
+    eyebrow: { color: colors.gold, fontSize: 10, fontWeight: "900", letterSpacing: 1.4 },
+    heading: { color: colors.text, fontSize: 27, fontWeight: "900", marginTop: 8 },
+    intro: { color: colors.muted, fontSize: 12, lineHeight: 20, marginTop: 8 },
+    sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 25, marginBottom: 12 },
+    sectionTitle: { color: colors.text, fontSize: 18, fontWeight: "900" },
+    refresh: { color: colors.gold, fontSize: 11, fontWeight: "900" },
+    review: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 13, padding: 15, marginBottom: 10 },
+    stars: { color: colors.gold, fontSize: 19, letterSpacing: 2 },
+    comment: { color: colors.text, fontSize: 12, lineHeight: 20, marginTop: 9 },
+    name: { color: colors.text, fontSize: 12, fontWeight: "900", marginTop: 12 },
+    kind: { color: colors.muted, fontSize: 10, marginTop: 3 },
+    empty: { backgroundColor: colors.surface, borderRadius: 11, padding: 15, color: colors.muted, fontSize: 12, lineHeight: 19 },
+    form: { backgroundColor: colors.surface, borderRadius: 15, padding: 17, marginTop: 19, borderWidth: 1, borderColor: colors.border },
+    helper: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 5 },
+    label: { color: colors.gold, fontSize: 10, fontWeight: "900", letterSpacing: .8, marginTop: 17, marginBottom: 7 },
+    input: { backgroundColor: colors.input, borderWidth: 1, borderColor: colors.border, borderRadius: 9, padding: 12, color: colors.text, fontSize: 12 },
+    textarea: { minHeight: 125, paddingTop: 12 },
+    choiceRow: { flexDirection: "row", gap: 8 },
+    choice: { borderWidth: 1, borderColor: colors.border, borderRadius: 9, padding: 11, flex: 1, alignItems: "center", backgroundColor: colors.surface },
+    choiceActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    choiceText: { color: colors.muted, fontSize: 11, fontWeight: "800" },
+    choiceTextActive: { color: colors.primaryText },
+    ratingRow: { flexDirection: "row", gap: 10 },
+    ratingStar: { fontSize: 31 },
+    ratingCaption: { color: colors.muted, fontSize: 10, marginTop: 2 },
+    counter: { color: colors.muted, fontSize: 10, textAlign: "right", marginTop: 5 },
+    button: { backgroundColor: colors.primary, borderRadius: 10, minHeight: 48, padding: 14, alignItems: "center", justifyContent: "center", marginTop: 16 },
+    buttonText: { color: colors.primaryText, fontSize: 12, fontWeight: "900" },
+    message: { color: isDark ? "#F2A198" : "#A33A2A", fontSize: 11, lineHeight: 18, marginTop: 12 },
+    success: { color: colors.success }
+  }), [colors, isDark]);
   const [rows, setRows] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -64,13 +98,13 @@ export default function ReviewsScreen() {
       <Text style={s.heading}>Reviews from our community</Text>
       <Text style={s.intro}>We're building a trusted community of guests and property owners. Have you used Source Stays? Share your experience.</Text>
       <View style={s.sectionHead}><Text style={s.sectionTitle}>Published reviews</Text><Pressable onPress={loadReviews}><Text style={s.refresh}>Refresh</Text></Pressable></View>
-      {loading ? <ActivityIndicator color="#123D2B" style={{ marginVertical: 25 }} /> : loadError ? <Text style={s.empty}>{loadError}</Text> : rows.length ? rows.map((review, i) => <View key={review.created_at + i} style={[s.review, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {loading ? <ActivityIndicator color="#123D2B" style={{ marginVertical: 25 }} /> : loadError ? <Text style={s.empty}>{loadError}</Text> : rows.length ? rows.map((review, i) => <View key={review.created_at + i} style={s.review}>
         <Text style={s.stars} accessibilityLabel={review.rating + " out of 5 stars"}>{"★".repeat(Math.max(0, Math.min(5, Number(review.rating)))) + "☆".repeat(5 - Math.max(0, Math.min(5, Number(review.rating))))}</Text>
         <Text style={s.comment}>{review.comment}</Text>
         <Text style={s.name}>{review.reviewer_name}</Text>
         <Text style={s.kind}>{review.reviewer_type === "property_owner" ? "Property owner" : "Guest"}</Text>
       </View>) : <Text style={s.empty}>No published reviews yet. Be among the first to share your genuine experience with Source Stays.</Text>}
-      <View style={[s.form, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={s.form}>
         <Text style={s.sectionTitle}>Share your experience</Text>
         <Text style={s.helper}>Your review will be checked by our team before it appears publicly.</Text>
         <Text style={s.label}>YOUR NAME</Text>
@@ -81,7 +115,7 @@ export default function ReviewsScreen() {
           <Pressable onPress={() => setType("property_owner")} style={[s.choice, type === "property_owner" && s.choiceActive]}><Text style={[s.choiceText, type === "property_owner" && s.choiceTextActive]}>Property owner</Text></Pressable>
         </View>
         <Text style={s.label}>YOUR RATING</Text>
-        <View style={s.ratingRow}>{[1,2,3,4,5].map(n => <Pressable key={n} onPress={() => setRating(n)} accessibilityRole="button" accessibilityLabel={n + " stars"}><Text style={[s.ratingStar, { color: n <= rating ? gold : "#C9CEC7" }]}>★</Text></Pressable>)}</View>
+        <View style={s.ratingRow}>{[1,2,3,4,5].map(n => <Pressable key={n} onPress={() => setRating(n)} accessibilityRole="button" accessibilityLabel={n + " stars"}><Text style={[s.ratingStar, { color: n <= rating ? gold : colors.border }]}>★</Text></Pressable>)}</View>
         <Text style={s.ratingCaption}>{["","Poor","Fair","Good","Very good","Excellent"][rating]}</Text>
         <Text style={s.label}>YOUR REVIEW</Text>
         <TextInput value={comment} onChangeText={setComment} multiline maxLength={2000} placeholder="Tell us about your genuine experience..." textAlignVertical="top" style={[s.input, s.textarea]} />
