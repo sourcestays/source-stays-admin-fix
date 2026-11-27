@@ -33,7 +33,8 @@ function money(value: number) {
   return `₦${value.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export default function RewardsScreen() {\n  const { colors, isDark } = useAppTheme();
+export default function RewardsScreen() {
+  const { colors, isDark } = useAppTheme();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
