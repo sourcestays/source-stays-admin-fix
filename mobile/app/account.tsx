@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Link, router, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { User } from "@supabase/supabase-js";
@@ -13,6 +13,7 @@ type Booking = {
   guests: number | null;
   status: string | null;
   payment_status: string | null;
+  payment_request_status?: string | null;
   amount_due: number | null;
   currency: string | null;
   created_at: string;
@@ -55,6 +56,8 @@ export default function AccountScreen() {
   const [propertyNames, setPropertyNames] = useState<Record<string, string>>({});
   const [hotelDetails, setHotelDetails] = useState<Record<string, HotelDetails>>({});
   const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [paymentBusyId, setPaymentBusyId] = useState<string | null>(null);
+  const [paymentMessage, setPaymentMessage] = useState("");
   const [dashboardError, setDashboardError] = useState("");
   const [eligibleRedemptions, setEligibleRedemptions] = useState<EligibleRedemption[]>([]);
   const [redemptionRequests, setRedemptionRequests] = useState<RedemptionRequest[]>([]);
@@ -86,7 +89,7 @@ export default function AccountScreen() {
     try {
     const [bookingResult, hotelResult] = await Promise.all([
       supabase.from("bookings")
-        .select("id, property_id, check_in, check_out, guests, status, payment_status, amount_due, currency, created_at")
+        .select("id, property_id, check_in, check_out, guests, status, payment_status, payment_request_status, amount_due, currency, created_at")
         .eq("customer_user_id", userId).order("created_at", { ascending: false }),
       supabase.from("hotel_availability_requests")
         .select("id, request_ref, room_category, check_in, check_out, rooms_requested, guests, status, payment_status, hotel_reservation_confirmed_at, hotel_identity_released_at, created_at")
@@ -164,6 +167,50 @@ export default function AccountScreen() {
     const hotelRows: RedemptionRequest[] = (hotelRedemptionResult.data || []).map((row: any) => ({ ...row, kind: "hotel" }));
     setRedemptionRequests([...shortletRows, ...hotelRows].sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
   }, []);
+
+  async function payShortletBooking(booking: Booking) {
+    if (!supabase) return;
+    setPaymentMessage("");
+    setPaymentBusyId(String(booking.id));
+    try {
+      const { data, error } = await supabase.functions.invoke("initialize-shortlet-payment", {
+        body: { booking_id: Number(booking.id), callback_url: "https://sourcestays.com.ng/confirmation.html" }
+      });
+      if (error) {
+        let detail = data?.error || error.message;
+        try { const response = (error as any).context; if (response?.json) { const body = await response.json(); detail = body?.error || detail; } } catch {}
+        throw new Error(detail || "Could not start Paystack checkout.");
+      }
+      if (!data?.success || !data?.authorization_url) throw new Error(data?.error || "Paystack checkout is unavailable.");
+      await Linking.openURL(data.authorization_url);
+    } catch (e) {
+      setPaymentMessage(e instanceof Error ? e.message : "Unable to open Paystack checkout.");
+    } finally { setPaymentBusyId(null); }
+  }
+
+  async function verifyShortletPayment(booking: Booking) {
+    if (!supabase) return;
+    setPaymentMessage("");
+    setPaymentBusyId(String(booking.id));
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-shortlet-payment", {
+        body: { booking_id: Number(booking.id) }
+      });
+      if (error) {
+        let detail = data?.error || error.message;
+        try { const response = (error as any).context; if (response?.json) { const body = await response.json(); detail = body?.error || detail; } } catch {}
+        throw new Error(detail || "Could not verify payment.");
+      }
+      if (data?.paid) {
+        setPaymentMessage("Payment confirmed successfully. Your booking payment status is now updated.");
+        if (user?.id) await loadDashboard(user.id);
+      } else {
+        setPaymentMessage("Paystack has not confirmed a successful payment yet. If you have just paid, wait briefly and check again.");
+      }
+    } catch (e) {
+      setPaymentMessage(e instanceof Error ? e.message : "Unable to verify payment right now.");
+    } finally { setPaymentBusyId(null); }
+  }
 
   async function submitRedemption() {
     setRedemptionMessage("");
@@ -270,7 +317,7 @@ export default function AccountScreen() {
         </View>
         <View style={s.sectionHead}><Text style={s.sectionTitle}>My bookings</Text><Pressable onPress={() => loadDashboard(user.id)}><Text style={s.refresh}>Refresh</Text></Pressable></View>
         {dashboardLoading ? <ActivityIndicator color="#123D2B" style={{ marginVertical: 24 }} /> : <>
-          {!!dashboardError && <Text style={s.warning}>{dashboardError}</Text>}
+          {!!dashboardError && <Text style={s.warning}>{dashboardError}</Text>}{!!paymentMessage && <Text style={s.message}>{paymentMessage}</Text>}
           <Text style={s.subhead}>Shortlet bookings</Text>
           {bookings.length ? bookings.map((booking) => <View key={String(booking.id)} style={s.card}>
             <Text style={s.cardTitle}>{propertyNames[String(booking.property_id)] || `Booking #${booking.id}`}</Text>
@@ -279,6 +326,14 @@ export default function AccountScreen() {
             <Text style={s.meta}>Guests: {booking.guests ?? "—"}</Text>
             <View style={s.statusRow}><Text style={s.meta}>Booking: {pretty(booking.status)}</Text><Text style={s.meta}>Payment: {pretty(booking.payment_status)}</Text></View>
             <Text style={s.amount}>{money(booking.amount_due, booking.currency)}</Text>
+            {booking.payment_status !== "paid" && booking.payment_request_status === "requested" ? <>
+              <Pressable disabled={paymentBusyId === String(booking.id)} onPress={() => payShortletBooking(booking)} style={[s.button, paymentBusyId === String(booking.id) && { opacity: .6 }]}>
+                {paymentBusyId === String(booking.id) ? <ActivityIndicator color="#fff" /> : <Text style={s.buttonText}>Pay securely with Paystack</Text>}
+              </Pressable>
+              <Pressable disabled={paymentBusyId === String(booking.id)} onPress={() => verifyShortletPayment(booking)} style={s.verifyPayButton}>
+                <Text style={s.verifyPayText}>I have paid — verify payment</Text>
+              </Pressable>
+            </> : booking.payment_status !== "paid" ? <Text style={s.meta}>Payment will be available here once Source Stays confirms your booking and requests payment.</Text> : null}
           </View>) : <Text style={s.empty}>No shortlet bookings are linked to your account yet.</Text>}
 
           <Text style={[s.subhead, { marginTop: 22 }]}>Hotel reservations</Text>
@@ -387,6 +442,8 @@ const s = StyleSheet.create({
   meta: { color: "#69736B", fontSize: 11, lineHeight: 17 },
   statusRow: { flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 5, marginTop: 3 },
   amount: { color: "#173E2D", fontSize: 13, fontWeight: "900", marginTop: 5 },
+  verifyPayButton: { alignItems: "center", padding: 11, marginTop: 6, borderRadius: 9, borderWidth: 1, borderColor: "#D6B66E" },
+  verifyPayText: { color: "#8A6A2B", fontSize: 11, fontWeight: "900" },
   confirm: { color: "#237443", fontSize: 11, fontWeight: "900", marginTop: 5 },
   pending: { color: "#A77D31" },
   hotelDetails: { backgroundColor: "#F5F2E9", borderRadius: 9, padding: 11, marginTop: 6, gap: 3 },
