@@ -90,23 +90,3 @@ export default function GuestVerificationScreen() {
   </SafeAreaView>;
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
-  back: { color: "#123D2B", fontWeight: "800", marginBottom: 18 },
-  hero: { backgroundColor: "#123D2B", borderRadius: 18, padding: 22, marginBottom: 16 },
-  brand: { color: "#fff", fontSize: 17, fontWeight: "900", letterSpacing: 1.2 },
-  heading: { color: "#fff", fontSize: 25, fontWeight: "900", marginTop: 18 },
-  copy: { color: "#E0E8E1", fontSize: 12, lineHeight: 19, marginTop: 8 },
-  card: { backgroundColor: "#fff", borderRadius: 15, padding: 18, borderWidth: 1, borderColor: "#E6E7DF" },
-  title: { color: "#173E2D", fontSize: 19, fontWeight: "900" },
-  body: { color: "#69736B", fontSize: 12, lineHeight: 19, marginTop: 9 },
-  label: { color: "#A77D31", fontSize: 10, fontWeight: "900", letterSpacing: 0.8, marginTop: 20, marginBottom: 7 },
-  input: { borderWidth: 1, borderColor: "#DDE1D8", borderRadius: 9, padding: 13, color: "#173E2D", fontSize: 13 },
-  button: { backgroundColor: "#123D2B", borderRadius: 10, padding: 15, alignItems: "center", justifyContent: "center", minHeight: 49, marginTop: 15 },
-  buttonText: { color: "#fff", fontSize: 13, fontWeight: "900" },
-  error: { color: "#A33A2A", fontSize: 12, lineHeight: 18, marginTop: 12 },
-  notice: { backgroundColor: "#FFF8E8", borderColor: "#EAD9A0", borderWidth: 1, borderRadius: 12, padding: 15, marginTop: 16 },
-  noticeTitle: { color: "#674E1F", fontSize: 13, fontWeight: "900" },
-  footer: { color: "#858B84", fontSize: 10, textAlign: "center", marginTop: 22 }
-});
