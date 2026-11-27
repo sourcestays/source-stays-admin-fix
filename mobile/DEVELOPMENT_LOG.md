@@ -134,3 +134,12 @@ Last updated: 2026-11-27
 - Live `pg_policies` query for `public.properties` returned zero rows.
 - Supplied `information_schema.role_table_grants` output lists `REFERENCES`, `TRIGGER`, and `TRUNCATE` for `anon`, `authenticated`, and `service_role`; it lists no `SELECT`, `INSERT`, `UPDATE`, or `DELETE` grants for those roles. The output alone does not settle effective privileges inherited from PUBLIC, column-level grants, or other role membership, so do not infer that client reads are either allowed or denied yet.
 - This is a release-blocking security configuration concern: RLS is disabled and no policies exist. Do not change live RLS, grants, or client queries until effective table/column privileges and existing public views are inspected. Then design a least-privilege customer-safe property contract and coordinate website/mobile changes.
+
+
+## Customer read-access and public-view audit — 2026-11-27
+
+- User supplied effective privilege checks from the Source Stays test project: `anon_table_select=false`, `anon_column_select=false`, `authenticated_table_select=false`, `authenticated_column_select=false`, and `service_role_table_select=false`.
+- User also supplied a `pg_views` search for public views with names matching `%property%`; it returned zero rows.
+- Combined with the prior results (RLS disabled, no policies, and no listed SELECT grants), the supplied checks establish that the `anon` and `authenticated` API roles do not currently have effective SELECT access to `public.properties`. The app's direct customer-side queries to this table therefore have no demonstrated supported read path in this test project.
+- No property-named public view was found. This search does not rule out views with other names, RPCs, or other schemas.
+- Do not grant broad SELECT on the base table: it contains partner/private identity fields and the app currently masks those values client-side. Next inspect table ACL/schema usage, all public views, and relevant read RPCs/migrations. Then implement a least-privilege sanitized read contract and update mobile + website together. Keep live production untouched.
