@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Link, router, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -43,6 +43,58 @@ const money = (value: number | null, currency: string | null) => value == null ?
 
 export default function AccountScreen() {
   const { colors, isDark } = useAppTheme();
+  const s = useMemo(() => StyleSheet.create({
+    safe: { flex: 1 }, content: { padding: 20, paddingBottom: 42 },
+    back: { color: colors.primary, fontWeight: "700", marginBottom: 20 },
+    hero: { backgroundColor: colors.hero, borderRadius: 18, padding: 22, marginBottom: 18 },
+    brand: { color: colors.heroText, fontSize: 18, fontWeight: "900", letterSpacing: 1.2 },
+    head: { color: colors.heroText, fontSize: 24, fontWeight: "900", marginTop: 19 },
+    copy: { color: isDark ? colors.muted : "#E0E8E1", fontSize: 12, lineHeight: 19, marginTop: 7 },
+    heroActions: { flexDirection: "row", gap: 9, marginTop: 18, flexWrap: "wrap" },
+    goldButton: { backgroundColor: colors.gold, paddingHorizontal: 15, paddingVertical: 11, borderRadius: 9 },
+    goldButtonText: { color: colors.goldText, fontSize: 11, fontWeight: "900" },
+    outlineButton: { borderWidth: 1, borderColor: colors.gold, paddingHorizontal: 15, paddingVertical: 10, borderRadius: 9 },
+    outlineText: { color: colors.heroText, fontSize: 11, fontWeight: "800" },
+    redemptionPanel: { backgroundColor: colors.surface, borderRadius: 13, padding: 16, borderWidth: 1, borderColor: colors.border, marginTop: 18 },
+    redemptionHint: { color: colors.muted, fontSize: 11, lineHeight: 18, marginTop: 7, marginBottom: 12 },
+    eligibleOption: { borderWidth: 1, borderColor: colors.border, borderRadius: 9, padding: 11, marginBottom: 8, backgroundColor: colors.surface },
+    eligibleOptionActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    eligibleOptionText: { color: colors.text, fontSize: 11, lineHeight: 17 },
+    eligibleOptionTextActive: { color: colors.primaryText },
+    redemptionRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 4 },
+    profileCard: { backgroundColor: colors.surface, borderRadius: 13, padding: 16, borderWidth: 1, borderColor: colors.border, marginBottom: 18 },
+    profileLabel: { color: colors.gold, fontSize: 9, fontWeight: "900", letterSpacing: 1, marginTop: 13 },
+    profileValue: { color: colors.text, fontSize: 13, fontWeight: "700", marginTop: 4 },
+    sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 9, marginBottom: 13 },
+    sectionTitle: { color: colors.text, fontSize: 21, fontWeight: "900" },
+    refresh: { color: colors.gold, fontSize: 12, fontWeight: "900" },
+    subhead: { color: colors.text, fontSize: 15, fontWeight: "900", marginBottom: 10 },
+    card: { backgroundColor: colors.surface, borderRadius: 13, padding: 15, borderWidth: 1, borderColor: colors.border, marginBottom: 10, gap: 5 },
+    cardTitle: { color: colors.text, fontSize: 14, fontWeight: "900", marginBottom: 3 },
+    meta: { color: colors.muted, fontSize: 11, lineHeight: 17 },
+    statusRow: { flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 5, marginTop: 3 },
+    amount: { color: colors.text, fontSize: 13, fontWeight: "900", marginTop: 5 },
+    verifyPayButton: { alignItems: "center", padding: 11, marginTop: 6, borderRadius: 9, borderWidth: 1, borderColor: colors.gold },
+    verifyPayText: { color: colors.gold, fontSize: 11, fontWeight: "900" },
+    confirm: { color: colors.success, fontSize: 11, fontWeight: "900", marginTop: 5 },
+    pending: { color: colors.gold },
+    hotelDetails: { backgroundColor: colors.surfaceAlt, borderRadius: 9, padding: 11, marginTop: 6, gap: 3 },
+    detailTitle: { color: colors.text, fontSize: 12, fontWeight: "900" },
+    empty: { color: colors.muted, fontSize: 11, lineHeight: 18, backgroundColor: colors.surface, padding: 14, borderRadius: 10 },
+    warning: { color: isDark ? "#E9C77A" : "#9A4A32", fontSize: 11, marginBottom: 12 },
+    realEstate: { color: colors.gold, fontSize: 12, fontWeight: "900", marginTop: 17 },
+    panel: { backgroundColor: colors.surface, padding: 18, borderRadius: 17, marginTop: 17, borderWidth: 1, borderColor: colors.border },
+    tabs: { flexDirection: "row", backgroundColor: colors.surfaceAlt, borderRadius: 10, padding: 4, marginBottom: 20 },
+    tab: { flex: 1, padding: 11, alignItems: "center", borderRadius: 8 }, tabActive: { backgroundColor: colors.primary },
+    tabText: { color: colors.muted, fontWeight: "800", fontSize: 12 }, tabTextActive: { color: colors.primaryText },
+    title: { fontSize: 21, color: colors.text, fontWeight: "900", marginBottom: 15 },
+    label: { fontSize: 11, color: colors.text, fontWeight: "800", marginTop: 12, marginBottom: 6 },
+    input: { borderWidth: 1, borderColor: colors.border, borderRadius: 9, padding: 13, fontSize: 13, color: colors.text, backgroundColor: colors.input },
+    reset: { alignSelf: "flex-end", paddingVertical: 12 }, resetText: { fontSize: 11, color: colors.gold, fontWeight: "800" },
+    button: { backgroundColor: colors.primary, borderRadius: 10, padding: 15, alignItems: "center", marginTop: 17, minHeight: 48, justifyContent: "center" },
+    buttonText: { color: colors.primaryText, fontSize: 13, fontWeight: "900" }, message: { fontSize: 11, lineHeight: 17, color: isDark ? "#F2A198" : "#A33A2A", marginTop: 14 },
+    success: { color: colors.success }, foot: { fontSize: 10, color: colors.muted, textAlign: "center", marginTop: 20 }
+  }), [colors, isDark]);
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -298,7 +350,7 @@ export default function AccountScreen() {
     <Stack.Screen options={{ headerShown: false }} />
     <ScrollView contentContainerStyle={s.content}>
       <Link href="/" style={s.back}>← Source Stays</Link>
-      {checking ? <ActivityIndicator color="#123D2B" style={{ marginTop: 50 }} /> : user ? <>
+      {checking ? <ActivityIndicator color={colors.gold} style={{ marginTop: 50 }} /> : user ? <>
         <View style={[s.hero, { backgroundColor: colors.hero }]}>
           <Text style={s.brand}>SOURCE <Text style={{ color: "#D6B66E" }}>STAYS</Text></Text>
           <Text style={s.head}>Welcome{user.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ""}.</Text>
@@ -331,7 +383,7 @@ export default function AccountScreen() {
             <Text style={s.amount}>{money(booking.amount_due, booking.currency)}</Text>
             {booking.payment_status !== "paid" && booking.payment_request_status === "requested" ? <>
               <Pressable disabled={paymentBusyId === String(booking.id)} onPress={() => payShortletBooking(booking)} style={[s.button, paymentBusyId === String(booking.id) && { opacity: .6 }]}>
-                {paymentBusyId === String(booking.id) ? <ActivityIndicator color="#fff" /> : <Text style={s.buttonText}>Pay securely with Paystack</Text>}
+                {paymentBusyId === String(booking.id) ? <ActivityIndicator color={colors.primaryText} /> : <Text style={s.buttonText}>Pay securely with Paystack</Text>}
               </Pressable>
               <Pressable disabled={paymentBusyId === String(booking.id)} onPress={() => verifyShortletPayment(booking)} style={s.verifyPayButton}>
                 <Text style={s.verifyPayText}>I have paid — verify payment</Text>
@@ -414,55 +466,3 @@ export default function AccountScreen() {
   </SafeAreaView>;
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1 }, content: { padding: 20, paddingBottom: 42 },
-  back: { color: "#123D2B", fontWeight: "700", marginBottom: 20 },
-  hero: { backgroundColor: "#123D2B", borderRadius: 18, padding: 22, marginBottom: 18 },
-  brand: { color: "#fff", fontSize: 18, fontWeight: "900", letterSpacing: 1.2 },
-  head: { color: "#fff", fontSize: 24, fontWeight: "900", marginTop: 19 },
-  copy: { color: "#E0E8E1", fontSize: 12, lineHeight: 19, marginTop: 7 },
-  heroActions: { flexDirection: "row", gap: 9, marginTop: 18, flexWrap: "wrap" },
-  goldButton: { backgroundColor: "#D6B66E", paddingHorizontal: 15, paddingVertical: 11, borderRadius: 9 },
-  goldButtonText: { color: "#173E2D", fontSize: 11, fontWeight: "900" },
-  outlineButton: { borderWidth: 1, borderColor: "#D6B66E", paddingHorizontal: 15, paddingVertical: 10, borderRadius: 9 },
-  outlineText: { color: "#fff", fontSize: 11, fontWeight: "800" },
-  redemptionPanel: { backgroundColor: "#fff", borderRadius: 13, padding: 16, borderWidth: 1, borderColor: "#E9E8E0", marginTop: 18 },
-  redemptionHint: { color: "#69736B", fontSize: 11, lineHeight: 18, marginTop: 7, marginBottom: 12 },
-  eligibleOption: { borderWidth: 1, borderColor: "#E2E5DC", borderRadius: 9, padding: 11, marginBottom: 8 },
-  eligibleOptionActive: { backgroundColor: "#123D2B", borderColor: "#123D2B" },
-  eligibleOptionText: { color: "#173E2D", fontSize: 11, lineHeight: 17 },
-  eligibleOptionTextActive: { color: "#fff" },
-  redemptionRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#E9E8E0", gap: 4 },
-  profileCard: { backgroundColor: "#fff", borderRadius: 13, padding: 16, borderWidth: 1, borderColor: "#E9E8E0", marginBottom: 18 },
-  profileLabel: { color: "#A77D31", fontSize: 9, fontWeight: "900", letterSpacing: 1, marginTop: 13 },
-  profileValue: { color: "#173E2D", fontSize: 13, fontWeight: "700", marginTop: 4 },
-  sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 9, marginBottom: 13 },
-  sectionTitle: { color: "#173E2D", fontSize: 21, fontWeight: "900" },
-  refresh: { color: "#A77D31", fontSize: 12, fontWeight: "900" },
-  subhead: { color: "#173E2D", fontSize: 15, fontWeight: "900", marginBottom: 10 },
-  card: { backgroundColor: "#fff", borderRadius: 13, padding: 15, borderWidth: 1, borderColor: "#E9E8E0", marginBottom: 10, gap: 5 },
-  cardTitle: { color: "#173E2D", fontSize: 14, fontWeight: "900", marginBottom: 3 },
-  meta: { color: "#69736B", fontSize: 11, lineHeight: 17 },
-  statusRow: { flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 5, marginTop: 3 },
-  amount: { color: "#173E2D", fontSize: 13, fontWeight: "900", marginTop: 5 },
-  verifyPayButton: { alignItems: "center", padding: 11, marginTop: 6, borderRadius: 9, borderWidth: 1, borderColor: "#D6B66E" },
-  verifyPayText: { color: "#8A6A2B", fontSize: 11, fontWeight: "900" },
-  confirm: { color: "#237443", fontSize: 11, fontWeight: "900", marginTop: 5 },
-  pending: { color: "#A77D31" },
-  hotelDetails: { backgroundColor: "#F5F2E9", borderRadius: 9, padding: 11, marginTop: 6, gap: 3 },
-  detailTitle: { color: "#173E2D", fontSize: 12, fontWeight: "900" },
-  empty: { color: "#7B837B", fontSize: 11, lineHeight: 18, backgroundColor: "#fff", padding: 14, borderRadius: 10 },
-  warning: { color: "#9A4A32", fontSize: 11, marginBottom: 12 },
-  realEstate: { color: "#A77D31", fontSize: 12, fontWeight: "900", marginTop: 17 },
-  panel: { backgroundColor: "#fff", padding: 18, borderRadius: 17, marginTop: 17, borderWidth: 1, borderColor: "#E9E8E0" },
-  tabs: { flexDirection: "row", backgroundColor: "#F3F1E9", borderRadius: 10, padding: 4, marginBottom: 20 },
-  tab: { flex: 1, padding: 11, alignItems: "center", borderRadius: 8 }, tabActive: { backgroundColor: "#123D2B" },
-  tabText: { color: "#667168", fontWeight: "800", fontSize: 12 }, tabTextActive: { color: "#fff" },
-  title: { fontSize: 21, color: "#173E2D", fontWeight: "900", marginBottom: 15 },
-  label: { fontSize: 11, color: "#39483E", fontWeight: "800", marginTop: 12, marginBottom: 6 },
-  input: { borderWidth: 1, borderColor: "#DDE1D8", borderRadius: 9, padding: 13, fontSize: 13, color: "#173E2D", backgroundColor: "#fff" },
-  reset: { alignSelf: "flex-end", paddingVertical: 12 }, resetText: { fontSize: 11, color: "#A77D31", fontWeight: "800" },
-  button: { backgroundColor: "#123D2B", borderRadius: 10, padding: 15, alignItems: "center", marginTop: 17, minHeight: 48, justifyContent: "center" },
-  buttonText: { color: "#fff", fontSize: 13, fontWeight: "900" }, message: { fontSize: 11, lineHeight: 17, color: "#A33A2A", marginTop: 14 },
-  success: { color: "#237443" }, foot: { fontSize: 10, color: "#858B84", textAlign: "center", marginTop: 20 }
-});
