@@ -127,37 +127,3 @@ export default function ReviewsScreen() {
   </SafeAreaView>;
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1 }, content: { padding: 20, paddingBottom: 42 },
-  back: { color: "#123D2B", fontWeight: "800", marginBottom: 18 },
-  eyebrow: { color: gold, fontSize: 10, fontWeight: "900", letterSpacing: 1.4 },
-  heading: { color: "#173E2D", fontSize: 27, fontWeight: "900", marginTop: 8 },
-  intro: { color: "#68736C", fontSize: 12, lineHeight: 20, marginTop: 8 },
-  sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 25, marginBottom: 12 },
-  sectionTitle: { color: "#173E2D", fontSize: 18, fontWeight: "900" },
-  refresh: { color: gold, fontSize: 11, fontWeight: "900" },
-  review: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E8E6DD", borderRadius: 13, padding: 15, marginBottom: 10 },
-  stars: { color: gold, fontSize: 19, letterSpacing: 2 },
-  comment: { color: "#455148", fontSize: 12, lineHeight: 20, marginTop: 9 },
-  name: { color: "#173E2D", fontSize: 12, fontWeight: "900", marginTop: 12 },
-  kind: { color: "#80877F", fontSize: 10, marginTop: 3 },
-  empty: { backgroundColor: "#fff", borderRadius: 11, padding: 15, color: "#747D74", fontSize: 12, lineHeight: 19 },
-  form: { backgroundColor: "#fff", borderRadius: 15, padding: 17, marginTop: 19, borderWidth: 1, borderColor: "#E8E6DD" },
-  helper: { color: "#68736C", fontSize: 11, lineHeight: 17, marginTop: 5 },
-  label: { color: "#A77D31", fontSize: 10, fontWeight: "900", letterSpacing: .8, marginTop: 17, marginBottom: 7 },
-  input: { borderWidth: 1, borderColor: "#DDE1D8", borderRadius: 9, padding: 12, color: "#173E2D", fontSize: 12 },
-  textarea: { minHeight: 125, paddingTop: 12 },
-  choiceRow: { flexDirection: "row", gap: 8 },
-  choice: { borderWidth: 1, borderColor: "#DDE1D8", borderRadius: 9, padding: 11, flex: 1, alignItems: "center" },
-  choiceActive: { backgroundColor: "#123D2B", borderColor: "#123D2B" },
-  choiceText: { color: "#526055", fontSize: 11, fontWeight: "800" },
-  choiceTextActive: { color: "#fff" },
-  ratingRow: { flexDirection: "row", gap: 10 },
-  ratingStar: { fontSize: 31 },
-  ratingCaption: { color: "#6B756C", fontSize: 10, marginTop: 2 },
-  counter: { color: "#8A9189", fontSize: 10, textAlign: "right", marginTop: 5 },
-  button: { backgroundColor: "#123D2B", borderRadius: 10, minHeight: 48, padding: 14, alignItems: "center", justifyContent: "center", marginTop: 16 },
-  buttonText: { color: "#fff", fontSize: 12, fontWeight: "900" },
-  message: { color: "#A33A2A", fontSize: 11, lineHeight: 18, marginTop: 12 },
-  success: { color: "#237443" }
-});
