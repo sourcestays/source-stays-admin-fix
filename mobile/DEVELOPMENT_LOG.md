@@ -93,3 +93,18 @@ Last updated: 2026-11-27
 - Latest GitHub Actions mobile CI run #98: success.
 - Latest Vercel check for the home-screen commit: success.
 - Visual milestone is complete at source-code and automated-build level. Physical device review (small Android/iPhone screens, safe areas, image loading and actual light/dark appearance) remains outstanding.
+
+
+## Security and customer-flow audit — 2026-11-27
+
+- Confirmed the privacy concern in the current mobile code:
+  - `mobile/app/division/[type].tsx` selects raw `title` and `location` from `properties`, then applies `hide_partner_identity` masking in React Native.
+  - `mobile/app/property/[id].tsx` also selects raw `title` and `location` and masks them only after the response reaches the app.
+  - `mobile/app/account.tsx` fetches `title` and `public_title` for the customer's own booking history.
+  - This proves the raw values are requested by the client; it does **not** prove they are exposed to anonymous customers because live RLS, column grants and policies have not been inspected. Treat partner-identity exposure as an unresolved release blocker until verified.
+- Reviewed the tracked Supabase migrations. They define customer-safe hotel room pricing through `hotel_room_categories_public`, exposing the calculated customer rate while excluding hotel net rate and markup inputs. The tracked migration set does not contain a `properties_public` view or equivalent sanitized property-listing contract.
+- Reviewed `create_customer_booking(p_payload jsonb)`: it requires an authenticated user, verifies the submitted email against the signed-in account, locks the published property row, calculates the amount from database pricing, and rechecks availability before inserting. The mobile client also performs a preflight availability check, but the RPC performs the authoritative check again. Client-submitted totals in the payload are not used by this SQL function.
+- Privilege-hardening item: the tracked `create_customer_booking` migration does not explicitly revoke default function EXECUTE privileges from PUBLIC or grant EXECUTE only to authenticated. The function's internal authentication check is present, but deployed function privileges must be inspected and explicitly restricted as part of the backend audit.
+- Reviewed the hotel customer flow: the app creates an availability request first, tells the customer payment is not taken, and only exposes the Paystack payment action after an availability status and unexpired confirmation are present. The payment initializer is an Edge Function, not a client-side Paystack secret integration.
+- Latest branch-head CI run #100 passed: dependency install, TypeScript check, Android JS bundle export and shortlet payment Edge Function checks. This is automated build validation, not proof of live Supabase policies or real payment behavior.
+- No production SQL, RLS policies or app data queries were changed during this audit. A safe fix requires a read-only inspection of the live Supabase table/view grants, RLS policies, deployed RPC signatures/privileges and Edge Function versions first. After that, implement a customer-safe property view/RPC and update both website and mobile clients together if the live policy permits raw identity fields.
