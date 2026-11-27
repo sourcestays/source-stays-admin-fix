@@ -22,23 +22,16 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/source-stays-logo.png",
-          "imageWidth": 190,
-          "resizeMode": "contain",
-          "backgroundColor": "#123D2B",
-          "dark": {
-            "backgroundColor": "#091A14"
-          }
-        }
-      ]
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
     },
-    "icon": "./assets/source-stays-logo.png"
+    "icon": "./assets/source-stays-logo.png",
+    "splash": {
+      "image": "./assets/source-stays-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#123D2B"
+    }
   }
 }
