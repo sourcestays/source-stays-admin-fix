@@ -178,3 +178,10 @@ Last updated: 2026-11-27
 - Returned rows contain 13 columns for `properties`: `id bigint`, `title text`, `public_title text`, `published boolean`, `price numeric`, `caution_fee numeric`, `extra_guest_fee numeric`, `cleaning_fee numeric`, `service_fee numeric`, `other_fee numeric`, `event_enabled boolean`, `event_price numeric`, `event_caution_fee numeric`.
 - No columns were returned for `hotel_room_categories` or `villa_packages`. This does not conclusively prove those relations are absent (they may be views, use different names/schemas, or the result may be partial); inspect relation existence separately.
 - Compared with current mobile queries, fields such as `category`, `location`, `image_url`, `price_period`, `bedrooms`, `guests`, `amenities`, and partner privacy/verification flags were not present in the supplied result. This is a potentially significant schema drift issue; do not create a property view or grant privileges until the full actual `properties` schema and relation inventory are confirmed.
+
+
+## Public relation inventory — 2026-11-27
+
+- User supplied `pg_class` inventory for public relations of kinds table/view/materialized view/partitioned table. Exactly four objects were returned: `bookings` (table), `properties` (table), `shortlet_payment_transactions` (table), and `shortlet_paystack_webhook_events` (table).
+- No public views or materialized views were returned; no hotel/villa package relation appeared in the inventory.
+- GitHub branch contains migrations for hotel availability, hotel room categories and their public rate view, hotel room media, hotel payment transactions, property exact address, hotel credits, inspection notes, secure customer booking pricing, shortlet Paystack transactions, and booking RPC privilege restriction. The live test schema inventory is substantially narrower than the branch's expected schema. Do not bulk-apply migrations until prerequisites, ordering, and current object definitions are compared.
