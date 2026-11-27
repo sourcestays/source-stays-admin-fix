@@ -157,3 +157,9 @@ Last updated: 2026-11-27
 - User queried `pg_class` for `hotel_room_categories_public`, `villa_packages_public`, and `properties_public` in schema `public`; zero rows returned.
 - Therefore none of these three named objects currently exists in the Source Stays test project's public schema. This corroborates the earlier empty public-view inventory.
 - Before applying or replaying view migrations, inspect Supabase migration history and the actual underlying hotel/villa tables and columns. Do not assume the migrations have or have not run solely from GitHub source files.
+
+
+## Supabase migration-history lookup — 2026-11-27
+
+- User attempted to query `supabase_migrations.schema_migrations` in the Source Stays test project; PostgreSQL returned `42P01: relation does not exist`.
+- This means that exact migration-history relation is unavailable in the queried database. It does not establish that no migrations were applied; inspect catalog for migration-related schemas/tables and confirm the project's migration workflow before drawing conclusions.
