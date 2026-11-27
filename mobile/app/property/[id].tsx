@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,6 +22,7 @@ type VillaPackage = { id: string | number; package_name: string; package_type: "
 
 export default function PropertyScreen() {
   const { colors, isDark } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [item, setItem] = useState<Property | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -489,7 +490,7 @@ export default function PropertyScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.content}>
         <Link href="/" style={[styles.back, { color: colors.gold }]}>← Source Stays</Link>
-        {loading ? <ActivityIndicator size="large" color="#123D2B" style={{ marginTop: 50 }} /> :
+        {loading ? <ActivityIndicator size="large" color={colors.gold} style={{ marginTop: 50 }} /> :
           error ? <Text style={styles.error}>{error}</Text> : item ? <>
             <Text style={[styles.category, { color: colors.gold }]}>{item.category.toUpperCase()}</Text>
             <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
@@ -664,47 +665,50 @@ export default function PropertyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+
+function createStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: boolean) {
+  return StyleSheet.create({
   safe: { flex: 1 }, content: { padding: 20, paddingBottom: 45 },
-  back: { color: "#123D2B", fontWeight: "700", marginBottom: 23 }, category: { fontSize: 10, color: "#A77D31", fontWeight: "900", letterSpacing: 1.5 },
-  title: { fontSize: 27, lineHeight: 34, fontWeight: "900", color: "#123D2B", marginTop: 7 }, location: { fontSize: 12, color: "#747B73", marginTop: 8 },
-  gallery: { marginTop: 20 }, image: { width: 300, height: 220, borderRadius: 15, marginRight: 10, backgroundColor: "#E9ECE5" },
-  noImage: { height: 180, backgroundColor: "#E9ECE5", borderRadius: 15, alignItems: "center", justifyContent: "center", marginTop: 20 },
-  noImageText: { color: "#A77D31", fontWeight: "900", letterSpacing: 2 }, verified: { fontSize: 11, color: "#247343", fontWeight: "700", marginTop: 8 },
-  section: { fontSize: 18, fontWeight: "900", color: "#173E2D", marginTop: 25, marginBottom: 10 }, details: { fontSize: 13, color: "#59645B", lineHeight: 21 },
-  rate: { fontSize: 17, fontWeight: "900", color: "#173E2D", marginTop: 12 }, room: { backgroundColor: "#fff", padding: 15, borderRadius: 13, marginTop: 10, borderWidth: 1, borderColor: "#E7E8E0" },
-  roomSelected: { borderColor: "#A77D31", borderWidth: 2 }, roomHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  roomName: { fontSize: 15, fontWeight: "800", color: "#173E2D" }, selectText: { fontSize: 9, color: "#A77D31", fontWeight: "900" },
-  formHint: { fontSize: 12, color: "#687269", lineHeight: 19, marginBottom: 12 }, label: { color: "#173E2D", fontSize: 12, fontWeight: "700", marginTop: 12, marginBottom: 6 },
-  input: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E2E4DC", borderRadius: 11, padding: 13, color: "#173E2D", fontSize: 14 },
+  back: { color: colors.primary, fontWeight: "700", marginBottom: 23 }, category: { fontSize: 10, color: colors.gold, fontWeight: "900", letterSpacing: 1.5 },
+  title: { fontSize: 27, lineHeight: 34, fontWeight: "900", color: colors.primary, marginTop: 7 }, location: { fontSize: 12, color: colors.muted, marginTop: 8 },
+  gallery: { marginTop: 20 }, image: { width: 300, height: 220, borderRadius: 15, marginRight: 10, backgroundColor: colors.surfaceAlt },
+  noImage: { height: 180, backgroundColor: colors.surfaceAlt, borderRadius: 15, alignItems: "center", justifyContent: "center", marginTop: 20 },
+  noImageText: { color: colors.gold, fontWeight: "900", letterSpacing: 2 }, verified: { fontSize: 11, color: colors.success, fontWeight: "700", marginTop: 8 },
+  section: { fontSize: 18, fontWeight: "900", color: colors.text, marginTop: 25, marginBottom: 10 }, details: { fontSize: 13, color: colors.muted, lineHeight: 21 },
+  rate: { fontSize: 17, fontWeight: "900", color: colors.text, marginTop: 12 }, room: { backgroundColor: colors.surface, padding: 15, borderRadius: 13, marginTop: 10, borderWidth: 1, borderColor: colors.border },
+  roomSelected: { borderColor: colors.gold, borderWidth: 2 }, roomHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  roomName: { fontSize: 15, fontWeight: "800", color: colors.text }, selectText: { fontSize: 9, color: colors.gold, fontWeight: "900" },
+  formHint: { fontSize: 12, color: colors.muted, lineHeight: 19, marginBottom: 12 }, label: { color: colors.text, fontSize: 12, fontWeight: "700", marginTop: 12, marginBottom: 6 },
+  input: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 11, padding: 13, color: colors.text, fontSize: 14 },
   twoFields: { flexDirection: "row", gap: 12 }, half: { flex: 1 },
   timeOptions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 5 },
-  timeOption: { borderWidth: 1, borderColor: "#DADDD4", borderRadius: 18, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: "#fff" },
-  timeOptionActive: { backgroundColor: "#123D2B", borderColor: "#123D2B" },
-  timeOptionText: { color: "#526057", fontSize: 11, fontWeight: "700" },
-  timeOptionTextActive: { color: "#fff" }, noteInput: { minHeight: 78, textAlignVertical: "top" },
-  cta: { backgroundColor: "#123D2B", padding: 16, borderRadius: 12, marginTop: 18, alignItems: "center" }, ctaText: { color: "#fff", fontWeight: "800", fontSize: 13 },
-  requestCard: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E2E4DC", borderRadius: 13, padding: 15, marginTop: 18 },
-  requestCardTitle: { color: "#173E2D", fontSize: 15, fontWeight: "900" },
-  requestCardRef: { color: "#A77D31", fontSize: 12, fontWeight: "800", marginTop: 8 },
-  requestCardStatus: { color: "#566157", fontSize: 12, marginTop: 6, textTransform: "capitalize" },
-  refreshButton: { alignSelf: "flex-start", paddingVertical: 9, paddingHorizontal: 12, borderRadius: 8, backgroundColor: "#F1F3EE", marginTop: 10 },
-  refreshText: { color: "#173E2D", fontWeight: "800", fontSize: 11 },
+  timeOption: { borderWidth: 1, borderColor: colors.border, borderRadius: 18, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.surface },
+  timeOptionActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  timeOptionText: { color: colors.muted, fontSize: 11, fontWeight: "700" },
+  timeOptionTextActive: { color: colors.surface }, noteInput: { minHeight: 78, textAlignVertical: "top" },
+  cta: { backgroundColor: colors.primary, padding: 16, borderRadius: 12, marginTop: 18, alignItems: "center" }, ctaText: { color: colors.surface, fontWeight: "800", fontSize: 13 },
+  requestCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 13, padding: 15, marginTop: 18 },
+  requestCardTitle: { color: colors.text, fontSize: 15, fontWeight: "900" },
+  requestCardRef: { color: colors.gold, fontSize: 12, fontWeight: "800", marginTop: 8 },
+  requestCardStatus: { color: colors.muted, fontSize: 12, marginTop: 6, textTransform: "capitalize" },
+  refreshButton: { alignSelf: "flex-start", paddingVertical: 9, paddingHorizontal: 12, borderRadius: 8, backgroundColor: colors.surfaceAlt, marginTop: 10 },
+  refreshText: { color: colors.text, fontWeight: "800", fontSize: 11 },
   policyRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, marginTop: 18 },
-  policyCheck: { width: 22, height: 22, borderWidth: 1, borderColor: "#AEB8AE", borderRadius: 5, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
-  policyCheckOn: { backgroundColor: "#123D2B", borderColor: "#123D2B" },
-  policyCheckText: { color: "#fff", fontWeight: "900" },
-  policyText: { flex: 1, fontSize: 11, color: "#566157", lineHeight: 17 },
-  breakdownCard: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E3E6DD", borderRadius: 13, padding: 15, marginTop: 18 },
-  breakdownTitle: { color: "#173E2D", fontSize: 15, fontWeight: "900", marginBottom: 10 },
+  policyCheck: { width: 22, height: 22, borderWidth: 1, borderColor: colors.border, borderRadius: 5, alignItems: "center", justifyContent: "center", backgroundColor: colors.surface },
+  policyCheckOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  policyCheckText: { color: colors.surface, fontWeight: "900" },
+  policyText: { flex: 1, fontSize: 11, color: colors.muted, lineHeight: 17 },
+  breakdownCard: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 13, padding: 15, marginTop: 18 },
+  breakdownTitle: { color: colors.text, fontSize: 15, fontWeight: "900", marginBottom: 10 },
   breakdownRow: { flexDirection: "row", justifyContent: "space-between", gap: 12, paddingVertical: 6 },
-  breakdownLabel: { flex: 1, color: "#5D685F", fontSize: 12 },
-  breakdownValue: { color: "#173E2D", fontSize: 12, fontWeight: "700" },
-  breakdownTotal: { borderTopWidth: 1, borderTopColor: "#E5E8E0", marginTop: 8, paddingTop: 12, flexDirection: "row", justifyContent: "space-between", gap: 12 },
-  breakdownTotalLabel: { color: "#173E2D", fontSize: 13, fontWeight: "900", flex: 1 },
-  breakdownTotalValue: { color: "#123D2B", fontSize: 16, fontWeight: "900" },
-  breakdownNote: { color: "#777F76", fontSize: 10, lineHeight: 15, marginTop: 9 },
-  villaPanel: { marginTop: 8 }, secondaryCta: { borderWidth: 1, borderColor: "#A77D31", padding: 15, borderRadius: 12, marginTop: 12, alignItems: "center" }, secondaryCtaText: { color: "#173E2D", fontWeight: "800", fontSize: 13 },
-  disabled: { opacity: 0.6 }, requestMessage: { fontSize: 12, lineHeight: 19, marginTop: 12 }, success: { color: "#247343" },
-  notice: { fontSize: 11, color: "#777D76", lineHeight: 17, marginTop: 18 }, error: { color: "#9B3025", textAlign: "center", marginTop: 40 },
-});
+  breakdownLabel: { flex: 1, color: colors.muted, fontSize: 12 },
+  breakdownValue: { color: colors.text, fontSize: 12, fontWeight: "700" },
+  breakdownTotal: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 8, paddingTop: 12, flexDirection: "row", justifyContent: "space-between", gap: 12 },
+  breakdownTotalLabel: { color: colors.text, fontSize: 13, fontWeight: "900", flex: 1 },
+  breakdownTotalValue: { color: colors.primary, fontSize: 16, fontWeight: "900" },
+  breakdownNote: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 9 },
+  villaPanel: { marginTop: 8 }, secondaryCta: { borderWidth: 1, borderColor: colors.gold, padding: 15, borderRadius: 12, marginTop: 12, alignItems: "center" }, secondaryCtaText: { color: colors.text, fontWeight: "800", fontSize: 13 },
+  disabled: { opacity: 0.6 }, requestMessage: { fontSize: 12, lineHeight: 19, marginTop: 12 }, success: { color: colors.success },
+  notice: { fontSize: 11, color: "#777D76", lineHeight: 17, marginTop: 18 }, error: { color: isDark ? "#F2A198" : "#9B3025", textAlign: "center", marginTop: 40 },
+  });
+}
