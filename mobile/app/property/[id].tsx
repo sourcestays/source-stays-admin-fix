@@ -20,7 +20,8 @@ type Property = {
 type Room = { id: string; room_name: string; description: string | null; customer_rate: number; max_guests: number | null; photo_urls: string[] | null };
 type VillaPackage = { id: string | number; package_name: string; package_type: "day_getaway" | "overnight_getaway"; boat_included: boolean; description: string | null; boat_description: string | null; weekday_customer_rate: number; weekend_customer_rate: number; max_guests: number; start_time: string | null; end_time: string | null };
 
-export default function PropertyScreen() {\n  const { colors, isDark } = useAppTheme();
+export default function PropertyScreen() {
+  const { colors, isDark } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [item, setItem] = useState<Property | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
