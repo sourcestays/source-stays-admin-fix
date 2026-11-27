@@ -18,12 +18,12 @@ Deno.serve(async req => {
   const bookingId=Number(body.booking_id);
   if(!Number.isSafeInteger(bookingId)||bookingId<=0) return json({error:"A valid booking reference is required."},400);
   const {data:booking,error}=await admin.from("bookings")
-    .select("id,customer_user_id,customer_email,amount_due,currency,payment_status,status,check_in,check_out")
+    .select("id,customer_user_id,customer_email,amount_due,currency,payment_status,payment_request_status,status,check_in,check_out")
     .eq("id",bookingId).eq("customer_user_id",user.id).maybeSingle();
   if(error) throw error;
   if(!booking) return json({error:"Booking not found."},404);
   if(booking.payment_status==="paid") return json({error:"This booking has already been paid."},409);
-  if(!["pending","confirmed","awaiting_payment"].includes(String(booking.status))) return json({error:"This booking is not ready for payment. Please wait for Source Stays to confirm it."},409);
+  if(String(booking.payment_request_status||"").toLowerCase()!=="requested") return json({error:"Source Stays has not requested payment for this booking yet. You will be able to pay here once your booking and final amount are confirmed."},409);
   if(!booking.check_in||!booking.check_out||booking.check_out<=booking.check_in) return json({error:"Booking dates are invalid."},409);
   const amount=Number(booking.amount_due), kobo=Math.round(amount*100);
   if(!Number.isFinite(amount)||amount<=0||!Number.isSafeInteger(kobo)||kobo<=0) return json({error:"The confirmed booking amount is invalid."},409);
@@ -49,7 +49,7 @@ Deno.serve(async req => {
   }
   const {error:saveError}=await admin.from("shortlet_payment_transactions").update({authorization_url:paystack.data.authorization_url,access_code:paystack.data.access_code||null}).eq("id",tx.id).eq("status","pending");
   if(saveError) throw saveError;
-  await admin.from("bookings").update({payment_status:"pending"}).eq("id",bookingId).eq("customer_user_id",user.id).neq("payment_status","paid");
+  
   return json({success:true,authorization_url:paystack.data.authorization_url,reference,amount,currency:"NGN"});
  } catch(e) { console.error("Shortlet payment initialization error:",e); return json({error:"Unable to initialize payment. Please try again."},500); }
 });
