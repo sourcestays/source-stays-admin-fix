@@ -143,3 +143,10 @@ Last updated: 2026-11-27
 - Combined with the prior results (RLS disabled, no policies, and no listed SELECT grants), the supplied checks establish that the `anon` and `authenticated` API roles do not currently have effective SELECT access to `public.properties`. The app's direct customer-side queries to this table therefore have no demonstrated supported read path in this test project.
 - No property-named public view was found. This search does not rule out views with other names, RPCs, or other schemas.
 - Do not grant broad SELECT on the base table: it contains partner/private identity fields and the app currently masks those values client-side. Next inspect table ACL/schema usage, all public views, and relevant read RPCs/migrations. Then implement a least-privilege sanitized read contract and update mobile + website together. Keep live production untouched.
+
+
+## Schema usage and complete public-view inventory — 2026-11-27
+
+- User supplied test-project results: `anon` and `authenticated` both have USAGE on schema `public`; neither has SELECT on `public.properties`.
+- User's complete `pg_views` inventory for schema `public` returned zero rows.
+- This confirms schema USAGE is present but no public-schema views are available in this project. The customer property-read contract must be added deliberately; do not open direct base-table access.
