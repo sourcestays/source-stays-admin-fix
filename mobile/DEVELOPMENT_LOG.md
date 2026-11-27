@@ -185,3 +185,13 @@ Last updated: 2026-11-27
 - User supplied `pg_class` inventory for public relations of kinds table/view/materialized view/partitioned table. Exactly four objects were returned: `bookings` (table), `properties` (table), `shortlet_payment_transactions` (table), and `shortlet_paystack_webhook_events` (table).
 - No public views or materialized views were returned; no hotel/villa package relation appeared in the inventory.
 - GitHub branch contains migrations for hotel availability, hotel room categories and their public rate view, hotel room media, hotel payment transactions, property exact address, hotel credits, inspection notes, secure customer booking pricing, shortlet Paystack transactions, and booking RPC privilege restriction. The live test schema inventory is substantially narrower than the branch's expected schema. Do not bulk-apply migrations until prerequisites, ordering, and current object definitions are compared.
+
+
+## Full four-table column inventory — 2026-11-27
+
+- User supplied complete `information_schema.columns` output for `properties`, `bookings`, `shortlet_payment_transactions`, and `shortlet_paystack_webhook_events`.
+- `bookings` includes the fields used by the secure booking RPC: property/customer/date/guest/amount/payment/status fields plus `customer_user_id`, `booking_option`, `booking_option_label`, `booking_base_price`, and `booking_caution_fee`.
+- `shortlet_payment_transactions` includes booking/user/reference/gateway/currency/amount/status, authorization/access codes, gateway transaction ID/response, and timestamps.
+- `shortlet_paystack_webhook_events` includes event ID/reference/type/payload and receive/process timestamps.
+- `properties` has only 13 reported columns: id, title, public_title, published, price, caution_fee, extra_guest_fee, cleaning_fee, service_fee, other_fee, event_enabled, event_price, event_caution_fee. Many fields queried by mobile listing/detail screens are absent from the supplied inventory, including category/location/image and partner-identity controls. Do not apply a view migration or grant direct table access based on the expected app schema until the base table schema and function dependencies are verified.
+- Preserve all existing bookings and payment records; no reset/drop/recreate operations.
