@@ -26,10 +26,12 @@ Deno.serve(async req=>{
   const data=result.data;
   if(data.status!=="success") return json({success:true,paid:false,status:data.status||"pending"});
   if(Number(data.amount)!==Math.round(Number(tx.amount)*100)||String(data.currency)!=="NGN"||String(data.reference)!==reference) return json({error:"Payment amount or reference does not match this booking. Contact Source Stays."},409);
-  const {error:updateError}=await admin.from("shortlet_payment_transactions").update({status:"paid",gateway_transaction_id:String(data.id),gateway_response:data,paid_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",tx.id);
+  const {data:updatedTx,error:updateError}=await admin.from("shortlet_payment_transactions").update({status:"paid",gateway_transaction_id:String(data.id),gateway_response:data,paid_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",tx.id).select("id").maybeSingle();
   if(updateError) throw updateError;
-  const {error:bookingError}=await admin.from("bookings").update({payment_status:"paid"}).eq("id",tx.booking_id).eq("customer_user_id",user.id);
+  if(!updatedTx) return json({error:"Payment was verified, but the payment record could not be updated. Please contact Source Stays with your payment reference: "+reference},500);
+  const {data:updatedBooking,error:bookingError}=await admin.from("bookings").update({payment_status:"paid"}).eq("id",tx.booking_id).eq("customer_user_id",user.id).select("id").maybeSingle();
   if(bookingError) throw bookingError;
+  if(!updatedBooking) return json({error:"Payment was received and recorded, but the booking status could not be updated. Please contact Source Stays with your payment reference: "+reference},500);
   return json({success:true,paid:true,booking_id:tx.booking_id});
  }catch(e){console.error("Shortlet payment verification error:",e);return json({error:"Unable to verify payment. Please try again."},500);}
 });
