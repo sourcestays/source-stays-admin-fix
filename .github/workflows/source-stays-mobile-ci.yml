@@ -17,6 +17,8 @@ on:
       - "mobile/**"
       - "supabase/functions/initialize-shortlet-payment/**"
       - "supabase/functions/verify-shortlet-payment/**"
+      - "supabase/functions/paystack-shortlet-webhook/**"
+      - "supabase/config.toml"
       - "supabase/migrations/**"
       - ".github/workflows/source-stays-mobile-ci.yml"
   workflow_dispatch:
