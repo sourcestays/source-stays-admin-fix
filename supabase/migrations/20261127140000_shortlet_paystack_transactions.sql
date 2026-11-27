@@ -19,13 +19,12 @@ CREATE TABLE IF NOT EXISTS public.shortlet_payment_transactions (
 CREATE INDEX IF NOT EXISTS shortlet_payment_transactions_booking_idx
   ON public.shortlet_payment_transactions(booking_id, created_at DESC);
 ALTER TABLE public.shortlet_payment_transactions ENABLE ROW LEVEL SECURITY;
+-- Payment ledger access is server-only; Edge Functions use the service role.
+-- Do not depend on an app-specific public.is_admin() helper in test projects.
 DROP POLICY IF EXISTS "Admins manage shortlet payment transactions" ON public.shortlet_payment_transactions;
-CREATE POLICY "Admins manage shortlet payment transactions"
-  ON public.shortlet_payment_transactions FOR ALL TO authenticated
-  USING (public.is_admin()) WITH CHECK (public.is_admin());
 REVOKE ALL ON public.shortlet_payment_transactions FROM anon, authenticated;
-GRANT SELECT ON public.shortlet_payment_transactions TO authenticated;
 GRANT ALL ON public.shortlet_payment_transactions TO service_role;
+
 
 
 -- Idempotency ledger for Paystack shortlet webhook delivery.
