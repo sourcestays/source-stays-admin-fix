@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link } from "expo-router";
 import { isSupabaseConfigured, supabase } from "@/src/lib/supabase";
@@ -13,6 +13,7 @@ const divisions = [
 
 export default function HomeScreen() {
   const [listingCount, setListingCount] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const [status, setStatus] = useState("Connecting to Source Stays");
 
   useEffect(() => {
@@ -49,7 +50,8 @@ export default function HomeScreen() {
           <Text style={styles.eyebrow}>WELCOME TO SOURCE STAYS</Text>
           <Text style={styles.headline}>Find a place to stay.{"\n"}Find a place to own.</Text>
           <Text style={styles.heroCopy}>Discover handpicked shortlets, hotels and real estate opportunities — all in one place.</Text>
-          <View style={styles.searchPill}><Text style={styles.searchIcon}>⌕</Text><Text style={styles.searchText}>Where would you like to go?</Text></View>
+          <View style={styles.searchPill}><Text style={styles.searchIcon}>⌕</Text><TextInput value={searchTerm} onChangeText={setSearchTerm} onSubmitEditing={() => {}} returnKeyType="search" placeholder="Search area: Lekki, Ikeja, Magodo…" placeholderTextColor="#777D76" style={styles.searchInput}/></View>
+          <Link href={{ pathname: "/division/[type]", params: { type: "shortlet", q: searchTerm.trim() } }} asChild><Pressable style={styles.searchButton}><Text style={styles.searchButtonText}>Find a shortlet  →</Text></Pressable></Link>
         </View>
 
         <View style={styles.sectionHeader}>
@@ -106,7 +108,9 @@ const styles = StyleSheet.create({
   heroCopy: { color: "#E0E8E1", fontSize: 13, lineHeight: 20, marginTop: 12, maxWidth: 290 },
   searchPill: { backgroundColor: "#FFFFFF", borderRadius: 14, padding: 14, marginTop: 22, flexDirection: "row", alignItems: "center" },
   searchIcon: { color: "#B58A3A", fontSize: 23, marginRight: 10 },
-  searchText: { color: "#777D76", fontSize: 12 },
+  searchInput: { color: "#173E2D", fontSize: 12, flex: 1, paddingVertical: 2 },
+  searchButton: { alignSelf: "flex-start", backgroundColor: "#D6B66E", borderRadius: 10, paddingHorizontal: 15, paddingVertical: 11, marginTop: 10 },
+  searchButtonText: { color: "#123D2B", fontSize: 11, fontWeight: "900" },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 15 },
   sectionTitle: { color: "#173E2D", fontSize: 19, fontWeight: "800" },
   sectionCopy: { color: "#777D76", fontSize: 11, marginTop: 4 },
