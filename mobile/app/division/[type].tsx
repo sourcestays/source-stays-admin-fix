@@ -18,12 +18,12 @@ const labels: Record<string, string> = {
 };
 
 export default function DivisionScreen() {
-  const params = useLocalSearchParams<{ type: string }>();
+  const params = useLocalSearchParams<{ type: string; q?: string }>();
   const type = String(params.type || "shortlet");
   const [items, setItems] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState(String(params.q || ""));
   const [filter, setFilter] = useState("all");
   const [startingPrices, setStartingPrices] = useState<Record<string, number>>({});
 
@@ -68,7 +68,7 @@ export default function DivisionScreen() {
   const visible = useMemo(() => {
     const term = location.trim().toLowerCase();
     if (!term) return items;
-    return items.filter(p => String(p.location || p.public_location || "").toLowerCase().includes(term));
+    return items.filter(p => [p.title, p.public_title, p.location, p.public_location].some(value => String(value || "").toLowerCase().includes(term)));
   }, [items, location]);
 
   const title = labels[type] || "Source Stays";
