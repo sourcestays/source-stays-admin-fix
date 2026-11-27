@@ -125,3 +125,12 @@ Last updated: 2026-11-27
 - This verifies the live database now denies anonymous EXECUTE while preserving authenticated customer execution. The earlier note that the migration was committed but unapplied is superseded by this verification.
 - Branch-head CI run #103 passed after the migration and audit-log updates; run #102 for the migration commit also passed.
 - Remaining release blocker: live `properties` RLS status/policies, table grants and public property-view results have not yet been supplied. The app currently requests raw `title` and `location` values before applying partner-identity masking client-side; do not treat that as safe until live database permissions and the intended public contract are verified.
+
+
+## Live properties-table security inspection — 2026-11-27
+
+- User supplied screenshots/results from the Supabase project shown as `source-stays-testing`, branch `main`, marked `PRODUCTION`.
+- Live catalog result for `public.properties`: `relrowsecurity = false`, `relforcerowsecurity = false`.
+- Live `pg_policies` query for `public.properties` returned zero rows.
+- Supplied `information_schema.role_table_grants` output lists `REFERENCES`, `TRIGGER`, and `TRUNCATE` for `anon`, `authenticated`, and `service_role`; it lists no `SELECT`, `INSERT`, `UPDATE`, or `DELETE` grants for those roles. The output alone does not settle effective privileges inherited from PUBLIC, column-level grants, or other role membership, so do not infer that client reads are either allowed or denied yet.
+- This is a release-blocking security configuration concern: RLS is disabled and no policies exist. Do not change live RLS, grants, or client queries until effective table/column privileges and existing public views are inspected. Then design a least-privilege customer-safe property contract and coordinate website/mobile changes.
