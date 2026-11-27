@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Link, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -8,6 +9,25 @@ const WHATSAPP = "https://wa.me/2347085404814";
 
 export default function AboutScreen() {
   const { colors, isDark } = useAppTheme();
+  const s = useMemo(() => StyleSheet.create({
+    safe: { flex: 1 }, content: { padding: 20, paddingBottom: 42 },
+    back: { color: colors.primary, fontWeight: "800", marginBottom: 18 },
+    hero: { backgroundColor: colors.hero, borderRadius: 20, padding: 23, marginBottom: 14 },
+    eyebrow: { color: colors.gold, fontSize: 10, fontWeight: "900", letterSpacing: 1.4 },
+    heading: { color: colors.heroText, fontSize: 27, fontWeight: "900", lineHeight: 34, marginTop: 13 },
+    heroCopy: { color: isDark ? colors.muted : "#E0E8E1", fontSize: 12, lineHeight: 20, marginTop: 10 },
+    goldButton: { backgroundColor: colors.gold, borderRadius: 9, paddingHorizontal: 16, paddingVertical: 13, alignSelf: "flex-start", marginTop: 17 },
+    goldText: { color: colors.goldText, fontSize: 12, fontWeight: "900" },
+    card: { backgroundColor: colors.surface, borderRadius: 14, padding: 18, borderWidth: 1, borderColor: colors.border, marginBottom: 11 },
+    title: { color: colors.text, fontSize: 19, fontWeight: "900" },
+    body: { color: colors.muted, fontSize: 12, lineHeight: 20, marginTop: 8 },
+    founder: { backgroundColor: colors.surfaceAlt, borderRadius: 15, padding: 18, marginTop: 8 },
+    outlineButton: { borderWidth: 1, borderColor: colors.gold, borderRadius: 9, padding: 12, alignSelf: "flex-start", marginTop: 14 },
+    outlineText: { color: colors.text, fontSize: 11, fontWeight: "900" },
+    cta: { backgroundColor: colors.surface, borderRadius: 15, padding: 18, marginTop: 14, borderWidth: 1, borderColor: colors.border },
+    reviewLink: { color: colors.gold, fontSize: 12, fontWeight: "900", marginTop: 20 },
+    footer: { color: colors.muted, fontSize: 9, textAlign: "center", marginTop: 24, letterSpacing: 1 }
+  }), [colors, isDark]);
   async function open(url: string) {
     try { await Linking.openURL(url); } catch { /* The user can retry from the website. */ }
   }
