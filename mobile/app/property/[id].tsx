@@ -3,6 +3,8 @@ import { ActivityIndicator, Image, Linking, Pressable, ScrollView, StyleSheet, T
 import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/src/lib/supabase";
+import { useAppTheme } from "@/src/theme/ThemeProvider";
+import { SectionIcon } from "@/src/components/SectionIcon";
 
 type Property = {
   id: number; title: string; public_title: string | null; category: string;
@@ -18,7 +20,7 @@ type Property = {
 type Room = { id: string; room_name: string; description: string | null; customer_rate: number; max_guests: number | null; photo_urls: string[] | null };
 type VillaPackage = { id: string | number; package_name: string; package_type: "day_getaway" | "overnight_getaway"; boat_included: boolean; description: string | null; boat_description: string | null; weekday_customer_rate: number; weekend_customer_rate: number; max_guests: number; start_time: string | null; end_time: string | null };
 
-export default function PropertyScreen() {
+export default function PropertyScreen() {\n  const { colors, isDark } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [item, setItem] = useState<Property | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -482,34 +484,34 @@ export default function PropertyScreen() {
   const whatsapp = () => Linking.openURL("https://wa.me/2347085404814?text=" + encodeURIComponent("Hello Source Stays, I am interested in " + title + " (listing " + id + "). Please assist me."));
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Link href="/" style={styles.back}>← Source Stays</Link>
+        <Link href="/" style={[styles.back, { color: colors.gold }]}>← Source Stays</Link>
         {loading ? <ActivityIndicator size="large" color="#123D2B" style={{ marginTop: 50 }} /> :
           error ? <Text style={styles.error}>{error}</Text> : item ? <>
-            <Text style={styles.category}>{item.category.toUpperCase()}</Text>
-            <Text style={styles.title}>{title}</Text>
-            <Text style={styles.location}>⌖  {place}</Text>
+            <Text style={[styles.category, { color: colors.gold }]}>{item.category.toUpperCase()}</Text>
+            <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+            <Text style={[styles.location, { color: colors.muted }]}>⌖  {place}</Text>
             {images.length > 0 ? <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gallery}>
               {images.map((uri, i) => <Image key={i} source={{ uri }} style={styles.image} resizeMode="cover" />)}
             </ScrollView> : <View style={styles.noImage}><Text style={styles.noImageText}>SOURCE STAYS</Text></View>}
             {!!item.owner_identity_verified && <Text style={styles.verified}>✓ Source Verified</Text>}
             {!!item.physical_inspection_verified && <Text style={styles.verified}>✓ Physical inspection completed</Text>}
-            <Text style={styles.section}>Property details</Text>
-            <Text style={styles.details}>{item.amenities || "Contact Source Stays for more information about this property."}</Text>
+            <Text style={[styles.section, { color: colors.text }]}>Property details</Text>
+            <Text style={[styles.details, { color: colors.muted }]}>{item.amenities || "Contact Source Stays for more information about this property."}</Text>
             {isHotel ? <>
               <Text style={styles.section}>Room categories and rates</Text>
               {rooms.length ? rooms.map(room => <Pressable key={room.id} onPress={() => setSelectedRoomId(room.id)} style={[styles.room, selectedRoomId === room.id && styles.roomSelected]}>
                 <View style={styles.roomHeading}><Text style={styles.roomName}>{room.room_name}</Text><Text style={styles.selectText}>{selectedRoomId === room.id ? "SELECTED ✓" : "SELECT"}</Text></View>
                 {!!room.description && <Text style={styles.details}>{room.description}</Text>}
-                <Text style={styles.rate}>₦{Number(room.customer_rate).toLocaleString("en-NG")} / night</Text>
+                <Text style={[styles.rate, { color: colors.text }]}>₦{Number(room.customer_rate).toLocaleString("en-NG")} / night</Text>
                 {!!room.max_guests && <Text style={styles.location}>Up to {room.max_guests} guests</Text>}
               </Pressable>) : <Text style={styles.details}>Room rates will be provided after availability is confirmed.</Text>}
               <Text style={styles.section}>Request availability</Text>
               <Text style={styles.formHint}>Choose your dates and room requirements. This is an availability request, not a payment.</Text>
               <Text style={styles.label}>Check-in date (YYYY-MM-DD)</Text>
-              <TextInput value={checkIn} onChangeText={setCheckIn} placeholder="2026-12-20" style={styles.input} autoCapitalize="none" />
+              <TextInput value={checkIn} onChangeText={setCheckIn} placeholder="2026-12-20" style={[styles.input, { backgroundColor: colors.input, borderColor: colors.border, color: colors.text }]} autoCapitalize="none" />
               <Text style={styles.label}>Check-out date (YYYY-MM-DD)</Text>
               <TextInput value={checkOut} onChangeText={setCheckOut} placeholder="2026-12-22" style={styles.input} autoCapitalize="none" />
               <View style={styles.twoFields}>
@@ -521,12 +523,12 @@ export default function PropertyScreen() {
               <Text style={styles.label}>Phone number</Text>
               <TextInput value={customerPhone} onChangeText={setCustomerPhone} placeholder="e.g. 08012345678" keyboardType="phone-pad" style={styles.input} />
               <Text style={styles.label}>Additional note (optional)</Text>
-              <TextInput value={customerNote} onChangeText={setCustomerNote} placeholder="Any special requirements?" style={[styles.input, styles.noteInput]} multiline />
+              <TextInput value={customerNote} onChangeText={setCustomerNote} placeholder="Any special requirements?" style={[styles.input, styles.noteInput, { backgroundColor: colors.input, borderColor: colors.border, color: colors.text }]} multiline />
               <Pressable disabled={requestBusy} onPress={submitHotelAvailability} style={[styles.cta, requestBusy && styles.disabled]}>
                 <Text style={styles.ctaText}>{requestBusy ? "Submitting..." : "Request hotel availability"}</Text>
               </Pressable>
               {!!requestMessage && <Text style={[styles.requestMessage, requestSuccess ? styles.success : styles.error]}>{requestMessage}</Text>}
-              {!!hotelRequestRef && <View style={styles.requestCard}>
+              {!!hotelRequestRef && <View style={[styles.requestCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <Text style={styles.requestCardTitle}>Your hotel request</Text>
                 <Text style={styles.requestCardRef}>Reference: {hotelRequestRef}</Text>
                 <Text style={styles.requestCardStatus}>Availability: {hotelRequestStatus.replace(/_/g, " ") || "pending"}</Text>
@@ -564,7 +566,7 @@ export default function PropertyScreen() {
                   </>}
                   <Text style={styles.label}>Number of guests (maximum {selectedVillaPackage.max_guests})</Text>
                   <TextInput value={villaGuests} onChangeText={setVillaGuests} keyboardType="number-pad" style={styles.input} />
-                  {villaEstimate > 0 && <View style={styles.breakdownCard}>
+                  {villaEstimate > 0 && <View style={[styles.breakdownCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <Text style={styles.breakdownTitle}>Indicative package estimate</Text>
                     <Text style={styles.breakdownValue}>{money(villaEstimate)}{selectedVillaPackage.package_type === "overnight_getaway" ? " for " + villaNights + " night(s)" : " for the selected day"}</Text>
                     <Text style={styles.breakdownNote}>Based on the package weekday/weekend rates. Final availability and quotation are subject to partner confirmation.</Text>
@@ -662,7 +664,7 @@ export default function PropertyScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F8F7F2" }, content: { padding: 20, paddingBottom: 45 },
+  safe: { flex: 1 }, content: { padding: 20, paddingBottom: 45 },
   back: { color: "#123D2B", fontWeight: "700", marginBottom: 23 }, category: { fontSize: 10, color: "#A77D31", fontWeight: "900", letterSpacing: 1.5 },
   title: { fontSize: 27, lineHeight: 34, fontWeight: "900", color: "#123D2B", marginTop: 7 }, location: { fontSize: 12, color: "#747B73", marginTop: 8 },
   gallery: { marginTop: 20 }, image: { width: 300, height: 220, borderRadius: 15, marginRight: 10, backgroundColor: "#E9ECE5" },
