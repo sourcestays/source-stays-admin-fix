@@ -4,6 +4,8 @@ import { Link, router, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/src/lib/supabase";
+import { useAppTheme } from "@/src/theme/ThemeProvider";
+import { SectionIcon } from "@/src/components/SectionIcon";
 
 type Booking = {
   id: number | string;
@@ -39,7 +41,7 @@ type RedemptionRequest = { id: string | number; booking_id?: number | null; requ
 const pretty = (value: string | null | undefined) => (value || "Pending").replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
 const money = (value: number | null, currency: string | null) => value == null ? "Amount to be confirmed" : `${currency || "NGN"} ${Number(value).toLocaleString("en-NG", { maximumFractionDigits: 2 })}`;
 
-export default function AccountScreen() {
+export default function AccountScreen() {\n  const { colors, isDark } = useAppTheme();
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -291,12 +293,12 @@ export default function AccountScreen() {
     else { setMessage("You have signed out."); router.replace("/"); }
   }
 
-  return <SafeAreaView style={s.safe}>
+  return <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
     <Stack.Screen options={{ headerShown: false }} />
     <ScrollView contentContainerStyle={s.content}>
       <Link href="/" style={s.back}>← Source Stays</Link>
       {checking ? <ActivityIndicator color="#123D2B" style={{ marginTop: 50 }} /> : user ? <>
-        <View style={s.hero}>
+        <View style={[s.hero, { backgroundColor: colors.hero }]}>
           <Text style={s.brand}>SOURCE <Text style={{ color: "#D6B66E" }}>STAYS</Text></Text>
           <Text style={s.head}>Welcome{user.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ""}.</Text>
           <Text style={s.copy}>{user.email || "Your Source Stays account"}</Text>
@@ -306,8 +308,8 @@ export default function AccountScreen() {
             <Pressable onPress={signOut} disabled={busy} style={s.outlineButton}><Text style={s.outlineText}>{busy ? "Please wait…" : "Sign out"}</Text></Pressable>
           </View>
         </View>
-        <View style={s.profileCard}>
-          <Text style={s.sectionTitle}>My Profile</Text>
+        <View style={[s.profileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[s.sectionTitle, { color: colors.text }]}>My Profile</Text>
           <Text style={s.profileLabel}>FULL NAME</Text>
           <Text style={s.profileValue}>{user.user_metadata?.full_name || "Not provided"}</Text>
           <Text style={s.profileLabel}>EMAIL ADDRESS</Text>
@@ -318,10 +320,10 @@ export default function AccountScreen() {
         <View style={s.sectionHead}><Text style={s.sectionTitle}>My bookings</Text><Pressable onPress={() => loadDashboard(user.id)}><Text style={s.refresh}>Refresh</Text></Pressable></View>
         {dashboardLoading ? <ActivityIndicator color="#123D2B" style={{ marginVertical: 24 }} /> : <>
           {!!dashboardError && <Text style={s.warning}>{dashboardError}</Text>}{!!paymentMessage && <Text style={s.message}>{paymentMessage}</Text>}
-          <Text style={s.subhead}>Shortlet bookings</Text>
+          <Text style={[s.subhead, { color: colors.text }]}>Shortlet bookings</Text>
           {bookings.length ? bookings.map((booking) => <View key={String(booking.id)} style={s.card}>
-            <Text style={s.cardTitle}>{propertyNames[String(booking.property_id)] || `Booking #${booking.id}`}</Text>
-            <Text style={s.meta}>Reference: {booking.id}</Text>
+            <Text style={[s.cardTitle, { color: colors.text }]}>{propertyNames[String(booking.property_id)] || `Booking #${booking.id}`}</Text>
+            <Text style={[s.meta, { color: colors.muted }]}>Reference: {booking.id}</Text>
             <Text style={s.meta}>Check-in: {booking.check_in || "—"}  ·  Check-out: {booking.check_out || "—"}</Text>
             <Text style={s.meta}>Guests: {booking.guests ?? "—"}</Text>
             <View style={s.statusRow}><Text style={s.meta}>Booking: {pretty(booking.status)}</Text><Text style={s.meta}>Payment: {pretty(booking.payment_status)}</Text></View>
@@ -334,7 +336,7 @@ export default function AccountScreen() {
                 <Text style={s.verifyPayText}>I have paid — verify payment</Text>
               </Pressable>
             </> : booking.payment_status !== "paid" ? <Text style={s.meta}>Payment will be available here once Source Stays confirms your booking and requests payment.</Text> : null}
-          </View>) : <Text style={s.empty}>No shortlet bookings are linked to your account yet.</Text>}
+          </View>) : <Text style={[s.empty, { color: colors.muted, backgroundColor: colors.surfaceAlt }]}>No shortlet bookings are linked to your account yet.</Text>}
 
           <Text style={[s.subhead, { marginTop: 22 }]}>Hotel reservations</Text>
           {hotels.length ? hotels.map((request) => {
@@ -355,16 +357,16 @@ export default function AccountScreen() {
             </View>;
           }) : <Text style={s.empty}>No hotel requests are linked to your account yet.</Text>}
         </>}
-        <View style={s.redemptionPanel}>
+        <View style={[s.redemptionPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Text style={s.sectionTitle}>Redeem Source Stays Credits</Text>
           <Text style={s.redemptionHint}>Use eligible credits toward an unpaid shortlet booking or an available hotel reservation. Minimum request: ₦2,000. All requests require administrator approval.</Text>
-          <Text style={s.label}>Eligible booking or hotel reservation</Text>
+          <Text style={[s.label, { color: colors.gold }]}>Eligible booking or hotel reservation</Text>
           {eligibleRedemptions.map(option => <Pressable key={option.value} onPress={() => setSelectedRedemption(option.value)} style={[s.eligibleOption, selectedRedemption === option.value && s.eligibleOptionActive]}>
             <Text style={[s.eligibleOptionText, selectedRedemption === option.value && s.eligibleOptionTextActive]}>{option.label}</Text>
           </Pressable>)}
           {!eligibleRedemptions.length && <Text style={s.empty}>No eligible unpaid reservations are currently available.</Text>}
           <Text style={s.label}>Amount to redeem (₦)</Text>
-          <TextInput value={redemptionAmount} onChangeText={setRedemptionAmount} keyboardType="decimal-pad" placeholder="Minimum ₦2,000" style={s.input} />
+          <TextInput value={redemptionAmount} onChangeText={setRedemptionAmount} keyboardType="decimal-pad" placeholder="Minimum ₦2,000" style={[s.input, { backgroundColor: colors.input, borderColor: colors.border, color: colors.text }]} />
           <Text style={s.label}>Note (optional)</Text>
           <TextInput value={redemptionNote} onChangeText={setRedemptionNote} maxLength={300} placeholder="Add a note for our team" style={s.input} />
           <Pressable disabled={redemptionBusy || !eligibleRedemptions.length} onPress={submitRedemption} style={[s.button, (redemptionBusy || !eligibleRedemptions.length) && { opacity: .6 }]}>
@@ -388,12 +390,12 @@ export default function AccountScreen() {
           <Text style={s.head}>Your stay. Your rewards.</Text>
           <Text style={s.copy}>Sign in or create an account to manage your bookings, hotel reservations and Source Stays Credits.</Text>
         </View>
-        <View style={s.panel}>
+        <View style={[s.panel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={s.tabs}>
             <Pressable onPress={() => { setMode("login"); setMessage(""); }} style={[s.tab, mode === "login" && s.tabActive]}><Text style={[s.tabText, mode === "login" && s.tabTextActive]}>Log in</Text></Pressable>
             <Pressable onPress={() => { setMode("signup"); setMessage(""); }} style={[s.tab, mode === "signup" && s.tabActive]}><Text style={[s.tabText, mode === "signup" && s.tabTextActive]}>Sign up</Text></Pressable>
           </View>
-          <Text style={s.title}>{mode === "login" ? "Welcome back" : "Create your account"}</Text>
+          <Text style={[s.title, { color: colors.text }]}>{mode === "login" ? "Welcome back" : "Create your account"}</Text>
           {mode === "signup" && <>
             <Text style={s.label}>Full name</Text><TextInput value={name} onChangeText={setName} autoComplete="name" style={s.input} placeholder="Your full name" />
             <Text style={s.label}>Mobile number</Text><TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" autoComplete="tel" style={s.input} placeholder="+234..." />
@@ -412,7 +414,7 @@ export default function AccountScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F8F7F2" }, content: { padding: 20, paddingBottom: 42 },
+  safe: { flex: 1 }, content: { padding: 20, paddingBottom: 42 },
   back: { color: "#123D2B", fontWeight: "700", marginBottom: 20 },
   hero: { backgroundColor: "#123D2B", borderRadius: 18, padding: 22, marginBottom: 18 },
   brand: { color: "#fff", fontSize: 18, fontWeight: "900", letterSpacing: 1.2 },
