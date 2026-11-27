@@ -124,23 +124,3 @@ export default function RewardsScreen() {
   </SafeAreaView>;
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1 },
-  content: { padding: 20, paddingBottom: 40 },
-  back: { color: "#123D2B", fontWeight: "700", marginBottom: 25 },
-  eyebrow: { color: "#A77D31", fontSize: 10, fontWeight: "900", letterSpacing: 1.5 },
-  heading: { color: "#123D2B", fontSize: 28, fontWeight: "900", marginTop: 8 },
-  balance: { backgroundColor: "#123D2B", padding: 22, borderRadius: 18, marginTop: 23 },
-  balanceLabel: { color: "#D6B66E", fontSize: 10, fontWeight: "800", letterSpacing: 1.3 },
-  amount: { color: "#fff", fontSize: 32, fontWeight: "900", marginTop: 8 },
-  balanceHint: { color: "#E0E8E1", fontSize: 10, marginTop: 8, lineHeight: 16 },
-  sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 28, marginBottom: 12 },
-  section: { fontSize: 18, color: "#173E2D", fontWeight: "900" },
-  refresh: { color: "#247343", fontSize: 12, fontWeight: "800" },
-  entry: { backgroundColor: "#fff", padding: 15, borderRadius: 12, marginBottom: 10, flexDirection: "row", alignItems: "center", gap: 10 },
-  entryTitle: { fontSize: 13, color: "#173E2D", fontWeight: "800" },
-  note: { fontSize: 10, color: "#747B73", marginTop: 4 },
-  entryAmount: { fontSize: 13, fontWeight: "900", color: "#247343" },
-  redeemed: { color: "#8B4C32" },
-  message: { fontSize: 12, color: "#747B73", lineHeight: 20, marginTop: 10 }
-});
