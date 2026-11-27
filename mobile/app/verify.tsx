@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Link, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,7 +7,26 @@ import { useAppTheme } from "@/src/theme/ThemeProvider";
 const VERIFICATION_PAGE = "https://sourcestays.com.ng/verify.html";
 
 export default function GuestVerificationScreen() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
+  const s = useMemo(() => StyleSheet.create({
+    safe: { flex: 1 }, content: { padding: 20, paddingBottom: 40 },
+    back: { color: colors.primary, fontWeight: "800", marginBottom: 18 },
+    hero: { backgroundColor: colors.hero, borderRadius: 18, padding: 22, marginBottom: 16 },
+    brand: { color: colors.heroText, fontSize: 17, fontWeight: "900", letterSpacing: 1.2 },
+    heading: { color: colors.heroText, fontSize: 25, fontWeight: "900", marginTop: 18 },
+    copy: { color: isDark ? colors.muted : "#E0E8E1", fontSize: 12, lineHeight: 19, marginTop: 8 },
+    card: { backgroundColor: colors.surface, borderRadius: 15, padding: 18, borderWidth: 1, borderColor: colors.border },
+    title: { color: colors.text, fontSize: 19, fontWeight: "900" },
+    body: { color: colors.muted, fontSize: 12, lineHeight: 19, marginTop: 9 },
+    label: { color: colors.gold, fontSize: 10, fontWeight: "900", letterSpacing: 0.8, marginTop: 20, marginBottom: 7 },
+    input: { backgroundColor: colors.input, borderWidth: 1, borderColor: colors.border, borderRadius: 9, padding: 13, color: colors.text, fontSize: 13 },
+    button: { backgroundColor: colors.primary, borderRadius: 10, padding: 15, alignItems: "center", justifyContent: "center", minHeight: 49, marginTop: 15 },
+    buttonText: { color: colors.primaryText, fontSize: 13, fontWeight: "900" },
+    error: { color: isDark ? "#F2A198" : "#A33A2A", fontSize: 12, lineHeight: 18, marginTop: 12 },
+    notice: { backgroundColor: colors.surfaceAlt, borderColor: colors.border, borderWidth: 1, borderRadius: 12, padding: 15, marginTop: 16 },
+    noticeTitle: { color: colors.text, fontSize: 13, fontWeight: "900" },
+    footer: { color: colors.muted, fontSize: 10, textAlign: "center", marginTop: 22 }
+  }), [colors, isDark]);
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -39,11 +58,11 @@ export default function GuestVerificationScreen() {
     <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
       <Link href="/account" style={s.back}>← My Account</Link>
       <View style={s.hero}>
-        <Text style={s.brand}>SOURCE <Text style={{ color: "#D6B66E" }}>STAYS</Text></Text>
+        <Text style={s.brand}>SOURCE <Text style={{ color: colors.gold }}>STAYS</Text></Text>
         <Text style={s.heading}>Guest verification</Text>
         <Text style={s.copy}>Complete the identity verification linked to your booking using the secure reference sent to you by our team.</Text>
       </View>
-      <View style={[s.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={s.card}>
         <Text style={s.title}>Open your secure verification form</Text>
         <Text style={s.body}>Enter the verification reference from your Source Stays message. Your details and ID document will be submitted through the existing secure website form.</Text>
         <Text style={s.label}>SECURE VERIFICATION REFERENCE</Text>
@@ -53,12 +72,12 @@ export default function GuestVerificationScreen() {
           autoCapitalize="none"
           autoCorrect={false}
           placeholder="Paste your verification reference"
-          placeholderTextColor="#899188"
+          placeholderTextColor={colors.muted}
           style={s.input}
           editable={!busy}
         />
         <Pressable onPress={continueToVerification} disabled={busy} style={[s.button, busy && { opacity: 0.65 }]}>
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={s.buttonText}>Continue to secure form</Text>}
+          {busy ? <ActivityIndicator color={colors.primaryText} /> : <Text style={s.buttonText}>Continue to secure form</Text>}
         </Pressable>
         {!!message && <Text style={s.error}>{message}</Text>}
       </View>
