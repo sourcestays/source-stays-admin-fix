@@ -5,11 +5,17 @@ on:
     branches: [mobile-app-foundation]
     paths:
       - "mobile/**"
+      - "supabase/functions/initialize-shortlet-payment/**"
+      - "supabase/functions/verify-shortlet-payment/**"
+      - "supabase/migrations/**"
       - ".github/workflows/source-stays-mobile-ci.yml"
   pull_request:
     branches: [main]
     paths:
       - "mobile/**"
+      - "supabase/functions/initialize-shortlet-payment/**"
+      - "supabase/functions/verify-shortlet-payment/**"
+      - "supabase/migrations/**"
       - ".github/workflows/source-stays-mobile-ci.yml"
   workflow_dispatch:
 
@@ -35,3 +41,10 @@ jobs:
         env:
           EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
           EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: example-publishable-key
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check shortlet payment Edge Functions
+        working-directory: ..
+        run: deno check supabase/functions/initialize-shortlet-payment/index.ts supabase/functions/verify-shortlet-payment/index.ts
