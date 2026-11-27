@@ -7,6 +7,8 @@ on:
       - "mobile/**"
       - "supabase/functions/initialize-shortlet-payment/**"
       - "supabase/functions/verify-shortlet-payment/**"
+      - "supabase/functions/paystack-shortlet-webhook/**"
+      - "supabase/config.toml"
       - "supabase/migrations/**"
       - ".github/workflows/source-stays-mobile-ci.yml"
   pull_request:
@@ -47,4 +49,4 @@ jobs:
           deno-version: v2.x
       - name: Check shortlet payment Edge Functions
         working-directory: ${{ github.workspace }}
-        run: deno check supabase/functions/initialize-shortlet-payment/index.ts supabase/functions/verify-shortlet-payment/index.ts
+        run: deno check supabase/functions/initialize-shortlet-payment/index.ts supabase/functions/verify-shortlet-payment/index.ts supabase/functions/paystack-shortlet-webhook/index.ts
