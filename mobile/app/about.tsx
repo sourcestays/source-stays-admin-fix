@@ -1,16 +1,18 @@
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Link, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppTheme } from "@/src/theme/ThemeProvider";
 
 const WEBSITE_ABOUT = "https://sourcestays.com.ng/about.html";
 const WHATSAPP = "https://wa.me/2347085404814";
 
 export default function AboutScreen() {
+  const { colors, isDark } = useAppTheme();
   async function open(url: string) {
     try { await Linking.openURL(url); } catch { /* The user can retry from the website. */ }
   }
 
-  return <SafeAreaView style={s.safe}>
+  return <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
     <Stack.Screen options={{ headerShown: false }} />
     <ScrollView contentContainerStyle={s.content}>
       <Link href="/" style={s.back}>← Source Stays</Link>
@@ -20,9 +22,9 @@ export default function AboutScreen() {
         <Text style={s.heroCopy}>We bring shortlet apartments, hotel stays and real estate opportunities together, with a focus on helpful service, clear information and a better customer experience.</Text>
         <Link href="/division/shortlet" asChild><Pressable style={s.goldButton}><Text style={s.goldText}>Explore our listings</Text></Pressable></Link>
       </View>
-      <View style={s.card}>
-        <Text style={s.title}>Our Story</Text>
-        <Text style={s.body}>Source Stays was created to make finding accommodation and exploring property opportunities easier. Whether someone is planning a short getaway, a business trip or looking for real estate, we want the experience to feel welcoming, clear and convenient.</Text>
+      <View style={[s.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[s.title, { color: colors.text }]}>Our Story</Text>
+        <Text style={[s.body, { color: colors.muted }]}>Source Stays was created to make finding accommodation and exploring property opportunities easier. Whether someone is planning a short getaway, a business trip or looking for real estate, we want the experience to feel welcoming, clear and convenient.</Text>
       </View>
       <View style={s.card}>
         <Text style={s.title}>Our Mission</Text>
@@ -54,7 +56,7 @@ export default function AboutScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F8F7F2" }, content: { padding: 20, paddingBottom: 42 },
+  safe: { flex: 1 }, content: { padding: 20, paddingBottom: 42 },
   back: { color: "#123D2B", fontWeight: "800", marginBottom: 18 },
   hero: { backgroundColor: "#123D2B", borderRadius: 20, padding: 23, marginBottom: 14 },
   eyebrow: { color: "#D6B66E", fontSize: 10, fontWeight: "900", letterSpacing: 1.4 },
