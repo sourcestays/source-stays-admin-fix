@@ -98,7 +98,7 @@ export default function ReviewsScreen() {
       <Text style={s.heading}>Reviews from our community</Text>
       <Text style={s.intro}>We're building a trusted community of guests and property owners. Have you used Source Stays? Share your experience.</Text>
       <View style={s.sectionHead}><Text style={s.sectionTitle}>Published reviews</Text><Pressable onPress={loadReviews}><Text style={s.refresh}>Refresh</Text></Pressable></View>
-      {loading ? <ActivityIndicator color="#123D2B" style={{ marginVertical: 25 }} /> : loadError ? <Text style={s.empty}>{loadError}</Text> : rows.length ? rows.map((review, i) => <View key={review.created_at + i} style={s.review}>
+      {loading ? <ActivityIndicator color={colors.gold} style={{ marginVertical: 25 }} /> : loadError ? <Text style={s.empty}>{loadError}</Text> : rows.length ? rows.map((review, i) => <View key={review.created_at + i} style={s.review}>
         <Text style={s.stars} accessibilityLabel={review.rating + " out of 5 stars"}>{"★".repeat(Math.max(0, Math.min(5, Number(review.rating)))) + "☆".repeat(5 - Math.max(0, Math.min(5, Number(review.rating))))}</Text>
         <Text style={s.comment}>{review.comment}</Text>
         <Text style={s.name}>{review.reviewer_name}</Text>
@@ -120,7 +120,7 @@ export default function ReviewsScreen() {
         <Text style={s.label}>YOUR REVIEW</Text>
         <TextInput value={comment} onChangeText={setComment} multiline maxLength={2000} placeholder="Tell us about your genuine experience..." textAlignVertical="top" style={[s.input, s.textarea]} />
         <Text style={s.counter}>{comment.trim().length}/2000 characters (minimum 10)</Text>
-        <Pressable onPress={submitReview} disabled={busy} style={[s.button, busy && { opacity: .65 }]}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={s.buttonText}>Submit review</Text>}</Pressable>
+        <Pressable onPress={submitReview} disabled={busy} style={[s.button, busy && { opacity: .65 }]}>{busy ? <ActivityIndicator color={colors.primaryText} /> : <Text style={s.buttonText}>Submit review</Text>}</Pressable>
         {!!message && <Text style={[s.message, success && s.success]}>{message}</Text>}
       </View>
     </ScrollView>
