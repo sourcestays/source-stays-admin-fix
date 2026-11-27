@@ -37,7 +37,7 @@ export default function HomeScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <View style={s.topline}>
-          <Image source={{ uri: "https://raw.githubusercontent.com/sourcestays/source-stays-admin-fix/mobile-app-foundation/source-stays-logo-green-gold.png" }} style={s.logo} resizeMode="contain" accessibilityLabel="Source Stays logo" />
+          <Image source={require("../assets/source-stays-logo.png")} style={s.logo} resizeMode="contain" accessibilityLabel="Source Stays logo" />
           <View style={s.topActions}>
             <Pressable onPress={() => cycleTheme(mode === "system" ? "dark" : mode === "dark" ? "light" : "system")} style={[s.themeButton, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <SectionIcon name={isDark ? "moon" : "sun"} size={16} color={colors.gold} background="transparent" />
