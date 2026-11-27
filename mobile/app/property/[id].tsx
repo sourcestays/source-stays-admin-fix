@@ -402,11 +402,9 @@ export default function PropertyScreen() {
       const user = authData.user;
       if (!user) throw new Error("Please sign in to your Source Stays account before booking.");
       if (!user.email) throw new Error("Your account needs a valid email address before booking.");
-      const { data: available, error: availabilityError } = await supabase.rpc("check_property_availability", {
-        p_property_id: Number(id), p_check_in: bookingCheckIn, p_check_out: bookingCheckOut
-      });
-      if (availabilityError) throw availabilityError;
-      if (available !== true) throw new Error("These dates are not available. Please choose other dates.");
+      // Availability is validated atomically inside create_customer_booking.
+      // Do not call check_property_availability from the customer client:
+      // it is SECURITY INVOKER and customers intentionally have no SELECT on bookings.
       const price = Number(item.price || 0);
       if (price <= 0 && !(item.event_enabled && bookingOption === "event" && Number(item.event_price || 0) > 0)) throw new Error("Please contact Source Stays for this property's current rate.");
       const extraGuest = Math.max(0, guests - 1) * Number(item.extra_guest_fee || 0);
