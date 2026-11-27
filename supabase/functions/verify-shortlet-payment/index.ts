@@ -15,7 +15,7 @@ Deno.serve(async req=>{
   const body=await req.json().catch(()=>({}));
   const bookingId=Number(body.booking_id);
   if(!Number.isSafeInteger(bookingId)||bookingId<=0) return json({error:"A valid booking reference is required."},400);
-  const {data:tx,error}=await admin.from("shortlet_payment_transactions").select("id,booking_id,customer_user_id,amount,status,reference").eq("booking_id",bookingId).eq("customer_user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();
+  const {data:tx,error}=await admin.from("shortlet_payment_transactions").select("id,booking_id,customer_user_id,amount,currency,gateway,status,reference").eq("booking_id",bookingId).eq("customer_user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();
   if(error) throw error;
   if(!tx) return json({error:"No payment attempt was found for this booking yet."},404);
   const reference=String(tx.reference);
@@ -29,7 +29,13 @@ Deno.serve(async req=>{
   if(!response.ok||!result?.status) return json({error:"Paystack could not verify this payment yet. Please refresh shortly."},502);
   const data=result.data;
   if(data.status!=="success") return json({success:true,paid:false,status:data.status||"pending"});
-  if(Number(data.amount)!==Math.round(Number(tx.amount)*100)||String(data.currency)!=="NGN"||String(data.reference)!==reference) return json({error:"Payment amount or reference does not match this booking. Contact Source Stays."},409);
+  if(String(tx.gateway)!=="paystack"||String(tx.currency)!=="NGN"||Number(data.amount)!==Math.round(Number(tx.amount)*100)||String(data.currency)!=="NGN"||String(data.reference)!==reference) return json({error:"Payment amount or reference does not match this booking. Contact Source Stays."},409);
+  const {data:booking,error:bookingReadError}=await admin.from("bookings").select("id,amount_due,currency,payment_request_status").eq("id",tx.booking_id).eq("customer_user_id",user.id).maybeSingle();
+  if(bookingReadError) throw bookingReadError;
+  if(!booking) return json({error:"The booking linked to this payment could not be found. Contact Source Stays with your payment reference: "+reference},409);
+  if(String(booking.payment_request_status||"").toLowerCase()!=="requested"||String(booking.currency||"NGN").toUpperCase()!=="NGN"||Math.round(Number(booking.amount_due)*100)!==Math.round(Number(tx.amount)*100)) {
+   return json({error:"The booking amount or payment approval has changed since this payment link was created. Do not make another payment. Contact Source Stays with your payment reference: "+reference},409);
+  }
   const {data:updatedTx,error:updateError}=await admin.from("shortlet_payment_transactions").update({status:"paid",gateway_transaction_id:String(data.id),gateway_response:data,paid_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",tx.id).select("id").maybeSingle();
   if(updateError) throw updateError;
   if(!updatedTx) return json({error:"Payment was verified, but the payment record could not be updated. Please contact Source Stays with your payment reference: "+reference},500);
