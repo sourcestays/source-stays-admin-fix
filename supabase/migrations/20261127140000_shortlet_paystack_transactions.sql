@@ -26,3 +26,17 @@ CREATE POLICY "Admins manage shortlet payment transactions"
 REVOKE ALL ON public.shortlet_payment_transactions FROM anon, authenticated;
 GRANT SELECT ON public.shortlet_payment_transactions TO authenticated;
 GRANT ALL ON public.shortlet_payment_transactions TO service_role;
+
+
+-- Idempotency ledger for Paystack shortlet webhook delivery.
+CREATE TABLE IF NOT EXISTS public.shortlet_paystack_webhook_events (
+  event_id text PRIMARY KEY,
+  reference text NOT NULL,
+  event_type text NOT NULL,
+  payload jsonb NOT NULL,
+  received_at timestamptz NOT NULL DEFAULT now(),
+  processed_at timestamptz
+);
+ALTER TABLE public.shortlet_paystack_webhook_events ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.shortlet_paystack_webhook_events FROM anon, authenticated;
+GRANT ALL ON public.shortlet_paystack_webhook_events TO service_role;
