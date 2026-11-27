@@ -195,3 +195,10 @@ Last updated: 2026-11-27
 - `shortlet_paystack_webhook_events` includes event ID/reference/type/payload and receive/process timestamps.
 - `properties` has only 13 reported columns: id, title, public_title, published, price, caution_fee, extra_guest_fee, cleaning_fee, service_fee, other_fee, event_enabled, event_price, event_caution_fee. Many fields queried by mobile listing/detail screens are absent from the supplied inventory, including category/location/image and partner-identity controls. Do not apply a view migration or grant direct table access based on the expected app schema until the base table schema and function dependencies are verified.
 - Preserve all existing bookings and payment records; no reset/drop/recreate operations.
+
+
+## Public function and properties constraint audit — 2026-11-27
+
+- User supplied public function inventory: `check_property_availability(p_property_id bigint, p_check_in date, p_check_out date)` with `prosecdef=false` (SECURITY INVOKER), and `create_customer_booking(p_payload jsonb)` with `prosecdef=true` (SECURITY DEFINER).
+- User supplied properties constraints/index inventory: only `properties_pkey PRIMARY KEY (id)` and its unique btree index were returned.
+- Need inspect exact function definitions and EXECUTE privileges, especially whether direct authenticated calls to the availability function are needed and how it reads property/booking data. Do not alter function security mode or grants without reviewing definitions and dependencies.
