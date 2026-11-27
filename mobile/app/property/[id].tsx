@@ -709,6 +709,6 @@ function createStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: 
   breakdownNote: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 9 },
   villaPanel: { marginTop: 8 }, secondaryCta: { borderWidth: 1, borderColor: colors.gold, padding: 15, borderRadius: 12, marginTop: 12, alignItems: "center" }, secondaryCtaText: { color: colors.text, fontWeight: "800", fontSize: 13 },
   disabled: { opacity: 0.6 }, requestMessage: { fontSize: 12, lineHeight: 19, marginTop: 12 }, success: { color: colors.success },
-  notice: { fontSize: 11, color: "#777D76", lineHeight: 17, marginTop: 18 }, error: { color: isDark ? "#F2A198" : "#9B3025", textAlign: "center", marginTop: 40 },
+  notice: { fontSize: 11, color: colors.muted, lineHeight: 17, marginTop: 18 }, error: { color: isDark ? "#F2A198" : "#9B3025", textAlign: "center", marginTop: 40 },
   });
 }
