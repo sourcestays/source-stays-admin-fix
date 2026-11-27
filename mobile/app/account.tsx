@@ -41,7 +41,8 @@ type RedemptionRequest = { id: string | number; booking_id?: number | null; requ
 const pretty = (value: string | null | undefined) => (value || "Pending").replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
 const money = (value: number | null, currency: string | null) => value == null ? "Amount to be confirmed" : `${currency || "NGN"} ${Number(value).toLocaleString("en-NG", { maximumFractionDigits: 2 })}`;
 
-export default function AccountScreen() {\n  const { colors, isDark } = useAppTheme();
+export default function AccountScreen() {
+  const { colors, isDark } = useAppTheme();
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(true);
   const [mode, setMode] = useState<"login" | "signup">("login");
