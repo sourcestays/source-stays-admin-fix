@@ -2,10 +2,12 @@ import { useState } from "react";
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Link, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppTheme } from "@/src/theme/ThemeProvider";
 
 const VERIFICATION_PAGE = "https://sourcestays.com.ng/verify.html";
 
 export default function GuestVerificationScreen() {
+  const { colors } = useAppTheme();
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -32,7 +34,7 @@ export default function GuestVerificationScreen() {
     }
   }
 
-  return <SafeAreaView style={s.safe}>
+  return <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
     <Stack.Screen options={{ headerShown: false }} />
     <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
       <Link href="/account" style={s.back}>← My Account</Link>
@@ -41,7 +43,7 @@ export default function GuestVerificationScreen() {
         <Text style={s.heading}>Guest verification</Text>
         <Text style={s.copy}>Complete the identity verification linked to your booking using the secure reference sent to you by our team.</Text>
       </View>
-      <View style={s.card}>
+      <View style={[s.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={s.title}>Open your secure verification form</Text>
         <Text style={s.body}>Enter the verification reference from your Source Stays message. Your details and ID document will be submitted through the existing secure website form.</Text>
         <Text style={s.label}>SECURE VERIFICATION REFERENCE</Text>
@@ -70,7 +72,7 @@ export default function GuestVerificationScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F8F7F2" },
+  safe: { flex: 1 },
   content: { padding: 20, paddingBottom: 40 },
   back: { color: "#123D2B", fontWeight: "800", marginBottom: 18 },
   hero: { backgroundColor: "#123D2B", borderRadius: 18, padding: 22, marginBottom: 16 },
