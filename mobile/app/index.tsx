@@ -69,7 +69,7 @@ export default function HomeScreen() {
           {divisions.map(item => (
             <Link key={item.category} href={item.category === "rewards" ? "/rewards" : { pathname: "/division/[type]", params: { type: item.category } }} asChild>
               <Pressable style={[s.tile, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={s.tileTop}><SectionIcon name={item.icon} size={24} color={colors.gold} background={isDark ? "#294638" : "#F5F0E4"} /><Text style={[s.tileArrow, { color: colors.gold }]}>↗</Text></View>
+                <View style={s.tileTop}><SectionIcon name={item.icon} size={24} color={colors.gold} background={isDark ? "#294638" : "#F5F0E4"} /><SectionIcon name="arrow" size={14} color={colors.gold} background="transparent" /></View>
                 <Text style={[s.tileTitle, { color: colors.text }]}>{item.title}</Text>
                 <Text style={[s.tileCopy, { color: colors.muted }]}>{item.subtitle}</Text>
                 <Text style={[s.explore, { color: colors.gold }]}>Explore section</Text>
@@ -90,7 +90,7 @@ export default function HomeScreen() {
 
         <View style={[s.appearance, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={{ flex: 1 }}><Text style={[s.appearanceTitle, { color: colors.text }]}>Appearance</Text><Text style={[s.appearanceCopy, { color: colors.muted }]}>Choose how Source Stays looks.</Text></View>
-          {(["light", "dark", "system"] as ThemeMode[]).map(option => <Pressable key={option} onPress={() => setMode(option)} style={[s.modeChip, { backgroundColor: mode === option ? colors.primary : colors.surfaceAlt }]}><Text style={[s.modeText, { color: mode === option ? colors.primaryText : colors.muted }]}>{option === "light" ? "☼" : option === "dark" ? "☾" : "◐"}</Text></Pressable>)}
+          {(["light", "dark", "system"] as ThemeMode[]).map(option => <Pressable key={option} onPress={() => setMode(option)} accessibilityRole="button" accessibilityLabel={option + " appearance"} accessibilityState={{ selected: mode === option }} style={[s.modeChip, { backgroundColor: mode === option ? colors.primary : colors.surfaceAlt }]}><SectionIcon name={option === "light" ? "sun" : option === "dark" ? "moon" : "system"} size={16} color={mode === option ? colors.primaryText : colors.muted} background="transparent" /></Pressable>)}
         </View>
         <Text style={[s.noteText, { color: colors.muted }]}>{status}{!isSupabaseConfigured ? " Add the test project's public settings to the local build environment to load listings." : ""}</Text>
         <Text style={[s.footer, { color: colors.muted }]}>SOURCE STAYS  ·  LAGOS, NIGERIA</Text>
