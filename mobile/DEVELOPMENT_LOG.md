@@ -163,3 +163,10 @@ Last updated: 2026-11-27
 
 - User attempted to query `supabase_migrations.schema_migrations` in the Source Stays test project; PostgreSQL returned `42P01: relation does not exist`.
 - This means that exact migration-history relation is unavailable in the queried database. It does not establish that no migrations were applied; inspect catalog for migration-related schemas/tables and confirm the project's migration workflow before drawing conclusions.
+
+
+## Migration catalog discovery — 2026-11-27
+
+- User's catalog query found `auth.schema_migrations`, `realtime.schema_migrations`, and `storage.migrations`; it did not find a `supabase_migrations` schema/table.
+- These are Supabase service-schema migration tables and must not be treated as the Source Stays application migration ledger without verifying their purpose. Application SQL may have been applied manually in SQL Editor and not recorded in a CLI migration history.
+- Use Supabase Dashboard's project migration tooling/history if available and compare with actual object definitions; do not query or alter internal auth/realtime/storage migration records.
