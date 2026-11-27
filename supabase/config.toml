@@ -1,0 +1,2 @@
+[functions.paystack-shortlet-webhook]
+verify_jwt = false
