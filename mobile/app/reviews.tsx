@@ -3,11 +3,13 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { Link, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/src/lib/supabase";
+import { useAppTheme } from "@/src/theme/ThemeProvider";
 
 type Review = { reviewer_name: string; reviewer_type: string; rating: number; comment: string; created_at: string };
 const gold = "#B08A36";
 
 export default function ReviewsScreen() {
+  const { colors } = useAppTheme();
   const [rows, setRows] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -54,7 +56,7 @@ export default function ReviewsScreen() {
     } finally { setBusy(false); }
   }
 
-  return <SafeAreaView style={s.safe}>
+  return <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
     <Stack.Screen options={{ headerShown: false }} />
     <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
       <Link href="/" style={s.back}>← Source Stays</Link>
@@ -62,13 +64,13 @@ export default function ReviewsScreen() {
       <Text style={s.heading}>Reviews from our community</Text>
       <Text style={s.intro}>We're building a trusted community of guests and property owners. Have you used Source Stays? Share your experience.</Text>
       <View style={s.sectionHead}><Text style={s.sectionTitle}>Published reviews</Text><Pressable onPress={loadReviews}><Text style={s.refresh}>Refresh</Text></Pressable></View>
-      {loading ? <ActivityIndicator color="#123D2B" style={{ marginVertical: 25 }} /> : loadError ? <Text style={s.empty}>{loadError}</Text> : rows.length ? rows.map((review, i) => <View key={review.created_at + i} style={s.review}>
+      {loading ? <ActivityIndicator color="#123D2B" style={{ marginVertical: 25 }} /> : loadError ? <Text style={s.empty}>{loadError}</Text> : rows.length ? rows.map((review, i) => <View key={review.created_at + i} style={[s.review, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={s.stars} accessibilityLabel={review.rating + " out of 5 stars"}>{"★".repeat(Math.max(0, Math.min(5, Number(review.rating)))) + "☆".repeat(5 - Math.max(0, Math.min(5, Number(review.rating))))}</Text>
         <Text style={s.comment}>{review.comment}</Text>
         <Text style={s.name}>{review.reviewer_name}</Text>
         <Text style={s.kind}>{review.reviewer_type === "property_owner" ? "Property owner" : "Guest"}</Text>
       </View>) : <Text style={s.empty}>No published reviews yet. Be among the first to share your genuine experience with Source Stays.</Text>}
-      <View style={s.form}>
+      <View style={[s.form, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Text style={s.sectionTitle}>Share your experience</Text>
         <Text style={s.helper}>Your review will be checked by our team before it appears publicly.</Text>
         <Text style={s.label}>YOUR NAME</Text>
@@ -92,7 +94,7 @@ export default function ReviewsScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F8F7F2" }, content: { padding: 20, paddingBottom: 42 },
+  safe: { flex: 1 }, content: { padding: 20, paddingBottom: 42 },
   back: { color: "#123D2B", fontWeight: "800", marginBottom: 18 },
   eyebrow: { color: gold, fontSize: 10, fontWeight: "900", letterSpacing: 1.4 },
   heading: { color: "#173E2D", fontSize: 27, fontWeight: "900", marginTop: 8 },
