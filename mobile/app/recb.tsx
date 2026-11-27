@@ -1,6 +1,8 @@
+import { useMemo } from "react";
 import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { Link, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppTheme } from "@/src/theme/ThemeProvider";
 
 const PORTAL = "https://cashback.zylusgroup.com/";
 const WHATSAPP = "https://wa.me/2347085404814?text=" + encodeURIComponent("Hello Source Stays, I would like to enquire about the Real Estate Cashback programme.");
@@ -10,6 +12,17 @@ async function openExternal(url: string) {
 }
 
 export default function RecbScreen() {
+  const { colors, isDark } = useAppTheme();
+  const s = useMemo(() => StyleSheet.create({
+    safe: { flex: 1, backgroundColor: colors.background }, content: { padding: 20, paddingBottom: 42 }, back: { color: colors.primary, fontWeight: "700", marginBottom: 22 },
+    eyebrow: { color: colors.gold, fontSize: 9, fontWeight: "900", letterSpacing: 1.2, marginBottom: 10 },
+    hero: { backgroundColor: colors.hero, borderRadius: 20, padding: 22, marginBottom: 15 }, powered: { color: colors.gold, fontSize: 9, fontWeight: "900", letterSpacing: 1.1 }, title: { color: colors.heroText, fontSize: 28, lineHeight: 34, fontWeight: "900", marginTop: 13 }, copy: { color: isDark ? colors.muted : "#E0E8E1", fontSize: 12, lineHeight: 19, marginTop: 12 },
+    primary: { backgroundColor: colors.gold, padding: 14, borderRadius: 11, alignItems: "center", marginTop: 18 }, primaryText: { color: colors.goldText, fontSize: 12, fontWeight: "900" },
+    card: { backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 17, marginBottom: 14 }, section: { color: colors.text, fontSize: 18, fontWeight: "900", marginBottom: 9 }, copyDark: { color: colors.muted, fontSize: 12, lineHeight: 19, marginTop: 5 },
+    label: { color: colors.gold, fontSize: 9, fontWeight: "900", letterSpacing: 1, marginTop: 16 }, value: { color: colors.text, fontSize: 16, fontWeight: "800", marginTop: 5 }, cid: { color: colors.text, fontSize: 25, fontWeight: "900", letterSpacing: 1, marginTop: 4 },
+    secondary: { borderWidth: 1, borderColor: colors.gold, padding: 12, borderRadius: 10, alignItems: "center", marginTop: 12 }, secondaryText: { color: colors.text, fontSize: 11, fontWeight: "800" },
+    warning: { backgroundColor: colors.surfaceAlt, color: colors.muted, fontSize: 10, lineHeight: 16, padding: 11, borderRadius: 9, marginTop: 13 }, bullet: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, marginTop: 12 }, bulletTitle: { color: colors.text, fontSize: 12, fontWeight: "900", marginTop: 8 }, faq: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, marginTop: 12 }, disclaimer: { color: colors.muted, fontSize: 10, lineHeight: 16, marginTop: 16 }, bottom: { backgroundColor: colors.surfaceAlt, borderRadius: 16, padding: 18, marginTop: 4 }, footer: { textAlign: "center", color: colors.muted, fontSize: 9, letterSpacing: 1.1, marginTop: 20 }
+  }), [colors, isDark]);
   async function shareConsultantDetails() {
     await Share.share({ message: "Source Stays — registered consultant name. Consultant ID (CID): 612675. Please verify that these details are accepted and recorded on the official Zylus RECB portal: " + PORTAL });
   }
@@ -87,13 +100,3 @@ export default function RecbScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  safe:{flex:1,backgroundColor:"#F8F7F2"},content:{padding:20,paddingBottom:42},back:{color:"#123D2B",fontWeight:"700",marginBottom:22},
-  eyebrow:{color:"#A77D31",fontSize:9,fontWeight:"900",letterSpacing:1.2,marginBottom:10},
-  hero:{backgroundColor:"#123D2B",borderRadius:20,padding:22,marginBottom:15},powered:{color:"#D6B66E",fontSize:9,fontWeight:"900",letterSpacing:1.1},title:{color:"#fff",fontSize:28,lineHeight:34,fontWeight:"900",marginTop:13},copy:{color:"#E0E8E1",fontSize:12,lineHeight:19,marginTop:12},
-  primary:{backgroundColor:"#D0AD62",padding:14,borderRadius:11,alignItems:"center",marginTop:18},primaryText:{color:"#173E2D",fontSize:12,fontWeight:"900"},
-  card:{backgroundColor:"#fff",borderRadius:16,borderWidth:1,borderColor:"#E9E8E0",padding:17,marginBottom:14},section:{color:"#173E2D",fontSize:18,fontWeight:"900",marginBottom:9},copyDark:{color:"#667168",fontSize:12,lineHeight:19,marginTop:5},
-  label:{color:"#A77D31",fontSize:9,fontWeight:"900",letterSpacing:1,marginTop:16},value:{color:"#173E2D",fontSize:16,fontWeight:"800",marginTop:5},cid:{color:"#173E2D",fontSize:25,fontWeight:"900",letterSpacing:1,marginTop:4},
-  secondary:{borderWidth:1,borderColor:"#C6A45D",padding:12,borderRadius:10,alignItems:"center",marginTop:12},secondaryText:{color:"#173E2D",fontSize:11,fontWeight:"800"},
-  warning:{backgroundColor:"#FFF8E8",color:"#765D2B",fontSize:10,lineHeight:16,padding:11,borderRadius:9,marginTop:13},bullet:{borderTopWidth:1,borderTopColor:"#EEECE5",paddingTop:12,marginTop:12},bulletTitle:{color:"#173E2D",fontSize:12,fontWeight:"900",marginTop:8},faq:{borderTopWidth:1,borderTopColor:"#EEECE5",paddingTop:12,marginTop:12},disclaimer:{color:"#7B7569",fontSize:10,lineHeight:16,marginTop:16},bottom:{backgroundColor:"#F0EEE5",borderRadius:16,padding:18,marginTop:4},footer:{textAlign:"center",color:"#9A9C92",fontSize:9,letterSpacing:1.1,marginTop:20}
-});
