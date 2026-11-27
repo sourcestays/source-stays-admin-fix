@@ -75,22 +75,3 @@ export default function AboutScreen() {
   </SafeAreaView>;
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1 }, content: { padding: 20, paddingBottom: 42 },
-  back: { color: "#123D2B", fontWeight: "800", marginBottom: 18 },
-  hero: { backgroundColor: "#123D2B", borderRadius: 20, padding: 23, marginBottom: 14 },
-  eyebrow: { color: "#D6B66E", fontSize: 10, fontWeight: "900", letterSpacing: 1.4 },
-  heading: { color: "#fff", fontSize: 27, fontWeight: "900", lineHeight: 34, marginTop: 13 },
-  heroCopy: { color: "#E0E8E1", fontSize: 12, lineHeight: 20, marginTop: 10 },
-  goldButton: { backgroundColor: "#D6B66E", borderRadius: 9, paddingHorizontal: 16, paddingVertical: 13, alignSelf: "flex-start", marginTop: 17 },
-  goldText: { color: "#173E2D", fontSize: 12, fontWeight: "900" },
-  card: { backgroundColor: "#fff", borderRadius: 14, padding: 18, borderWidth: 1, borderColor: "#E8E6DD", marginBottom: 11 },
-  title: { color: "#173E2D", fontSize: 19, fontWeight: "900" },
-  body: { color: "#657067", fontSize: 12, lineHeight: 20, marginTop: 8 },
-  founder: { backgroundColor: "#F0EEE5", borderRadius: 15, padding: 18, marginTop: 8 },
-  outlineButton: { borderWidth: 1, borderColor: "#123D2B", borderRadius: 9, padding: 12, alignSelf: "flex-start", marginTop: 14 },
-  outlineText: { color: "#123D2B", fontSize: 11, fontWeight: "900" },
-  cta: { backgroundColor: "#fff", borderRadius: 15, padding: 18, marginTop: 14, borderWidth: 1, borderColor: "#E8E6DD" },
-  reviewLink: { color: "#A77D31", fontSize: 12, fontWeight: "900", marginTop: 20 },
-  footer: { color: "#858B84", fontSize: 9, textAlign: "center", marginTop: 24, letterSpacing: 1 }
-});
