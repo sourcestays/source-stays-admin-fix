@@ -60,14 +60,29 @@ Last updated: 2026-11-27
    - Preserved existing hotel availability, villa enquiry, shortlet booking, event enquiry, real-estate inspection and WhatsApp enquiry logic.
    - Commit: `752decc52f74a0ac3a93a92ce4afc589f6b00327`.
    - Follow-up theme-token correction for notice text: `b114b910d28f7ece4077eb49a47dbcd9e060c13b`.
-5. Vercel check for the latest commit was observed as successful. GitHub Actions mobile CI run #79 was still in progress at the time of this update; dependency installation was running and TypeScript check / Android bundle export had not yet completed. Do not describe CI as passed until its final conclusion is checked.
+5. Follow-up verification: GitHub Actions mobile CI run #79 completed successfully. Runs #80 and #82–#83 also completed successfully, including TypeScript, Android export and Deno Edge Function checks. An intermediate package-only commit run #81 failed because it was triggered before the lockfile update; the immediately subsequent lockfile and icon commits passed.
 
 ## Next actions
 
 1. Confirm GitHub Actions run #79 result for commit `b114b910d28f7ece4077eb49a47dbcd9e060c13b`. If it fails, inspect logs and fix before continuing.
-2. Audit and improve `SectionIcon.tsx` so the app uses a consistent, polished icon set rather than generic text glyphs; add dependencies only after checking compatibility with Expo SDK 54.
-3. Continue a screen-by-screen light/dark theme audit of account, rewards, verification, RECB, reviews, about and remaining nested screens.
+2. Continue screen-by-screen light/dark theme audit of remaining nested screens and any remaining inline hard-coded colours.
 4. Review app navigation and customer discovery flows end-to-end.
 5. Test Supabase authentication, published listing reads, pricing, partner privacy, booking requests and payment verification against the existing contracts.
 6. Complete accessibility, loading/error/empty states and mobile layout checks.
 7. Only after the wider app is ready, prepare Android APK and iOS TestFlight/store release steps.
+
+
+## Additional work completed (2026-11-27)
+
+- Replaced the placeholder Unicode glyph icon system with Material Community vector icons using `@expo/vector-icons` 15.1.1.
+- Added direct `@expo/vector-icons` and `expo-font` dependencies compatible with the existing Expo SDK 54 package set and synchronized the npm lockfile.
+- Updated `mobile/src/components/SectionIcon.tsx` with consistent line-style icons for shortlets, hotels, real estate, rewards, search, account, bed, location, calendar, security, theme modes, buildings and keys.
+- Applied theme-aware styling to:
+  - `mobile/app/rewards.tsx` — rewards balance panel, ledger rows, amounts, labels and empty/loading states.
+  - `mobile/app/reviews.tsx` — published reviews, review form, rating selector, inputs, buttons and feedback messages.
+  - `mobile/app/about.tsx` — branded hero, content cards, founder section and calls to action.
+  - `mobile/app/verify.tsx` — secure verification reference form and privacy notice; preserves the existing secure website flow and does not expose uploaded ID files to the app.
+  - `mobile/app/account.tsx` — profile, booking dashboard, hotel request details, redemption UI, login/signup form and payment-related UI styling.
+  - `mobile/app/recb.tsx` — RECB information and consultant referral guidance, preserving its official portal links and financial-risk disclosures.
+- Theme styling uses the shared `useAppTheme` palette; the screen data flows and existing Supabase/website integrations were left intact.
+- CI results after these changes: RECB run #95 and latest account run #96 were still running at the time this log was edited. Earlier theme screen runs #90–#92 and account run #93 passed; #94 was still running. Confirm the newest run before marking the full milestone complete.
