@@ -19,7 +19,11 @@ Deno.serve(async req=>{
   if(error) throw error;
   if(!tx) return json({error:"No payment attempt was found for this booking yet."},404);
   const reference=String(tx.reference);
-  if(tx.status==="paid") return json({success:true,paid:true,booking_id:tx.booking_id});
+  if(tx.status==="paid") {
+   const {error:syncError}=await admin.from("bookings").update({payment_status:"paid"}).eq("id",tx.booking_id).eq("customer_user_id",user.id);
+   if(syncError) throw syncError;
+   return json({success:true,paid:true,booking_id:tx.booking_id});
+  }
   const response=await fetch("https://api.paystack.co/transaction/verify/"+encodeURIComponent(reference),{headers:{Authorization:"Bearer "+secret}});
   const result=await response.json().catch(()=>null);
   if(!response.ok||!result?.status) return json({error:"Paystack could not verify this payment yet. Please refresh shortly."},502);
