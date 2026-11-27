@@ -352,7 +352,7 @@ export default function AccountScreen() {
       <Link href="/" style={s.back}>← Source Stays</Link>
       {checking ? <ActivityIndicator color={colors.gold} style={{ marginTop: 50 }} /> : user ? <>
         <View style={[s.hero, { backgroundColor: colors.hero }]}>
-          <Text style={s.brand}>SOURCE <Text style={{ color: "#D6B66E" }}>STAYS</Text></Text>
+          <Text style={s.brand}>SOURCE <Text style={{ color: colors.gold }}>STAYS</Text></Text>
           <Text style={s.head}>Welcome{user.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : ""}.</Text>
           <Text style={s.copy}>{user.email || "Your Source Stays account"}</Text>
           <View style={s.heroActions}>
@@ -457,7 +457,7 @@ export default function AccountScreen() {
           <Text style={s.label}>Password</Text><TextInput value={password} onChangeText={setPassword} secureTextEntry autoComplete={mode === "login" ? "current-password" : "new-password"} style={s.input} placeholder="At least 8 characters" />
           {mode === "signup" && <><Text style={s.label}>Confirm password</Text><TextInput value={confirm} onChangeText={setConfirm} secureTextEntry style={s.input} placeholder="Re-enter password" /></>}
           {mode === "login" && <Pressable onPress={reset} style={s.reset}><Text style={s.resetText}>Forgot password?</Text></Pressable>}
-          <Pressable disabled={busy} onPress={submit} style={[s.button, busy && { opacity: .65 }]}>{busy ? <ActivityIndicator color="#fff" /> : <Text style={s.buttonText}>{mode === "login" ? "Log in" : "Create my account"}</Text>}</Pressable>
+          <Pressable disabled={busy} onPress={submit} style={[s.button, busy && { opacity: .65 }]}>{busy ? <ActivityIndicator color={colors.primaryText} /> : <Text style={s.buttonText}>{mode === "login" ? "Log in" : "Create my account"}</Text>}</Pressable>
           {!!message && <Text style={[s.message, success && s.success]}>{message}</Text>}
         </View>
       </>}
