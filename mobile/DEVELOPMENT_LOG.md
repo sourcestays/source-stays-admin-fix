@@ -222,3 +222,11 @@ Last updated: 2026-11-27
 - Do not grant customer SELECT on bookings: the table contains customer PII and booking/payment information.
 - The nested call from SECURITY DEFINER `create_customer_booking` may execute under the definer's effective privileges. Verify function owner and whether owner has SELECT on bookings/properties before concluding nested behavior.
 - Safe public availability should be exposed as a narrowly scoped function that returns only a boolean and uses a carefully reviewed SECURITY DEFINER implementation, or keep availability check internal to booking RPC. Avoid direct customer access to booking rows.
+
+
+## Booking function owner privileges verified — 2026-11-27
+
+- User supplied owner privilege check for both public functions: owner is `postgres`; owner can SELECT from `public.bookings` and `public.properties` (true for both functions).
+- This supports the expected nested execution path: `create_customer_booking` runs SECURITY DEFINER as postgres, and its nested call to the SECURITY INVOKER availability function inherits the effective definer context; therefore the nested availability query can read bookings. The customer does not need SELECT on bookings for this internal path.
+- Direct calls to `check_property_availability` by anon/authenticated remain unable to read bookings because their own SELECT privileges are false. If the app needs a pre-booking availability preview, expose a narrowly scoped boolean-only SECURITY DEFINER endpoint with a fixed search_path and strict input validation, or avoid direct preflight calls and rely on the booking RPC response.
+- Preserve current customer booking RPC permissions: anon=false, authenticated=true. No changes to booking table grants.
