@@ -46,5 +46,5 @@ jobs:
         with:
           deno-version: v2.x
       - name: Check shortlet payment Edge Functions
-        working-directory: ..
+        working-directory: ${{ github.workspace }}
         run: deno check supabase/functions/initialize-shortlet-payment/index.ts supabase/functions/verify-shortlet-payment/index.ts
