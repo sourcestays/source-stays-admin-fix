@@ -213,3 +213,12 @@ Last updated: 2026-11-27
 - Inference: when the SECURITY DEFINER booking function calls the invoker availability function, the nested call executes in the current effective definer context, so it can read bookings as the function owner, assuming owner privileges. Confirm owner and grants before relying on this.
 - Potential correctness edge case for later review: `b.status <> 'declined'` does not include rows with NULL status because the predicate evaluates UNKNOWN. Do not change until existing booking status semantics/data are inspected.
 - Next inspect effective SELECT privileges and RLS for `public.bookings`; no changes to function grants or definitions until then.
+
+
+## Bookings table permissions/RLS audit — 2026-11-27
+
+- User supplied test-project result: `anon_can_read_bookings=false`, `authenticated_can_read_bookings=false`, `bookings_rls_enabled=false`, `bookings_force_rls=false`.
+- Since `check_property_availability` is SECURITY INVOKER and selects from `public.bookings`, direct calls by anon/authenticated are expected to fail due to missing SELECT privilege (subject to any other role membership/ownership context; has_table_privilege reported false).
+- Do not grant customer SELECT on bookings: the table contains customer PII and booking/payment information.
+- The nested call from SECURITY DEFINER `create_customer_booking` may execute under the definer's effective privileges. Verify function owner and whether owner has SELECT on bookings/properties before concluding nested behavior.
+- Safe public availability should be exposed as a narrowly scoped function that returns only a boolean and uses a carefully reviewed SECURITY DEFINER implementation, or keep availability check internal to booking RPC. Avoid direct customer access to booking rows.
