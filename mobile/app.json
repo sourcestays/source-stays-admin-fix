@@ -5,25 +5,40 @@
     "scheme": "sourcestays",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sourcestays.app"
+      "bundleIdentifier": "com.sourcestays.app",
+      "icon": "./assets/source-stays-logo.png"
     },
     "android": {
       "package": "com.sourcestays.app",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/source-stays-logo.png",
         "backgroundColor": "#123D2B"
       },
       "edgeToEdgeEnabled": true
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/source-stays-logo.png",
+          "imageWidth": 190,
+          "resizeMode": "contain",
+          "backgroundColor": "#123D2B",
+          "dark": {
+            "backgroundColor": "#091A14"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "icon": "./assets/source-stays-logo.png"
   }
 }
