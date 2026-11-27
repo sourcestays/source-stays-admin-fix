@@ -65,7 +65,8 @@ Last updated: 2026-11-27
 ## Next actions
 
 1. Confirm GitHub Actions run #79 result for commit `b114b910d28f7ece4077eb49a47dbcd9e060c13b`. If it fails, inspect logs and fix before continuing.
-2. Continue screen-by-screen light/dark theme audit of remaining nested screens and any remaining inline hard-coded colours.
+2. Verify the public listing privacy boundary before release. Current app queries read `title` and `location` from `properties` and apply `hide_partner_identity` masking in the UI; if public RLS allows those columns, the raw values are still present in the client response. Do not rely on client-side masking as a security boundary. Inspect live RLS/grants and implement a server-side sanitized public view/RPC before release if needed. The website listing code appears to use a similar client-side masking pattern, so assess both surfaces together.
+3. Review app navigation and customer discovery flows end-to-end.
 4. Review app navigation and customer discovery flows end-to-end.
 5. Test Supabase authentication, published listing reads, pricing, partner privacy, booking requests and payment verification against the existing contracts.
 6. Complete accessibility, loading/error/empty states and mobile layout checks.
@@ -85,4 +86,13 @@ Last updated: 2026-11-27
   - `mobile/app/account.tsx` — profile, booking dashboard, hotel request details, redemption UI, login/signup form and payment-related UI styling.
   - `mobile/app/recb.tsx` — RECB information and consultant referral guidance, preserving its official portal links and financial-risk disclosures.
 - Theme styling uses the shared `useAppTheme` palette; the screen data flows and existing Supabase/website integrations were left intact.
-- CI results after these changes: RECB run #95 and latest account run #96 were still running at the time this log was edited. Earlier theme screen runs #90–#92 and account run #93 passed; #94 was still running. Confirm the newest run before marking the full milestone complete.
+- CI results after these changes: runs #90–#98 completed successfully. The final home-screen commit run #98 passed dependency installation, TypeScript, Android JavaScript bundle export and Deno checks for the shortlet payment Edge Functions. Vercel check for the latest home-screen commit also passed.
+
+
+## Final status for the visual/theme milestone
+
+- Home screen now uses the shared icon library for section cards, arrows and the appearance selector; appearance options have accessible labels and selected state.
+- Latest code commit: `1c6eda8f897ae3b4140d0b2a271fa2d32d185223`.
+- Latest GitHub Actions mobile CI run #98: success.
+- Latest Vercel check for the home-screen commit: success.
+- Visual milestone is complete at source-code and automated-build level. Physical device review (small Android/iPhone screens, safe areas, image loading and actual light/dark appearance) remains outstanding.
