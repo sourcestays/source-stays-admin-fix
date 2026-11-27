@@ -230,3 +230,13 @@ Last updated: 2026-11-27
 - This supports the expected nested execution path: `create_customer_booking` runs SECURITY DEFINER as postgres, and its nested call to the SECURITY INVOKER availability function inherits the effective definer context; therefore the nested availability query can read bookings. The customer does not need SELECT on bookings for this internal path.
 - Direct calls to `check_property_availability` by anon/authenticated remain unable to read bookings because their own SELECT privileges are false. If the app needs a pre-booking availability preview, expose a narrowly scoped boolean-only SECURITY DEFINER endpoint with a fixed search_path and strict input validation, or avoid direct preflight calls and rely on the booking RPC response.
 - Preserve current customer booking RPC permissions: anon=false, authenticated=true. No changes to booking table grants.
+
+
+## Mobile app code audit and safe availability pre-check removal — 2026-11-27
+
+- Inspected `mobile/app/division/[type].tsx`: directly selects customer listings and private fields from `public.properties`; this cannot work in the test project with no anon/authenticated SELECT and the currently reported 13-column properties schema.
+- Inspected `mobile/app/property/[id].tsx`: directly selects the same properties base table, then queries `property_images`, `hotel_room_categories_public`, and `villa_packages_public`. Those supporting objects were absent from the supplied public relation inventory.
+- Found the mobile booking submit handler directly calling `check_property_availability` before `create_customer_booking`. This direct customer RPC is incompatible with missing SELECT on bookings because the function is SECURITY INVOKER. The booking RPC already performs the authoritative availability check internally.
+- Safely removed only the redundant client-side pre-check from `mobile/app/property/[id].tsx`, retaining the server-side `create_customer_booking` call and its internal availability validation. Added an explanatory code comment. Commit: `fdfb10f13e7c2ffa8f0bd7deb19755d864396cda`.
+- Inspected `mobile/app/account.tsx`: customer dashboard directly selects from `bookings` filtered by `customer_user_id`, and then directly selects property titles from `properties`. User's privilege checks showed no SELECT for authenticated on either table. Thus customer booking history and property-name lookup also lack a working direct-table read path in this test project. Do not grant broad SELECT; design narrow user-scoped RPCs/views for customer booking summaries and safe property labels.
+- `mobile/app/index.tsx` also performs a direct count query on `properties`, which will fail with current privileges; its UI already has a fallback status message.
