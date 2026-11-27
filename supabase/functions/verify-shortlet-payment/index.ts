@@ -12,11 +12,13 @@ Deno.serve(async req=>{
   const admin=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
   const {data:{user},error:authError}=await userClient.auth.getUser(auth.slice(7));
   if(authError||!user) return json({error:"Your login session is invalid."},401);
-  const body=await req.json().catch(()=>({})), reference=String(body.reference||"").trim();
-  if(!/^SSSHT-[A-F0-9]{32}$/i.test(reference)) return json({error:"Invalid payment reference."},400);
-  const {data:tx,error}=await admin.from("shortlet_payment_transactions").select("id,booking_id,customer_user_id,amount,status").eq("reference",reference).eq("customer_user_id",user.id).maybeSingle();
+  const body=await req.json().catch(()=>({}));
+  const bookingId=Number(body.booking_id);
+  if(!Number.isSafeInteger(bookingId)||bookingId<=0) return json({error:"A valid booking reference is required."},400);
+  const {data:tx,error}=await admin.from("shortlet_payment_transactions").select("id,booking_id,customer_user_id,amount,status,reference").eq("booking_id",bookingId).eq("customer_user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();
   if(error) throw error;
-  if(!tx) return json({error:"Payment record not found."},404);
+  if(!tx) return json({error:"No payment attempt was found for this booking yet."},404);
+  const reference=String(tx.reference);
   if(tx.status==="paid") return json({success:true,paid:true,booking_id:tx.booking_id});
   const response=await fetch("https://api.paystack.co/transaction/verify/"+encodeURIComponent(reference),{headers:{Authorization:"Bearer "+secret}});
   const result=await response.json().catch(()=>null);
