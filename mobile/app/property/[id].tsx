@@ -441,7 +441,7 @@ export default function PropertyScreen() {
         console.warn("Booking saved but admin notification could not be sent.", notificationError);
       }
       setBookingSuccess(true);
-      setBookingMessage("Your booking request has been received. Reference: " + bookingId + ". Source Stays will confirm the booking and send payment instructions. No payment has been taken yet.");
+      setBookingMessage("Your booking request has been received. Reference: " + bookingId + ". Source Stays will confirm availability and the final amount. Once payment is requested, you can pay securely from your customer account. No payment has been taken yet.");
     } catch (e) {
       setBookingMessage(e instanceof Error ? e.message : "Unable to submit your booking request. Please try again.");
     } finally {
@@ -629,7 +629,7 @@ export default function PropertyScreen() {
               </Pressable>
               <Pressable disabled={bookingBusy} onPress={submitShortletBooking} style={[styles.cta, bookingBusy && styles.disabled]}><Text style={styles.ctaText}>{bookingBusy ? "Submitting..." : "Check availability & book"}</Text></Pressable>
               {!!bookingMessage && <Text style={[styles.requestMessage, bookingSuccess ? styles.success : styles.error]}>{bookingMessage}</Text>}
-              <Text style={styles.notice}>Your request will be linked to your customer account. Source Stays will confirm availability and provide payment instructions.</Text>
+              <Text style={styles.notice}>Your request will be linked to your customer account. Source Stays will confirm availability and the final amount. When payment is requested, return to your account to pay securely with Paystack.</Text>
             </> : <>
               {Number(item.price) > 0 && <Text style={styles.rate}>₦{Number(item.price).toLocaleString("en-NG")} / {item.price_period || "night"}</Text>}
               {isRealEstate ? <>
