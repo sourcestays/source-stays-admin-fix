@@ -117,3 +117,11 @@ Last updated: 2026-11-27
 - Added `supabase/migrations/20261127150000_restrict_customer_booking_rpc.sql`: revoke all privileges from PUBLIC and anon, then grant EXECUTE to authenticated. This preserves the existing signed-in website/mobile RPC flow and does not alter the function body or booking schema.
 - Migration is committed but has **not** been applied to the live Supabase project. Apply only after reviewing the migration; then rerun the function privilege query and confirm anon=false, authenticated=true.
 - Partner identity privacy remains unresolved until the user supplies the properties RLS, table grants and public-view query results. Do not infer those permissions from this RPC result.
+
+
+## Booking RPC privilege fix verified in live Supabase — 2026-11-27
+
+- User subsequently supplied the post-migration live privilege result for `create_customer_booking(jsonb)`: `proacl = {postgres=X/postgres,authenticated=X/postgres}`, `anon_can_execute = false`, and `authenticated_can_execute = true`.
+- This verifies the live database now denies anonymous EXECUTE while preserving authenticated customer execution. The earlier note that the migration was committed but unapplied is superseded by this verification.
+- Branch-head CI run #103 passed after the migration and audit-log updates; run #102 for the migration commit also passed.
+- Remaining release blocker: live `properties` RLS status/policies, table grants and public property-view results have not yet been supplied. The app currently requests raw `title` and `location` values before applying partner-identity masking client-side; do not treat that as safe until live database permissions and the intended public contract are verified.
