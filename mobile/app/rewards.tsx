@@ -3,6 +3,8 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { Link } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "@/src/lib/supabase";
+import { useAppTheme } from "@/src/theme/ThemeProvider";
+import { SectionIcon } from "@/src/components/SectionIcon";
 
 type Entry = { amount: number; entry_type: string; note: string | null; created_at: string };
 
@@ -31,7 +33,7 @@ function money(value: number) {
   return `₦${value.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export default function RewardsScreen() {
+export default function RewardsScreen() {\n  const { colors, isDark } = useAppTheme();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -70,40 +72,40 @@ export default function RewardsScreen() {
 
   useEffect(() => { loadCredits(); }, [loadCredits]);
 
-  return <SafeAreaView style={s.safe}>
+  return <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
     <ScrollView contentContainerStyle={s.content}>
-      <Link href="/" style={s.back}>← Source Stays</Link>
-      <Text style={s.eyebrow}>SOURCE STAYS REWARDS</Text>
-      <Text style={s.heading}>Your stays bring rewards.</Text>
-      <View style={s.balance}>
+      <Link href="/" style={[s.back, { color: colors.gold }]}>← Source Stays</Link>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 6 }}><SectionIcon name="rewards" size={22} color={colors.gold} background={isDark ? "#294638" : "#F5F0E4"} /><Text style={[s.eyebrow, { color: colors.gold }]}>SOURCE STAYS REWARDS</Text></View>
+      <Text style={[s.heading, { color: colors.text }]}>Your stays bring rewards.</Text>
+      <View style={[s.balance, { backgroundColor: colors.hero }]}>
         <Text style={s.balanceLabel}>AVAILABLE CREDIT</Text>
         <Text style={s.amount}>{money(balance)}</Text>
         <Text style={s.balanceHint}>This balance reflects credit entries currently posted to your account. The Source Stays website states that the wider rewards programme becomes active only after its terms, tracking and redemption process are implemented. Credits are not cash-withdrawable.</Text>
       </View>
       <View style={s.sectionRow}>
-        <Text style={s.section}>Credit history</Text>
+        <Text style={[s.section, { color: colors.text }]}>Credit history</Text>
         <Pressable onPress={loadCredits} disabled={loading} accessibilityRole="button">
-          <Text style={s.refresh}>{loading ? "Loading…" : "Refresh"}</Text>
+          <Text style={[s.refresh, { color: colors.gold }]}>{loading ? "Loading…" : "Refresh"}</Text>
         </Pressable>
       </View>
-      {loading ? <ActivityIndicator color="#123D2B" style={{ marginTop: 25 }} /> : entries.length ? entries.map((entry, index) =>
-        <View key={`${entry.created_at}-${index}`} style={s.entry}>
+      {loading ? <ActivityIndicator color={colors.gold} style={{ marginTop: 25 }} /> : entries.length ? entries.map((entry, index) =>
+        <View key={`${entry.created_at}-${index}`} style={[s.entry, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
           <View style={{ flex: 1 }}>
-            <Text style={s.entryTitle}>{entryLabel(entry.entry_type)}</Text>
-            <Text style={s.note}>{entry.note || "Source Stays Credits"}</Text>
+            <Text style={[s.entryTitle, { color: colors.text }]}>{entryLabel(entry.entry_type)}</Text>
+            <Text style={[s.note, { color: colors.muted }]}>{entry.note || "Source Stays Credits"}</Text>
             <Text style={s.note}>{new Date(entry.created_at).toLocaleDateString("en-NG")}</Text>
           </View>
           <Text style={[s.entryAmount, entry.entry_type === "redeem" && s.redeemed]}>
             {entryAmount(entry.entry_type, Number(entry.amount))}
           </Text>
         </View>
-      ) : <Text style={s.message}>{message}</Text>}
+      ) : <Text style={[s.message, { color: colors.muted }]}>{message}</Text>}
     </ScrollView>
   </SafeAreaView>;
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F8F7F2" },
+  safe: { flex: 1 },
   content: { padding: 20, paddingBottom: 40 },
   back: { color: "#123D2B", fontWeight: "700", marginBottom: 25 },
   eyebrow: { color: "#A77D31", fontSize: 10, fontWeight: "900", letterSpacing: 1.5 },
