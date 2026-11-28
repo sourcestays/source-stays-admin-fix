@@ -444,7 +444,7 @@ export default function PropertyScreen() {
     setInspectionMessage("");
     setInspectionSuccess(false);
     if (!supabase || !item) return setInspectionMessage("The Source Stays service is not connected.");
-    if (inspectionName.trim().length < 2 || inspectionPhone.trim().length < 7 || !/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(inspectionEmail.trim())) {
+    if (inspectionName.trim().length < 2 || inspectionPhone.trim().length < 7 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inspectionEmail.trim())) {
       return setInspectionMessage("Enter your full name, valid email address and phone number.");
     }
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(inspectionDate);
