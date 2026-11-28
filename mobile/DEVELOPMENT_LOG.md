@@ -412,3 +412,14 @@ Last updated: 2026-11-27
 - Production function inventory did not list newer test-branch `create_customer_booking` variant separately (same signature only); continue to rely on the live definition supplied earlier for pricing behavior.
 - Next: get exact columns for mobile-used tables and views, and inspect deployed Edge Function inventory. Then compare all app queries and correct code without applying database changes.
 - No production DB changes made.
+
+
+## Exact production column audit — 2026-11-28
+
+- User supplied exact main-production columns for properties, property_images, villa_booking_requests, villa_packages_public, source_stays_credit_redemptions and reviews.
+- Confirmed mobile properties query fields exist in production, including public title/location, category, pricing, fees, event fields and verification flags. The property_images(image_url) gallery query with property_id and ordering by id matches production.
+- Confirmed villa_booking_requests insert fields exist: property/package IDs, customer name/phone/email, preferred dates, guest count and message.
+- Confirmed source_stays_credit_redemptions columns match the customer account selected fields; reviews has reviewer name/type, rating, comment, status, source and created_at.
+- Found and corrected a mobile schema mismatch: production villa_packages_public exposes one customer_rate column, not weekday_customer_rate/weekend_customer_rate, and does not expose start_time/end_time. Updated listing starting-price lookup and property-detail package query, types, display and estimate to use the published customer_rate, and removed unsupported access-time fields.
+- Mobile repository code only was changed. No production SQL, schema, Edge Functions, secrets, website files, or payment records were changed. No live customer writes or payment tests were performed.
+- Remaining verification: review production RLS/grants for each mobile-used relation and confirm deployed Edge Functions used by mobile (initialize-hotel-payment, notify-hotel-availability-request, notify-new-booking, submit-inspection-request, get-confirmed-hotel-details). Column existence alone does not prove customer access or Edge Function deployment.
