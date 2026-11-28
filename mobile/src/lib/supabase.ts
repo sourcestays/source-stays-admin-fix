@@ -8,19 +8,36 @@ const secureStorage = {
   removeItem: (key: string) => SecureStore.deleteItemAsync(key),
 };
 
-// Source Stays mobile app is intentionally bound to the MAIN WEBSITE
-// production Supabase project. Never point this app at source-stays-testing.
+// The mobile app must use the MAIN WEBSITE production Supabase project only.
 const MAIN_WEBSITE_PROJECT_REF = "mrvckkzwhuoylxycaim";
 const MAIN_WEBSITE_SUPABASE_URL = `https://${MAIN_WEBSITE_PROJECT_REF}.supabase.co`;
 
-const configuredUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const configuredUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "");
+const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
 
-export const isMainWebsiteSupabaseConfigured =
-  configuredUrl === MAIN_WEBSITE_SUPABASE_URL && Boolean(supabaseKey);
+export type SupabaseConfigurationStatus =
+  | "ready"
+  | "missing_url"
+  | "wrong_project"
+  | "missing_publishable_key";
 
-// Keep the legacy name for existing screens, but it now means the approved
-// production project is configured—not merely that some Supabase URL exists.
+export const supabaseConfigurationStatus: SupabaseConfigurationStatus =
+  !configuredUrl
+    ? "missing_url"
+    : configuredUrl !== MAIN_WEBSITE_SUPABASE_URL
+      ? "wrong_project"
+      : !supabaseKey
+        ? "missing_publishable_key"
+        : "ready";
+
+export const supabaseConfigurationMessage: Record<SupabaseConfigurationStatus, string> = {
+  ready: "Connected to Source Stays production services.",
+  missing_url: "The app cannot find EXPO_PUBLIC_SUPABASE_URL. Check mobile/.env and restart Expo.",
+  wrong_project: "The configured Supabase URL is not the approved Source Stays production project. The connection was blocked.",
+  missing_publishable_key: "The production URL is set, but EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY is missing. Check mobile/.env and restart Expo.",
+};
+
+export const isMainWebsiteSupabaseConfigured = supabaseConfigurationStatus === "ready";
 export const isSupabaseConfigured = isMainWebsiteSupabaseConfigured;
 
 export const supabase = isMainWebsiteSupabaseConfigured
@@ -34,8 +51,6 @@ export const supabase = isMainWebsiteSupabaseConfigured
     })
   : null;
 
-if (__DEV__ && configuredUrl && configuredUrl !== MAIN_WEBSITE_SUPABASE_URL) {
-  console.error(
-    "Source Stays mobile app is restricted to the main website production Supabase project. The configured backend was not connected."
-  );
+if (__DEV__ && supabaseConfigurationStatus !== "ready") {
+  console.warn("[Source Stays] Supabase is not connected:", supabaseConfigurationMessage[supabaseConfigurationStatus]);
 }
