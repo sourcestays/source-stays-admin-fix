@@ -257,3 +257,11 @@ Last updated: 2026-11-27
 - The supplied properties columns are only id,title,public_title,published,price,caution_fee,extra_guest_fee,cleaning_fee,service_fee,other_fee,event_enabled,event_price,event_caution_fee. Mobile listing screens currently expect many more fields (category, price_period, location, public_location, bedrooms, guests, amenities, image_url, featured, verification flags, hide_partner_identity). Do not create a view referencing these absent columns. Need reconcile test-project schema vs migrations/website schema first.
 - CI runs #121 and #122 failed TypeScript because the cleanup accidentally removed the isSupabaseConfigured import while the home screen still uses it for its environment hint. Restored the import in commit 076086151c0059f10858de27d34da9d066d97ed6. Run #120 passed. Await CI for the import correction.
 - No database changes applied.
+
+
+## Supabase public relation inventory confirmed — 2026-11-28
+
+- User supplied Supabase SQL Editor screenshot for project source-stays-testing, branch main (Production badge). The public schema inventory contains exactly four relations: bookings (table), properties (table), shortlet_payment_transactions (table), and shortlet_paystack_webhook_events (table). No hotel request/category/media relations and no public views were listed.
+- Repository migrations include hotel_availability_requests, hotel_room_categories, room media, and public hotel room view migrations, but the inventory shows these have not been applied to this database (or are otherwise absent from public). The hotel room view migration also depends on properties.category being present; the supplied test properties column inventory did not include category. Do not apply this hotel migration chain blindly until the base properties schema is reconciled.
+- Repository currently has no migration that creates/extends the full properties base schema in this branch. The live test project's 13-column properties table is materially behind the schema assumed by the mobile UI and several existing migrations. Need compare with the intended Source Stays production schema and recover missing base migrations before attempting app data-access migrations.
+- This confirms the mobile app cannot yet load listings or hotel requests from this Supabase project's public schema. No production database changes were made.
