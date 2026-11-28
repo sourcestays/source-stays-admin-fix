@@ -397,3 +397,18 @@ Last updated: 2026-11-27
 - Kept booking status and payment status display. No calls to admin-only `initialize-payment` were added to the customer app.
 - Commit: `5325a871dd128272c323242395ae11cde2b6460e`.
 - Remaining payment integration decision depends on whether production has a distinct customer-facing function or whether the emailed Paystack link is the intended website flow. Do not re-enable in-app checkout until the deployed contract is confirmed.
+
+
+
+## Main production object inventory received — 2026-11-28
+
+- User supplied read-only SQL inventory from the main production project. This is now the canonical backend inventory for mobile alignment; do not use source-stays-testing.
+- Confirmed production relations include:
+  `admin_users`, `booking_payments`, `bookings`, `customer_profiles`, `enquiries`, `guest_verifications`, `hotel_availability_requests`, `hotel_payment_transactions`, `hotel_room_categories`, `hotel_room_categories_public` view, `hotel_source_stays_credit_redemptions`, `inspection_requests`, `payment_transactions`, `properties`, `property_date_blocks`, `property_images`, `property_inspections`, `property_partners`, `property_payment_instructions`, `property_payment_proofs`, `property_private_locations`, `property_sales`, `reviews`, `source_stays_credit_ledger`, `source_stays_credit_redemptions`, `villa_booking_requests`, `villa_packages`, `villa_packages_public`, plus Zylus-related sales/payment objects.
+- Confirmed production functions relevant to mobile include `check_property_availability`, `create_customer_booking`, `get_booking_id_by_verification_token`, `submit_guest_verification`, `validate_villa_request`, `request_source_stays_credit_redemption`, `request_hotel_source_stays_credit_redemption`, `source_stays_credit_balance`, `admin_review_source_stays_redemption`, and `admin_review_hotel_source_stays_credit_redemption`.
+- Confirmed production storage buckets: public `Property_images`, public `Property_videos`, private `guest-verification-documents`, private `inspection-evidence`, private `partner-property-payment-proofs`, private `zylus-payment-proofs`.
+- Confirmed table/view presence resolves earlier uncertainty: `property_images`, `villa_booking_requests`, `reviews`, `hotel_source_stays_credit_redemptions` exist. The existence of an object does not establish column compatibility, RLS, grants, or customer access.
+- Production public views `hotel_room_categories_public` and `villa_packages_public` are present, as previously confirmed.
+- Production function inventory did not list newer test-branch `create_customer_booking` variant separately (same signature only); continue to rely on the live definition supplied earlier for pricing behavior.
+- Next: get exact columns for mobile-used tables and views, and inspect deployed Edge Function inventory. Then compare all app queries and correct code without applying database changes.
+- No production DB changes made.
