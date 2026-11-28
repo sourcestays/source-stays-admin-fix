@@ -387,3 +387,13 @@ Last updated: 2026-11-27
   5. Remove/disable any app flow that writes to a table or invokes a function not confirmed to exist in main production.
 - Existing mobile code still has direct calls to `initialize-shortlet-payment` and `verify-shortlet-payment` in `mobile/app/account.tsx`, and `initialize-hotel-payment` in `mobile/app/property/[id].tsx`. The latter appears in production function list screenshot; shortlet-specific calls are not yet confirmed in the production function list. Do not present payment integration as complete until corrected.
 - User's instruction supersedes earlier plan to use `source-stays-testing` as a rehearsal target. Use static code review, CI/build checks, and read-only production schema/function inspection; never run app writes or payment tests against production without a separately agreed safe test plan.
+
+
+
+## Mobile account shortlet payment alignment — 2026-11-28
+
+- Removed mobile account calls to unconfirmed production functions `initialize-shortlet-payment` and `verify-shortlet-payment`. These functions exist in the app branch but are not confirmed deployed in the main website production project.
+- Removed the in-app Paystack initialization and manual verification buttons for shortlet bookings. When the website's admin process has marked `payment_request_status='requested'`, the account screen now tells the customer to use the secure Paystack link sent to their registered email, consistent with the deployed production `initialize-payment` admin flow which emails the authorization URL.
+- Kept booking status and payment status display. No calls to admin-only `initialize-payment` were added to the customer app.
+- Commit: `5325a871dd128272c323242395ae11cde2b6460e`.
+- Remaining payment integration decision depends on whether production has a distinct customer-facing function or whether the emailed Paystack link is the intended website flow. Do not re-enable in-app checkout until the deployed contract is confirmed.
