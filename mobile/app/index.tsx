@@ -77,7 +77,7 @@ export default function HomeScreen() {
           <View style={{ flex: 1 }}><Text style={[s.appearanceTitle, { color: colors.text }]}>Appearance</Text><Text style={[s.appearanceCopy, { color: colors.muted }]}>Choose how Source Stays looks.</Text></View>
           {(["light", "dark", "system"] as ThemeMode[]).map(option => <Pressable key={option} onPress={() => setMode(option)} accessibilityRole="button" accessibilityLabel={option + " appearance"} accessibilityState={{ selected: mode === option }} style={[s.modeChip, { backgroundColor: mode === option ? colors.primary : colors.surfaceAlt }]}><SectionIcon name={option === "light" ? "sun" : option === "dark" ? "moon" : "system"} size={16} color={mode === option ? colors.primaryText : colors.muted} background="transparent" /></Pressable>)}
         </View>
-        <Text style={[s.noteText, { color: colors.muted }]}>{status}{!isSupabaseConfigured ? " Add the test project's public settings to the local build environment to load listings." : ""}</Text>
+        <Text style={[s.noteText, { color: colors.muted }]}>{!isSupabaseConfigured ? "Listings are temporarily unavailable. Please try again shortly." : "Browse stays, hotels and property opportunities with Source Stays."}</Text>
         <Text style={[s.footer, { color: colors.muted }]}>SOURCE STAYS  ·  LAGOS, NIGERIA</Text>
       </ScrollView>
     </SafeAreaView>
