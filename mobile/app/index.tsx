@@ -16,7 +16,7 @@ const categories = [
 ];
 
 export default function HomeScreen() {
-  const { isDark, colors } = useAppTheme();
+  const { isDark, colors, mode, setMode } = useAppTheme();
   const [searchTerm, setSearchTerm] = useState("");
   const [featured, setFeatured] = useState<FeaturedStay | null>(null);
 
@@ -47,11 +47,16 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <View style={s.topbar}>
           <Image source={require("../assets/source-stays-logo.png")} style={s.logo} resizeMode="contain" accessibilityLabel="Source Stays" />
-          <Link href="/account" asChild>
+          <View style={s.topActions}>
+            <Pressable onPress={() => setMode(mode === "dark" ? "light" : "dark")} style={[s.themeButton, { backgroundColor: colors.surface, borderColor: colors.border }]} accessibilityRole="button" accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}>
+              <SectionIcon name={isDark ? "sun" : "moon"} size={18} color={colors.gold} background="transparent" />
+            </Pressable>
+            <Link href="/account" asChild>
             <Pressable style={[s.profileButton, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <SectionIcon name="account" size={19} color={colors.gold} background="transparent" />
             </Pressable>
-          </Link>
+            </Link>
+          </View>
         </View>
 
         <Text style={[s.greeting, { color: colors.muted }]}>LAGOS, NIGERIA</Text>
@@ -122,6 +127,8 @@ const s = StyleSheet.create({
   content: { paddingHorizontal: 19, paddingTop: 7, paddingBottom: 28 },
   topbar: { height: 54, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
   logo: { width: 88, height: 52 },
+  topActions: { flexDirection: "row", alignItems: "center", gap: 9 },
+  themeButton: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   profileButton: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   greeting: { fontSize: 9, fontWeight: "900", letterSpacing: 1.8, marginBottom: 7 },
   heading: { fontSize: 28, lineHeight: 34, fontWeight: "900", letterSpacing: -0.8 },
