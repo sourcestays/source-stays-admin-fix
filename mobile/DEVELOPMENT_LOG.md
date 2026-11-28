@@ -249,3 +249,11 @@ Last updated: 2026-11-27
 - The home screen now avoids a predictable denied database request until a restricted public listing/count contract is available.
 - Commit: `3a5ea705d72c000f31505a91b24c86e404846262` (plus import cleanup).
 - No production or test database changes were made.
+
+
+## Expanded schema result and CI correction — 2026-11-28
+
+- User repeated the information_schema.columns result for the requested set of five relations. The returned rows contain only public.bookings and public.properties; no columns were returned for property_images, hotel_room_categories, or hotel_availability_requests. This indicates those relations are absent from the queried public schema or not included in the result; confirm with a relation inventory before writing any dependent view/RPC migration.
+- The supplied properties columns are only id,title,public_title,published,price,caution_fee,extra_guest_fee,cleaning_fee,service_fee,other_fee,event_enabled,event_price,event_caution_fee. Mobile listing screens currently expect many more fields (category, price_period, location, public_location, bedrooms, guests, amenities, image_url, featured, verification flags, hide_partner_identity). Do not create a view referencing these absent columns. Need reconcile test-project schema vs migrations/website schema first.
+- CI runs #121 and #122 failed TypeScript because the cleanup accidentally removed the isSupabaseConfigured import while the home screen still uses it for its environment hint. Restored the import in commit 076086151c0059f10858de27d34da9d066d97ed6. Run #120 passed. Await CI for the import correction.
+- No database changes applied.
