@@ -331,3 +331,21 @@ Last updated: 2026-11-27
 - The repository's tracked shortlet transaction migration creates `shortlet_payment_transactions` and `shortlet_paystack_webhook_events`, locks them to service_role (no anon/authenticated table grants), and enables RLS. This schema is consistent with the tracked Edge Functions, but actual production deployment still needs separate confirmation.
 - No source files or databases were changed as part of this audit section. Production remains untouched.
 - Next: user to check Supabase Dashboard > Edge Functions for deployed `initialize-payment`, `initialize-shortlet-payment`, `verify-shortlet-payment`, and `paystack-shortlet-webhook`, including deployed status/version. Also confirm whether migration `20261126180000_secure_customer_booking_pricing.sql` has been applied to main production (do not apply it until tested in test project and schema compatibility is verified).
+
+
+
+## Production initialize-payment function inspected from user-provided source — 2026-11-28
+
+- User supplied the deployed `initialize-payment` Edge Function source from the main production Supabase project.
+- The function requires POST, a Bearer token, validates the session through Supabase Auth, and checks the caller's UUID exists in `admin_users`; non-admins are rejected.
+- It loads the booking and checks it exists, checkout date has not passed, payment_status is not paid, booking status is not declined, and `owner_availability_status='available'`.
+- It requires the latest `guest_verifications` row for the booking to have status approved.
+- It reads `amount_due` from the booking row, requires positive amount and customer email, and only supports NGN.
+- It checks approved `source_stays_credit_redemptions` for this booking, ensures at most one and that it belongs to the booking customer, validates amount and prevents credits covering/exceeding amount in this cash-payment path.
+- It calculates cash due after credits, creates a unique Paystack reference, inserts a pending row in legacy `payment_transactions`, and relies on a database unique index to prevent concurrent active payment attempts before contacting Paystack.
+- It initializes Paystack with the computed amount in kobo and booking/customer/credit metadata; it emails the authorization URL using Resend when configured. It returns authorization URL, reference, booking amount, credits applied and cash due.
+- The function does not itself update `bookings.payment_request_status` in the supplied source. The previously inspected admin.html caller updates that field after invoking the function. Therefore inspect the exact caller's error handling and ordering; don't assume payment request state and transaction creation are atomic.
+- This function is admin-only and represents a payment request from Source Stays staff after owner availability and guest verification. It is not the customer-facing `initialize-shortlet-payment` function tracked in the mobile branch.
+- It trusts `bookings.amount_due`; it does not recalculate property pricing. This preserves the previously identified upstream pricing-integrity issue: correctness depends on how the booking amount was created/approved. Approved credits are deducted from the stored amount, but this does not correct an incorrect stored amount.
+- It uses legacy `payment_transactions`, while the newer repository shortlet flow uses `shortlet_payment_transactions` and `shortlet_paystack_webhook_events`. Do not mix the two ledgers or wire mobile to the newer functions until their deployment and corresponding webhook path are confirmed.
+- Next: inspect production `paystack-webhook` and admin.html's caller/updates; confirm deployed function list further down for any shortlet-specific functions. No production changes made.
