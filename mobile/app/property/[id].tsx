@@ -186,20 +186,9 @@ export default function PropertyScreen() {
   })();
   const villaEstimate = (() => {
     if (!selectedVillaPackage || !validVillaDate(villaStartDate)) return 0;
-    const rateFor = (date: Date) => date.getUTCDay() >= 5
-      ? Number(selectedVillaPackage.customer_rate || 0)
-      : Number(selectedVillaPackage.customer_rate || 0);
-    if (selectedVillaPackage.package_type === "day_getaway") {
-      const date = new Date(villaStartDate + "T00:00:00Z");
-      return rateFor(date);
-    }
-    if (!villaNights) return 0;
-    let total = 0;
-    for (let i = 0; i < villaNights; i++) {
-      const date = new Date(Date.parse(villaStartDate + "T00:00:00Z") + i * 86400000);
-      total += rateFor(date);
-    }
-    return total;
+    const rate = Number(selectedVillaPackage.customer_rate || 0);
+    if (selectedVillaPackage.package_type === "day_getaway") return rate;
+    return villaNights > 0 ? rate * villaNights : 0;
   })();
 
   async function submitVillaRequest() {
