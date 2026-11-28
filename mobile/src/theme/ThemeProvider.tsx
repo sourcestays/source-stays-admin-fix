@@ -5,11 +5,11 @@ import * as SecureStore from "expo-secure-store";
 export type ThemeMode = "system" | "light" | "dark";
 const palettes = {
   light: {
-    background: "#F7F6F1", surface: "#FFFFFF", surfaceAlt: "#F0EEE6",
-    text: "#153D2D", muted: "#737B73", border: "#E4E3DA",
-    primary: "#123D2B", primaryText: "#FFFFFF", gold: "#D6B66E",
+    background: "#F2F3EC", surface: "#FFFEFA", surfaceAlt: "#E7EEE7",
+    text: "#123D2B", muted: "#617267", border: "#D8E1D8",
+    primary: "#123D2B", primaryText: "#FFFFFF", gold: "#B58A3B",
     goldText: "#173B2B", hero: "#0C2D22", heroText: "#FFFFFF",
-    input: "#FFFFFF", success: "#28734B", shadow: "#132B20",
+    input: "#FFFEFA", success: "#19764D", shadow: "#132B20",
   },
   dark: {
     background: "#091A14", surface: "#10271D", surfaceAlt: "#183629",
