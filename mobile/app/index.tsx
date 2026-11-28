@@ -14,23 +14,8 @@ const divisions = [
 ];
 
 export default function HomeScreen() {
-  const [listingCount, setListingCount] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [status, setStatus] = useState("Discover stays and property opportunities across Nigeria.");
   const { mode, setMode, isDark, colors } = useAppTheme();
-
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      if (!supabase) { setStatus("Connect to Source Stays to explore live listings."); return; }
-      const { count, error } = await supabase.from("properties").select("id", { count: "exact", head: true }).eq("published", true);
-      if (!active) return;
-      if (error) setStatus("Explore stays and property opportunities across Nigeria.");
-      else { setListingCount(count ?? 0); setStatus("Discover stays and property opportunities across Nigeria."); }
-    }
-    load();
-    return () => { active = false; };
-  }, []);
 
   const cycleTheme = (next: ThemeMode) => setMode(next);
   return (
@@ -63,7 +48,6 @@ export default function HomeScreen() {
 
         <View style={s.sectionHeader}>
           <View><Text style={[s.sectionTitle, { color: colors.text }]}>Explore our world</Text><Text style={[s.sectionCopy, { color: colors.muted }]}>Everything you need, in one place.</Text></View>
-          {listingCount !== null && <Text style={[s.count, { color: colors.gold }]}>{listingCount} listings</Text>}
         </View>
         <View style={s.grid}>
           {divisions.map(item => (
