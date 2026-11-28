@@ -368,3 +368,22 @@ Last updated: 2026-11-27
 - No changes to production or deployed functions. No deployment performed.
 - Current mobile recommendation: preserve existing production architecture and legacy transaction ledger unless/until a separately tested migration plan replaces it. Mobile must not call admin-only `initialize-payment`; it should request payment only when the existing admin workflow has completed and customer-facing payment state is available. Before selecting a customer initializer, reconcile the actual deployed Edge Function list and the customer authorization contract.
 - Remaining checks: inspect `admin.html` caller behavior for `initialize-payment` and payment_request_status update order; verify production Edge Functions list below current viewport for any customer-facing shortlet initializer; inspect live production function source/behavior only through read-only review. Keep production unchanged.
+
+
+
+## Production-only backend policy and app alignment — 2026-11-28
+
+- User explicitly directed that mobile app development must use ONLY the main website production Supabase project. The separate `source-stays-testing` project must not be used for app development, app integration, testing, or deployment.
+- Main website Supabase project ref confirmed from the user's production dashboard screenshot/function URL: `mrvckkzwhuoylxycaim`.
+- Updated `mobile/src/lib/supabase.ts` to fail closed unless `EXPO_PUBLIC_SUPABASE_URL` exactly matches `https://mrvckkzwhuoylxycaim.supabase.co` and a publishable key is present. Existing `isSupabaseConfigured` export is retained for compatibility and now means the approved main production project is configured. Dev builds log an explicit warning when another project URL is configured. No service-role key is used in the app.
+- Updated `mobile/.env.example` to identify the main website production URL and explicitly prohibit use of `source-stays-testing`.
+- Commits: `34e333724ab217280820bf033cc3d928bb4792fb` (production project lock), `7eba6ce04d79441d55800f65c05522cacaffa1e7` (production env example).
+- No Supabase database, Edge Function, secret, migration, or production website file was changed.
+- Critical alignment work still required before app can be called production-ready:
+  1. Replace mobile's newer shortlet payment calls/ledger assumptions with the existing deployed production customer-payment contract; do not call admin-only `initialize-payment` from the app.
+  2. Confirm customer-facing payment request state update in deployed website admin flow and whether a customer-facing initializer exists in the production Edge Function list.
+  3. Resolve the production booking pricing-integrity gap: live `create_customer_booking` accepts client `amount_due`; repository migration `20261126180000_secure_customer_booking_pricing.sql` is a candidate server-side pricing correction, but must not be deployed until reviewed against the actual production schema/business pricing rules. The user's instruction is production-only means no test-project rehearsal; any production schema change needs a separate explicit approval and careful backup/review.
+  4. Audit every mobile table/view/RPC/Edge Function/storage bucket against the production schema and deployed functions before enabling the relevant screen.
+  5. Remove/disable any app flow that writes to a table or invokes a function not confirmed to exist in main production.
+- Existing mobile code still has direct calls to `initialize-shortlet-payment` and `verify-shortlet-payment` in `mobile/app/account.tsx`, and `initialize-hotel-payment` in `mobile/app/property/[id].tsx`. The latter appears in production function list screenshot; shortlet-specific calls are not yet confirmed in the production function list. Do not present payment integration as complete until corrected.
+- User's instruction supersedes earlier plan to use `source-stays-testing` as a rehearsal target. Use static code review, CI/build checks, and read-only production schema/function inspection; never run app writes or payment tests against production without a separately agreed safe test plan.
