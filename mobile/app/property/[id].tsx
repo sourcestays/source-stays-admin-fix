@@ -18,7 +18,7 @@ type Property = {
   event_enabled?: boolean | null; event_price?: number | null; event_caution_fee?: number | null;
 };
 type Room = { id: string; room_name: string; description: string | null; customer_rate: number; max_guests: number | null; photo_urls: string[] | null };
-type VillaPackage = { id: string | number; package_name: string; package_type: "day_getaway" | "overnight_getaway"; boat_included: boolean; description: string | null; boat_description: string | null; weekday_customer_rate: number; weekend_customer_rate: number; max_guests: number; start_time: string | null; end_time: string | null };
+type VillaPackage = { id: string; package_name: string; package_type: "day_getaway" | "overnight_getaway"; boat_included: boolean; description: string | null; boat_description: string | null; customer_rate: number; max_guests: number; };
 
 export default function PropertyScreen() {
   const { colors, isDark } = useAppTheme();
@@ -128,7 +128,7 @@ export default function PropertyScreen() {
           ? supabase.from("hotel_room_categories_public").select("id,room_name,description,customer_rate,max_guests,photo_urls").eq("property_id", Number(id)).order("sort_order")
           : Promise.resolve({ data: [], error: null }),
         String(data.category).toLowerCase() === "shortlet"
-          ? supabase.from("villa_packages_public").select("id,property_id,package_name,package_type,boat_included,description,boat_description,weekday_customer_rate,weekend_customer_rate,max_guests,sort_order,start_time,end_time").eq("property_id", Number(id)).order("sort_order", { ascending: true })
+          ? supabase.from("villa_packages_public").select("id,property_id,package_name,package_type,boat_included,description,boat_description,customer_rate,max_guests,sort_order").eq("property_id", Number(id)).order("sort_order", { ascending: true })
           : Promise.resolve({ data: [], error: null }),
       ]);
       if (!active) return;
@@ -187,8 +187,8 @@ export default function PropertyScreen() {
   const villaEstimate = (() => {
     if (!selectedVillaPackage || !validVillaDate(villaStartDate)) return 0;
     const rateFor = (date: Date) => date.getUTCDay() >= 5
-      ? Number(selectedVillaPackage.weekend_customer_rate || 0)
-      : Number(selectedVillaPackage.weekday_customer_rate || 0);
+      ? Number(selectedVillaPackage.customer_rate || 0)
+      : Number(selectedVillaPackage.customer_rate || 0);
     if (selectedVillaPackage.package_type === "day_getaway") {
       const date = new Date(villaStartDate + "T00:00:00Z");
       return rateFor(date);
@@ -545,7 +545,7 @@ export default function PropertyScreen() {
 
               {villaPackages.length > 0 && <View style={styles.villaPanel}>
                 <Text style={styles.section}>Choose Your Villa Getaway</Text>
-                <Text style={styles.formHint}>These packages reserve the entire villa, including its bedrooms. Choose a package to view the weekday and weekend rates.</Text>
+                <Text style={styles.formHint}>These packages reserve the entire villa, including its bedrooms. Choose a package to view its published customer rate.</Text>
                 {villaPackages.map(pkg => <Pressable key={String(pkg.id)} onPress={() => setSelectedVillaPackageId(String(pkg.id))} style={[styles.room, selectedVillaPackageId === String(pkg.id) && styles.roomSelected]}>
                   <View style={styles.roomHeading}>
                     <Text style={styles.roomName}>{pkg.package_name}</Text>
@@ -553,9 +553,9 @@ export default function PropertyScreen() {
                   </View>
                   <Text style={styles.details}>{pkg.package_type === "day_getaway" ? "Day getaway" : "Overnight getaway"} · Up to {pkg.max_guests} guests</Text>
                   {!!pkg.description && <Text style={styles.details}>{pkg.description}</Text>}
-                  <Text style={styles.rate}>Weekday {money(Number(pkg.weekday_customer_rate || 0))} · Weekend {money(Number(pkg.weekend_customer_rate || 0))}</Text>
+                  <Text style={styles.rate}>Customer rate {money(Number(pkg.customer_rate || 0))}</Text>
                   <Text style={styles.details}>{pkg.boat_included ? (pkg.boat_description || "Includes one 15-seater boat for a round trip.") : (pkg.boat_description || "Boat not included.")}</Text>
-                  {!!(pkg.start_time || pkg.end_time) && <Text style={styles.location}>Access: {pkg.start_time || "—"}{pkg.end_time ? " – " + pkg.end_time : ""}</Text>}
+                  
                 </Pressable>)}
                 {!!selectedVillaPackage && <>
                   <Text style={styles.label}>Preferred {selectedVillaPackage.package_type === "day_getaway" ? "date" : "check-in date"} (YYYY-MM-DD)</Text>
@@ -569,7 +569,7 @@ export default function PropertyScreen() {
                   {villaEstimate > 0 && <View style={[styles.breakdownCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                     <Text style={styles.breakdownTitle}>Indicative package estimate</Text>
                     <Text style={styles.breakdownValue}>{money(villaEstimate)}{selectedVillaPackage.package_type === "overnight_getaway" ? " for " + villaNights + " night(s)" : " for the selected day"}</Text>
-                    <Text style={styles.breakdownNote}>Based on the package weekday/weekend rates. Final availability and quotation are subject to partner confirmation.</Text>
+                    <Text style={styles.breakdownNote}>Based on the published customer rate. Final availability and quotation are subject to partner confirmation.</Text>
                   </View>}
                   <Text style={styles.label}>Full name</Text>
                   <TextInput value={villaName} onChangeText={setVillaName} placeholder="Your full name" style={styles.input} maxLength={100} />
