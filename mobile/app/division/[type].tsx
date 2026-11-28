@@ -56,7 +56,18 @@ export default function DivisionScreen() {
       const { data, error: queryError } = await query;
       if (!active) return;
       if (queryError) {
-        setError("Unable to load listings right now. Please try again later.");
+        console.error("[Source Stays] Properties query failed", {
+          message: queryError.message,
+          code: queryError.code,
+          details: queryError.details,
+          hint: queryError.hint,
+          type,
+        });
+        setError(
+          __DEV__
+            ? `Listings error (${queryError.code || "unknown"}): ${queryError.message}`
+            : "Unable to load listings right now. Please try again later."
+        );
       } else {
         const rows = (data || []) as Listing[];
         setItems(rows);
