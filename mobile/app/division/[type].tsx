@@ -56,7 +56,7 @@ export default function DivisionScreen() {
       const { data, error: queryError } = await query;
       if (!active) return;
       if (queryError) {
-        console.error("[Source Stays] Properties query failed", {
+        console.warn("[Source Stays] Properties query failed", {
           message: queryError.message,
           code: queryError.code,
           details: queryError.details,
