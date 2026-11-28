@@ -20,7 +20,6 @@ type FeaturedStay = {
 };
 
 const featuredGroups = [
-  { key: "villa", title: "Villas", caption: "Private escapes", categories: ["villa"], fallback: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=900&q=85" },
   { key: "shortlet", title: "Shortlets", caption: "Feel at home", categories: ["shortlet"], fallback: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=900&q=85" },
   { key: "hotel", title: "Hotels", caption: "Rest in comfort", categories: ["hotel"], fallback: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=900&q=85" },
   { key: "realestate", title: "Real estate", caption: "Find your next property", categories: ["sale", "land", "rent"], fallback: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&q=85" },
@@ -45,7 +44,7 @@ export default function HomeScreen() {
       const { data, error } = await supabase.from("properties")
         .select("id,title,public_title,category,image_url,public_location,location,price,price_period,hide_partner_identity")
         .eq("published", true)
-        .in("category", ["villa", "shortlet", "hotel", "sale", "land", "rent"])
+        .in("category", ["shortlet", "hotel", "sale", "land", "rent"])
         .order("featured", { ascending: false })
         .order("id", { ascending: false })
         .limit(60);
@@ -180,7 +179,7 @@ export default function HomeScreen() {
               ? { pathname: "/division/[type]" as const, params: { type: "realestate" } }
               : item
                 ? { pathname: "/property/[id]" as const, params: { id: String(item.id) } }
-                : { pathname: "/division/[type]" as const, params: { type: group.key === "villa" ? "shortlet" : group.key } };
+                : { pathname: "/division/[type]" as const, params: { type: group.key } };
             return (
               <Link key={group.key} href={href} asChild>
                 <Pressable style={[s.featureCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
