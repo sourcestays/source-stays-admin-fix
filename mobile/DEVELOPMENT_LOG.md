@@ -240,3 +240,12 @@ Last updated: 2026-11-27
 - Safely removed only the redundant client-side pre-check from `mobile/app/property/[id].tsx`, retaining the server-side `create_customer_booking` call and its internal availability validation. Added an explanatory code comment. Commit: `fdfb10f13e7c2ffa8f0bd7deb19755d864396cda`.
 - Inspected `mobile/app/account.tsx`: customer dashboard directly selects from `bookings` filtered by `customer_user_id`, and then directly selects property titles from `properties`. User's privilege checks showed no SELECT for authenticated on either table. Thus customer booking history and property-name lookup also lack a working direct-table read path in this test project. Do not grant broad SELECT; design narrow user-scoped RPCs/views for customer booking summaries and safe property labels.
 - `mobile/app/index.tsx` also performs a direct count query on `properties`, which will fail with current privileges; its UI already has a fallback status message.
+
+
+## Follow-up home screen data-access cleanup — 2026-11-28
+
+- CI run #119 for the booking pre-check removal passed.
+- Removed the home-screen direct count query against `properties`. That query cannot succeed with the currently verified customer grants and the app does not need it to navigate or discover content. Removed the unused imports as well.
+- The home screen now avoids a predictable denied database request until a restricted public listing/count contract is available.
+- Commit: `3a5ea705d72c000f31505a91b24c86e404846262` (plus import cleanup).
+- No production or test database changes were made.
