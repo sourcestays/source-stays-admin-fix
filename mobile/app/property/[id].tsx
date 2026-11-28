@@ -212,6 +212,18 @@ export default function PropertyScreen() {
     if (villaNote.trim().length > 1000) return setVillaMessage("Your message must be 1,000 characters or fewer.");
     setVillaBusy(true);
     try {
+      // Match the production villa package/property/date/guest rules before creating a request.
+      const { data: villaRequestValid, error: villaValidationError } = await supabase.rpc("validate_villa_request", {
+        p_package_id: selectedVillaPackage.id,
+        p_property_id: Number(id),
+        p_guest_count: guests,
+        p_start_date: villaStartDate,
+        p_end_date: selectedVillaPackage.package_type === "overnight_getaway" ? villaEndDate : null
+      });
+      if (villaValidationError) throw villaValidationError;
+      if (villaRequestValid !== true) {
+        throw new Error("This getaway package is no longer available for the selected dates or guest count. Please choose another option.");
+      }
       const { error } = await supabase.from("villa_booking_requests").insert({
         property_id: Number(id),
         package_id: selectedVillaPackage.id,
