@@ -180,7 +180,7 @@ export default function HomeScreen() {
               ? { pathname: "/division/[type]" as const, params: { type: "realestate" } }
               : item
                 ? { pathname: "/property/[id]" as const, params: { id: String(item.id) } }
-                : { pathname: "/division/[type]" as const, params: { type: group.key } };
+                : { pathname: "/division/[type]" as const, params: { type: group.key === "villa" ? "shortlet" : group.key } };
             return (
               <Link key={group.key} href={href} asChild>
                 <Pressable style={[s.featureCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
