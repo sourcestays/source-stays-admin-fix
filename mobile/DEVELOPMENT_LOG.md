@@ -265,3 +265,12 @@ Last updated: 2026-11-27
 - Repository migrations include hotel_availability_requests, hotel_room_categories, room media, and public hotel room view migrations, but the inventory shows these have not been applied to this database (or are otherwise absent from public). The hotel room view migration also depends on properties.category being present; the supplied test properties column inventory did not include category. Do not apply this hotel migration chain blindly until the base properties schema is reconciled.
 - Repository currently has no migration that creates/extends the full properties base schema in this branch. The live test project's 13-column properties table is materially behind the schema assumed by the mobile UI and several existing migrations. Need compare with the intended Source Stays production schema and recover missing base migrations before attempting app data-access migrations.
 - This confirms the mobile app cannot yet load listings or hotel requests from this Supabase project's public schema. No production database changes were made.
+
+
+## Main website public hotel/villa view permissions verified — 2026-11-28
+
+- User supplied catalog results for public.hotel_room_categories_public and public.villa_packages_public: both owned by postgres, reloptions include security_barrier=true, and anon/authenticated can SELECT both.
+- Previously inspected view definitions return customer-facing calculated rates and omit hotel_net_rate/partner_net_rate and markup input columns. Hotel view includes active room categories joined to published hotel properties; villa view includes active packages joined to published properties.
+- security_barrier=true is not equivalent to security_invoker=true. These are postgres-owned views; assess underlying table access/RLS using view-owner semantics and the explicit projection/filter. Do not claim the barrier itself enforces RLS.
+- Mobile should reuse these existing public views for hotel/villa customer rates, not duplicate markup formulas or query partner net rates.
+- Critical unresolved issue from grants audit: anon has INSERT on bookings and an INSERT policy with WITH CHECK (true); authenticated has broad INSERT/UPDATE/DELETE grants on bookings and properties (subject to RLS policies). Need inspect triggers, constraints, and exact app booking creation flow before proposing a least-privilege grant/policy migration. No changes to main production database.
