@@ -212,6 +212,14 @@ export default function PropertyScreen() {
     if (villaNote.trim().length > 1000) return setVillaMessage("Your message must be 1,000 characters or fewer.");
     setVillaBusy(true);
     try {
+      // Villa requests are customer-account actions on the Source Stays website.
+      // Require the same authenticated customer session in the mobile app.
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!authData.user) {
+        throw new Error("Please sign in to your Source Stays account before requesting a villa getaway.");
+      }
+
       // Match the production villa package/property/date/guest rules before creating a request.
       const { data: villaRequestValid, error: villaValidationError } = await supabase.rpc("validate_villa_request", {
         p_package_id: selectedVillaPackage.id,
