@@ -18,6 +18,11 @@ type Property = {
   event_enabled?: boolean | null; event_price?: number | null; event_caution_fee?: number | null;
 };
 type Room = { id: string; room_name: string; description: string | null; customer_rate: number; max_guests: number | null; photo_urls: string[] | null };
+type RelatedProperty = {
+  id: number; title: string; public_title: string | null; category: string;
+  image_url: string | null; location: string | null; public_location: string | null;
+  price: number | null; price_period: string | null; hide_partner_identity: boolean | null;
+};
 type VillaPackage = { id: string; package_name: string; package_type: "day_getaway" | "overnight_getaway"; boat_included: boolean; description: string | null; boat_description: string | null; customer_rate: number; max_guests: number; };
 
 export default function PropertyScreen() {
@@ -25,6 +30,7 @@ export default function PropertyScreen() {
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const [item, setItem] = useState<Property | null>(null);
+  const [relatedProperties, setRelatedProperties] = useState<RelatedProperty[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [villaPackages, setVillaPackages] = useState<VillaPackage[]>([]);
   const [selectedVillaPackageId, setSelectedVillaPackageId] = useState<string>("");
@@ -122,7 +128,15 @@ export default function PropertyScreen() {
         return;
       }
       setItem(data as Property);
-      const [photoResult, roomResult, villaResult] = await Promise.all([
+      const [photoResult, roomResult, villaResult, relatedResult] = await Promise.all([
+        supabase.from("properties")
+          .select("id,title,public_title,category,image_url,location,public_location,price,price_period,hide_partner_identity")
+          .eq("published", true)
+          .eq("category", String(data.category))
+          .neq("id", Number(id))
+          .order("featured", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(8),
         supabase.from("property_images").select("image_url").eq("property_id", Number(id)).order("id"),
         String(data.category).toLowerCase() === "hotel"
           ? supabase.from("hotel_room_categories_public").select("id,room_name,description,customer_rate,max_guests,photo_urls").eq("property_id", Number(id)).order("sort_order")
@@ -133,6 +147,7 @@ export default function PropertyScreen() {
       ]);
       if (!active) return;
       setImages([data.image_url, ...(photoResult.data || []).map((x: any) => x.image_url)].filter(Boolean) as string[]);
+      setRelatedProperties((relatedResult.data || []) as RelatedProperty[]);
       const loadedRooms = (roomResult.data || []) as Room[];
       setRooms(loadedRooms);
       if (loadedRooms.length) setSelectedRoomId(loadedRooms[0].id);
@@ -666,6 +681,31 @@ export default function PropertyScreen() {
                 <Pressable onPress={whatsapp} style={styles.cta}><Text style={styles.ctaText}>Enquire with Source Stays  →</Text></Pressable>
               </>}
             </>}
+            {relatedProperties.length > 0 && <>
+              <Text style={[styles.section, { color: colors.text }]}>You may also like</Text>
+              <Text style={[styles.details, { color: colors.muted }]}>More {String(item.category).toLowerCase()} listings selected for you.</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relatedList}>
+                {relatedProperties.map(related => {
+                  const relatedHidden = Boolean(related.hide_partner_identity);
+                  const relatedTitle = relatedHidden ? (related.public_title || "Luxury Private Getaway") : related.title;
+                  const relatedLocation = relatedHidden ? related.public_location : related.location;
+                  return (
+                    <Link key={related.id} href={{ pathname: "/property/[id]", params: { id: String(related.id) } }} asChild>
+                      <Pressable style={[styles.relatedCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                        {related.image_url
+                          ? <Image source={{ uri: related.image_url }} style={styles.relatedImage} resizeMode="cover" />
+                          : <View style={[styles.relatedImage, { backgroundColor: colors.surfaceAlt, alignItems: "center", justifyContent: "center" }]}><Text style={{ color: colors.gold, fontWeight: "900" }}>SOURCE STAYS</Text></View>}
+                        <View style={{ padding: 11 }}>
+                          <Text numberOfLines={1} style={{ color: colors.text, fontWeight: "900", fontSize: 12 }}>{relatedTitle}</Text>
+                          <Text numberOfLines={1} style={{ color: colors.muted, fontSize: 10, marginTop: 4 }}>{relatedLocation || "Location on request"}</Text>
+                          {Number(related.price) > 0 && <Text style={{ color: colors.gold, fontWeight: "900", fontSize: 11, marginTop: 7 }}>₦{Number(related.price).toLocaleString("en-NG")} / {related.price_period || "night"}</Text>}
+                        </View>
+                      </Pressable>
+                    </Link>
+                  );
+                })}
+              </ScrollView>
+            </>}
           </> : null}
       </ScrollView>
     </SafeAreaView>
@@ -678,6 +718,9 @@ function createStyles(colors: ReturnType<typeof useAppTheme>["colors"], isDark: 
   safe: { flex: 1 }, content: { padding: 20, paddingBottom: 45 },
   back: { color: colors.primary, fontWeight: "700", marginBottom: 23 }, category: { fontSize: 10, color: colors.gold, fontWeight: "900", letterSpacing: 1.5 },
   title: { fontSize: 27, lineHeight: 34, fontWeight: "900", color: colors.primary, marginTop: 7 }, location: { fontSize: 12, color: colors.muted, marginTop: 8 },
+  relatedList: { gap: 11, paddingRight: 4, paddingBottom: 8 },
+  relatedCard: { width: 220, borderRadius: 14, overflow: "hidden", borderWidth: 1 },
+  relatedImage: { width: "100%", height: 125, backgroundColor: colors.surfaceAlt },
   gallery: { marginTop: 20 }, image: { width: 300, height: 220, borderRadius: 15, marginRight: 10, backgroundColor: colors.surfaceAlt },
   noImage: { height: 180, backgroundColor: colors.surfaceAlt, borderRadius: 15, alignItems: "center", justifyContent: "center", marginTop: 20 },
   noImageText: { color: colors.gold, fontWeight: "900", letterSpacing: 2 }, verified: { fontSize: 11, color: colors.success, fontWeight: "700", marginTop: 8 },
