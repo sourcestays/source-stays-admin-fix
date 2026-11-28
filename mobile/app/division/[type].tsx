@@ -64,7 +64,7 @@ export default function DivisionScreen() {
         const packageIds = rows.filter(p => p.category !== "hotel" && Number(p.price) <= 0).map(p => p.id);
         const [hotelRates, packageRates] = await Promise.all([
           hotelIds.length ? supabase.from("hotel_room_categories_public").select("property_id,customer_rate").in("property_id", hotelIds) : Promise.resolve({ data: [], error: null }),
-          packageIds.length ? supabase.from("villa_packages_public").select("property_id,weekday_customer_rate").in("property_id", packageIds) : Promise.resolve({ data: [], error: null })
+          packageIds.length ? supabase.from("villa_packages_public").select("property_id,customer_rate").in("property_id", packageIds) : Promise.resolve({ data: [], error: null })
         ]);
         if (!active) return;
         const prices: Record<string, number> = {};
@@ -73,7 +73,7 @@ export default function DivisionScreen() {
           if (Number.isFinite(value) && value > 0) prices[key] = prices[key] ? Math.min(prices[key], value) : value;
         });
         (packageRates.data || []).forEach((row: any) => {
-          const key = String(row.property_id), value = Number(row.weekday_customer_rate);
+          const key = String(row.property_id), value = Number(row.customer_rate);
           if (Number.isFinite(value) && value > 0) prices[key] = prices[key] ? Math.min(prices[key], value) : value;
         });
         setStartingPrices(prices);
