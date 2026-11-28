@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Link, Stack, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase, supabaseConfigurationMessage } from "@/src/lib/supabase";
+import { supabase, supabaseConfigurationMessage, supabaseConfigurationStatus } from "@/src/lib/supabase";
 import { useAppTheme } from "@/src/theme/ThemeProvider";
 import { SectionIcon } from "@/src/components/SectionIcon";
 
@@ -40,7 +40,7 @@ export default function DivisionScreen() {
       setLoading(true);
       setError("");
       if (!supabase) {
-        setError(supabaseConfigurationMessage[!process.env.EXPO_PUBLIC_SUPABASE_URL ? "missing_url" : process.env.EXPO_PUBLIC_SUPABASE_URL.replace(/\\/$/, "") !== "https://mrvckkzwhuoylxycaim.supabase.co" ? "wrong_project" : "missing_publishable_key"]);
+        setError(supabaseConfigurationMessage[supabaseConfigurationStatus]);
         setLoading(false);
         return;
       }
