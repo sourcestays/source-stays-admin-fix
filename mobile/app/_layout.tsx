@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { Stack } from "expo-router";
+import { Tabs } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemeProvider, useAppTheme } from "@/src/theme/ThemeProvider";
@@ -51,7 +52,6 @@ function AppNavigator() {
       })
       .catch(() => {
         if (!active) return;
-        // If local storage is unavailable, allow the app to open rather than block customers.
         setShowOnboarding(false);
         setReady(true);
       });
@@ -77,10 +77,41 @@ function AppNavigator() {
 
   if (showOnboarding) return <FirstLaunchExperience onComplete={completeOnboarding} />;
 
-  return <>
-    <StatusBar style={isDark ? "light" : "dark"} />
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} />
-  </>;
+  const icon = (name: string) => ({ color, focused }: { color: string; focused: boolean }) => (
+    <MaterialCommunityIcons name={name as never} size={focused ? 23 : 21} color={color} />
+  );
+
+  return (
+    <>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Tabs screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.success,
+        tabBarInactiveTintColor: colors.muted,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          height: 62,
+          paddingTop: 7,
+          paddingBottom: 7,
+          elevation: 8,
+        },
+        tabBarLabelStyle: { fontSize: 9, fontWeight: "700" },
+        tabBarHideOnKeyboard: true,
+      }}>
+        <Tabs.Screen name="index" options={{ title: "Home", tabBarIcon: icon("home-variant") }} />
+        <Tabs.Screen name="explore" options={{ title: "Explore", tabBarIcon: icon("compass-outline") }} />
+        <Tabs.Screen name="rewards" options={{ title: "Rewards", tabBarIcon: icon("gift-outline") }} />
+        <Tabs.Screen name="account" options={{ title: "My stays", tabBarIcon: icon("account-circle-outline") }} />
+        <Tabs.Screen name="division/[type]" options={{ href: null, tabBarStyle: { display: "none" } }} />
+        <Tabs.Screen name="property/[id]" options={{ href: null, tabBarStyle: { display: "none" } }} />
+        <Tabs.Screen name="about" options={{ href: null }} />
+        <Tabs.Screen name="recb" options={{ href: null }} />
+        <Tabs.Screen name="reviews" options={{ href: null }} />
+        <Tabs.Screen name="verify" options={{ href: null }} />
+      </Tabs>
+    </>
+  );
 }
 
 export default function RootLayout() {
