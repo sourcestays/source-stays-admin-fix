@@ -295,3 +295,39 @@ Last updated: 2026-11-27
 - User supplied production booking RLS policy `Public can submit bookings` with anon/authenticated INSERT and `WITH CHECK (true)`, plus anon INSERT table grant. The secure authenticated RPC is available to signed-in users, but the broad anonymous insert path remains a separate item to inspect alongside constraints and trusted website flows. Do not remove or alter it without tracing production website dependencies.
 - Production `bookings` trigger does not validate submitted amount, property, dates, guest count or payment status; validation in the RPC covers several fields, but the RPC accepts client-provided amount. Do not treat the trigger as a full booking validation boundary.
 - Next: trace the website's existing shortlet booking/payment path and payment initialization/webhook amount checks; inspect the anonymous booking insert use case and verification-token lookup caller. Then implement app integration against verified existing contracts. Keep production read-only during audit.
+
+
+
+## Shortlet website-to-Paystack flow traced — 2026-11-28
+
+- Inspected current branch files `booking.html`, `app.js`, `admin.html`, mobile `mobile/app/property/[id].tsx`, `mobile/app/account.tsx`, and shortlet payment Edge Functions.
+- Website customer booking flow (`booking.html`):
+  - Browser fetches the published property and calculates the estimate client-side from price × nights, extra guest fees, cleaning/service/other fees and caution fee; event bookings use event price × nights plus event caution fee.
+  - Browser sends `amount_due` and other booking fields to `SourceStays.submitBooking`, which calls `create_customer_booking(p_payload)`.
+  - Browser checks availability before submit and again immediately before RPC; the RPC performs its own authoritative availability check.
+  - Customer must be signed in and booking email must match account email.
+  - Website displays booking request received and tells the customer Source Stays will confirm availability/final amount and send payment instructions. It does not collect payment at booking submission.
+- Production RPC definition supplied by user still accepts `amount_due` from payload and only checks it is positive. Therefore the website's browser-calculated amount is not independently recalculated by the deployed production RPC. The client can potentially tamper with the amount. This is a confirmed pricing-integrity gap, not just a theoretical concern.
+- Repository contains a proposed migration `20261126180000_secure_customer_booking_pricing.sql` that replaces the RPC with server-side price calculation from the locked `properties` row (including event/accommodation price, nights, extra guest and one-off fees). This migration's comments say apply manually after testing in non-production; it is source code only and is NOT evidence that the production function has been replaced. Live function definition supplied by user takes precedence and shows it has not yet been applied there.
+- Current mobile booking screen also calculates `amountDue` client-side and passes it to the same RPC. It explicitly tells customer final amount will be confirmed by Source Stays, no payment is taken yet. Thus mobile inherits the same amount-integrity gap until the server-side pricing migration is tested and applied to the correct project.
+- Mobile customer account uses `initialize-shortlet-payment` and `verify-shortlet-payment` Edge Functions. It only renders Pay button when `payment_status != paid` and `payment_request_status = requested`. It opens the returned Paystack authorization URL with Linking and supports a separate verify action.
+- `initialize-shortlet-payment` (tracked in repo):
+  - Requires valid bearer-authenticated Supabase user.
+  - Loads booking using service role but filters by booking ID AND authenticated customer_user_id.
+  - Rejects missing/paid booking and requires `payment_request_status=requested`.
+  - Reads `amount_due` from the booking row, validates positive NGN amount, creates/reuses a pending `shortlet_payment_transactions` row, generates a random reference, and calls Paystack initialize with amount in kobo and booking/customer metadata.
+  - Client cannot set amount in request body. The payment amount is the stored booking amount, so it protects payment initialization from client tampering after booking, but it does not repair a bad amount originally inserted into bookings.
+- `verify-shortlet-payment` (tracked):
+  - Requires authenticated customer and selects payment transaction by booking ID plus customer_user_id.
+  - Verifies the reference with Paystack and compares transaction ID/reference/currency/amount against stored transaction.
+  - Re-reads the customer's booking and checks payment_request_status, currency and amount_due match the transaction before marking transaction and booking paid.
+- `paystack-shortlet-webhook` (tracked):
+  - Validates Paystack HMAC SHA-512 signature against raw request body using constant-time comparison.
+  - Independently verifies transaction with Paystack.
+  - Matches reference/transaction ID/currency/amount against local transaction and booking, checks payment request state, uses webhook event ledger for duplicate delivery handling, then marks transaction and booking paid.
+  - Supabase config sets `verify_jwt=false` for this webhook; the function performs its own Paystack signature validation.
+- Potential deployment/repository mismatch discovered in `admin.html`: admin `requestPayment(id)` invokes Edge Function `initialize-payment` (not found in tracked `supabase/functions` directory), then updates `bookings.payment_request_status='requested'`. The tracked customer initializer `initialize-shortlet-payment` requires that status to already be requested. The live deployed implementation of `initialize-payment` is not in the repo and must be identified before assuming the admin payment request path is consistent. Do not change either flow until the deployed function is confirmed.
+- The tracked `initialize-shortlet-payment` requires request status='requested', whereas admin.html's legacy request flow calls a differently named `initialize-payment` function first and only then sets status. This is a critical workflow/deployment reconciliation item.
+- The repository's tracked shortlet transaction migration creates `shortlet_payment_transactions` and `shortlet_paystack_webhook_events`, locks them to service_role (no anon/authenticated table grants), and enables RLS. This schema is consistent with the tracked Edge Functions, but actual production deployment still needs separate confirmation.
+- No source files or databases were changed as part of this audit section. Production remains untouched.
+- Next: user to check Supabase Dashboard > Edge Functions for deployed `initialize-payment`, `initialize-shortlet-payment`, `verify-shortlet-payment`, and `paystack-shortlet-webhook`, including deployed status/version. Also confirm whether migration `20261126180000_secure_customer_booking_pricing.sql` has been applied to main production (do not apply it until tested in test project and schema compatibility is verified).
