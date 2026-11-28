@@ -61,7 +61,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <View style={s.topbar}>
           <View style={s.brandRow}>
-            <Image source={require("../assets/source-stays-logo.png")} style={s.logo} resizeMode="contain" accessibilityLabel="Source Stays" />
+            <View style={s.logoBadge}><Image source={require("../assets/source-stays-logo.png")} style={s.logo} resizeMode="contain" accessibilityLabel="Source Stays" /></View>
             <View>
               <Text style={[s.eyebrow, { color: colors.muted }]}>WELCOME TO</Text>
               <Text style={[s.brandName, { color: colors.text }]}>Source Stays</Text>
@@ -109,8 +109,8 @@ export default function HomeScreen() {
               href={item.type === "rewards" ? "/rewards" : { pathname: "/division/[type]", params: { type: item.type } }}
               asChild>
               <Pressable style={[s.serviceTile, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={[s.serviceIcon, { backgroundColor: isDark ? "#1D3B2E" : "#E5F5EC" }]}>
-                  <SectionIcon name={item.icon} size={22} color={isDark ? "#8BD4A8" : "#16865B"} background="transparent" />
+                <View style={[s.serviceIcon, { backgroundColor: isDark ? "#1D3B2E" : "#DDECE1" }]}>
+                  <SectionIcon name={item.icon} size={22} color={isDark ? "#8BD4A8" : "#126B46"} background="transparent" />
                 </View>
                 <Text style={[s.serviceTitle, { color: colors.text }]}>{item.title}</Text>
                 <Text style={[s.serviceCaption, { color: colors.muted }]}>{item.caption}</Text>
@@ -188,7 +188,7 @@ const s = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 5, paddingBottom: 24 },
   topbar: { minHeight: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 9 },
-  logo: { width: 46, height: 46 },
+  logoBadge: { width: 48, height: 48, borderRadius: 14, backgroundColor: "#123D2B", alignItems: "center", justifyContent: "center", shadowColor: "#123D2B", shadowOpacity: 0.18, shadowRadius: 7, shadowOffset: { width: 0, height: 3 }, elevation: 3 },\n  logo: { width: 39, height: 39 },
   eyebrow: { fontSize: 8, fontWeight: "800", letterSpacing: 1.4 },
   brandName: { fontSize: 16, fontWeight: "900", marginTop: 2 },
   topActions: { flexDirection: "row", gap: 8 },
@@ -203,16 +203,16 @@ const s = StyleSheet.create({
   sectionTitle: { fontSize: 15, fontWeight: "900", letterSpacing: -0.2 },
   sectionHint: { fontSize: 9, marginTop: 3 },
   serviceGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 9, marginBottom: 20 },
-  serviceTile: { width: "48.7%", minHeight: 112, borderRadius: 16, borderWidth: 1, padding: 12, flexDirection: "column", justifyContent: "center" },
+  serviceTile: { width: "48.7%", minHeight: 116, borderRadius: 17, borderWidth: 1, padding: 12, flexDirection: "column", justifyContent: "center", shadowColor: "#123D2B", shadowOpacity: 0.045, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
   serviceIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 8 },
   serviceTitle: { fontSize: 12, fontWeight: "900" },
   serviceCaption: { fontSize: 9, marginTop: 3 },
-  quickPanel: { borderRadius: 16, borderWidth: 1, paddingVertical: 12, paddingHorizontal: 6, flexDirection: "row", justifyContent: "space-around", marginBottom: 21 },
+  quickPanel: { borderRadius: 17, borderWidth: 1, paddingVertical: 13, paddingHorizontal: 6, flexDirection: "row", justifyContent: "space-around", marginBottom: 21, shadowColor: "#123D2B", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
   quickItem: { alignItems: "center", flex: 1, gap: 5 },
   quickIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   quickLabel: { fontSize: 9, fontWeight: "700" },
   seeAll: { fontSize: 10, fontWeight: "900" },
-  featureCard: { borderRadius: 17, borderWidth: 1, overflow: "hidden" },
+  featureCard: { borderRadius: 17, borderWidth: 1, overflow: "hidden", shadowColor: "#123D2B", shadowOpacity: 0.07, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
   featureImage: { height: 150, justifyContent: "flex-start", padding: 11 },
   featureImageStyle: { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
   featurePill: { alignSelf: "flex-start", borderRadius: 20, backgroundColor: "rgba(9,26,20,0.78)", paddingHorizontal: 10, paddingVertical: 6 },
