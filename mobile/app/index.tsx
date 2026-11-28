@@ -6,13 +6,23 @@ import { supabase } from "@/src/lib/supabase";
 import { useAppTheme } from "@/src/theme/ThemeProvider";
 import { SectionIcon } from "@/src/components/SectionIcon";
 
-type FeaturedStay = { id: number; title: string; public_title: string | null; image_url: string | null; public_location: string | null; location: string | null; price: number | null; price_period: string | null; hide_partner_identity: boolean | null };
+type FeaturedStay = {
+  id: number;
+  title: string;
+  public_title: string | null;
+  image_url: string | null;
+  public_location: string | null;
+  location: string | null;
+  price: number | null;
+  price_period: string | null;
+  hide_partner_identity: boolean | null;
+};
 
-const categories = [
-  { title: "Shortlets", subtitle: "Find your stay", category: "shortlet", icon: "shortlets" },
-  { title: "Hotels", subtitle: "Rooms & comfort", category: "hotel", icon: "hotels" },
-  { title: "Real Estate", subtitle: "Buy or rent", category: "realestate", icon: "realestate" },
-  { title: "Rewards", subtitle: "Your stay benefits", category: "rewards", icon: "rewards" },
+const primaryServices = [
+  { title: "Shortlets", caption: "Apartments & villas", type: "shortlet", icon: "shortlets" },
+  { title: "Hotels", caption: "Rooms & getaways", type: "hotel", icon: "hotels" },
+  { title: "Real estate", caption: "Buy, rent or invest", type: "realestate", icon: "realestate" },
+  { title: "Rewards", caption: "Earn stay benefits", type: "rewards", icon: "rewards" },
 ];
 
 export default function HomeScreen() {
@@ -38,85 +48,136 @@ export default function HomeScreen() {
     return () => { active = false; };
   }, []);
 
-  const featuredName = featured?.hide_partner_identity ? featured.public_title || "A beautiful place to stay" : featured?.title || "Discover your next stay";
+  const featuredName = featured?.hide_partner_identity
+    ? featured.public_title || "A beautiful place to stay"
+    : featured?.title || "Find your next favourite stay";
   const featuredPlace = featured?.hide_partner_identity ? featured.public_location : featured?.location;
-  const featuredPrice = Number(featured?.price) > 0 ? "₦" + Number(featured?.price).toLocaleString("en-NG") + " / " + (featured?.price_period || "night") : "Explore available stays";
+  const featuredPrice = Number(featured?.price) > 0
+    ? "₦" + Number(featured?.price).toLocaleString("en-NG") + " / " + (featured?.price_period || "night")
+    : "Explore handpicked stays";
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
         <View style={s.topbar}>
-          <Image source={require("../assets/source-stays-logo.png")} style={s.logo} resizeMode="contain" accessibilityLabel="Source Stays" />
+          <View style={s.brandRow}>
+            <Image source={require("../assets/source-stays-logo.png")} style={s.logo} resizeMode="contain" accessibilityLabel="Source Stays" />
+            <View>
+              <Text style={[s.eyebrow, { color: colors.muted }]}>WELCOME TO</Text>
+              <Text style={[s.brandName, { color: colors.text }]}>Source Stays</Text>
+            </View>
+          </View>
           <View style={s.topActions}>
-            <Pressable onPress={() => setMode(mode === "dark" ? "light" : "dark")} style={[s.themeButton, { backgroundColor: colors.surface, borderColor: colors.border }]} accessibilityRole="button" accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}>
-              <SectionIcon name={isDark ? "sun" : "moon"} size={18} color={colors.gold} background="transparent" />
+            <Pressable onPress={() => setMode(mode === "dark" ? "light" : "dark")}
+              style={[s.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              accessibilityRole="button" accessibilityLabel={isDark ? "Switch to light mode" : "Switch to dark mode"}>
+              <SectionIcon name={isDark ? "sun" : "moon"} size={17} color={colors.gold} background="transparent" />
             </Pressable>
             <Link href="/account" asChild>
-            <Pressable style={[s.profileButton, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <SectionIcon name="account" size={19} color={colors.gold} background="transparent" />
-            </Pressable>
+              <Pressable style={[s.iconButton, { backgroundColor: colors.surface, borderColor: colors.border }]} accessibilityLabel="My account">
+                <SectionIcon name="account" size={18} color={colors.gold} background="transparent" />
+              </Pressable>
             </Link>
           </View>
         </View>
 
-        <Text style={[s.greeting, { color: colors.muted }]}>LAGOS, NIGERIA</Text>
-        <Text style={[s.heading, { color: colors.text }]}>Where to next?</Text>
-        <Text style={[s.subheading, { color: colors.muted }]}>Find a stay you'll love, or your next property.</Text>
+        <View style={s.intro}>
+          <Text style={[s.heading, { color: colors.text }]}>Where would you like to go?</Text>
+          <Text style={[s.subheading, { color: colors.muted }]}>Find a stay, book a room or discover your next property.</Text>
+        </View>
 
         <View style={[s.search, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <SectionIcon name="search" size={18} color={colors.gold} background="transparent" />
-          <TextInput value={searchTerm} onChangeText={setSearchTerm} placeholder="Search location or property"
-            placeholderTextColor={colors.muted} returnKeyType="search" style={[s.searchInput, { color: colors.text }]} />
+          <SectionIcon name="search" size={18} color={colors.muted} background="transparent" />
+          <TextInput value={searchTerm} onChangeText={setSearchTerm}
+            placeholder="Search area, property or destination"
+            placeholderTextColor={colors.muted} returnKeyType="search"
+            style={[s.searchInput, { color: colors.text }]} />
           <Link href={{ pathname: "/division/[type]", params: { type: "shortlet", q: searchTerm.trim() } }} asChild>
-            <Pressable style={[s.searchGo, { backgroundColor: colors.primary }]}><Text style={{ color: colors.primaryText, fontSize: 11, fontWeight: "900" }}>Go</Text></Pressable>
+            <Pressable style={[s.searchGo, { backgroundColor: colors.primary }]}>
+              <Text style={{ color: colors.primaryText, fontSize: 12, fontWeight: "800" }}>Search</Text>
+            </Pressable>
           </Link>
         </View>
 
-        <View style={s.sectionRow}>
-          <Text style={[s.sectionTitle, { color: colors.text }]}>Explore</Text>
+        <View style={s.sectionHeading}>
+          <Text style={[s.sectionTitle, { color: colors.text }]}>Explore services</Text>
+          <Text style={[s.sectionHint, { color: colors.muted }]}>Everything in one place</Text>
         </View>
-        <View style={s.categoryGrid}>
-          {categories.map(item => (
-            <Link key={item.category} href={item.category === "rewards" ? "/rewards" : { pathname: "/division/[type]", params: { type: item.category } }} asChild>
-              <Pressable style={[s.categoryCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={[s.categoryIcon, { backgroundColor: isDark ? "#294638" : "#F5F0E4" }]}>
-                  <SectionIcon name={item.icon} size={22} color={colors.gold} background="transparent" />
+        <View style={s.serviceGrid}>
+          {primaryServices.map(item => (
+            <Link key={item.type}
+              href={item.type === "rewards" ? "/rewards" : { pathname: "/division/[type]", params: { type: item.type } }}
+              asChild>
+              <Pressable style={[s.serviceTile, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={[s.serviceIcon, { backgroundColor: isDark ? "#1D3B2E" : "#E5F5EC" }]}>
+                  <SectionIcon name={item.icon} size={22} color={isDark ? "#8BD4A8" : "#16865B"} background="transparent" />
                 </View>
-                <Text style={[s.categoryTitle, { color: colors.text }]}>{item.title}</Text>
-                <Text style={[s.categorySubtitle, { color: colors.muted }]}>{item.subtitle}</Text>
-                <View style={s.arrow}><SectionIcon name="arrow" size={12} color={colors.gold} background="transparent" /></View>
+                <Text style={[s.serviceTitle, { color: colors.text }]}>{item.title}</Text>
+                <Text style={[s.serviceCaption, { color: colors.muted }]}>{item.caption}</Text>
               </Pressable>
             </Link>
           ))}
         </View>
 
-        <View style={s.sectionRow}>
-          <Text style={[s.sectionTitle, { color: colors.text }]}>Featured stay</Text>
-          <Link href={{ pathname: "/division/[type]", params: { type: "shortlet" } }}><Text style={[s.seeAll, { color: colors.gold }]}>See all</Text></Link>
+        <View style={s.sectionHeading}>
+          <Text style={[s.sectionTitle, { color: colors.text }]}>Quick access</Text>
+        </View>
+        <View style={[s.quickPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Link href="/account" asChild>
+            <Pressable style={s.quickItem}>
+              <View style={[s.quickIcon, { backgroundColor: colors.surfaceAlt }]}>
+                <SectionIcon name="account" size={19} color={colors.gold} background="transparent" />
+              </View>
+              <Text style={[s.quickLabel, { color: colors.text }]}>My account</Text>
+            </Pressable>
+          </Link>
+          <Link href="/recb" asChild>
+            <Pressable style={s.quickItem}>
+              <View style={[s.quickIcon, { backgroundColor: colors.surfaceAlt }]}>
+                <SectionIcon name="gift" size={19} color={colors.gold} background="transparent" />
+              </View>
+              <Text style={[s.quickLabel, { color: colors.text }]}>RECB</Text>
+            </Pressable>
+          </Link>
+          <Link href="/reviews" asChild>
+            <Pressable style={s.quickItem}>
+              <View style={[s.quickIcon, { backgroundColor: colors.surfaceAlt }]}>
+                <SectionIcon name="shield" size={19} color={colors.gold} background="transparent" />
+              </View>
+              <Text style={[s.quickLabel, { color: colors.text }]}>Guest reviews</Text>
+            </Pressable>
+          </Link>
+        </View>
+
+        <View style={s.sectionHeading}>
+          <View>
+            <Text style={[s.sectionTitle, { color: colors.text }]}>Featured stay</Text>
+            <Text style={[s.sectionHint, { color: colors.muted }]}>A little inspiration for your next trip</Text>
+          </View>
+          <Link href={{ pathname: "/division/[type]", params: { type: "shortlet" } }}>
+            <Text style={[s.seeAll, { color: colors.gold }]}>See all</Text>
+          </Link>
         </View>
         <Link href={featured ? { pathname: "/property/[id]", params: { id: String(featured.id) } } : { pathname: "/division/[type]", params: { type: "shortlet" } }} asChild>
-          <Pressable style={[s.featuredCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Pressable style={[s.featureCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             {featured?.image_url ? (
-              <ImageBackground source={{ uri: featured.image_url }} style={s.featuredImage} imageStyle={s.featuredImageStyle}>
-                <View style={s.imagePill}><Text style={s.imagePillText}>SOURCE STAYS PICK</Text></View>
+              <ImageBackground source={{ uri: featured.image_url }} style={s.featureImage} imageStyle={s.featureImageStyle}>
+                <View style={s.featurePill}><Text style={s.featurePillText}>SOURCE STAYS PICK</Text></View>
               </ImageBackground>
             ) : (
-              <View style={[s.featuredImage, s.featuredFallback, { backgroundColor: colors.hero }]}>
-                <SectionIcon name="bed" size={35} color="#D6B66E" background="rgba(255,255,255,0.08)" />
+              <View style={[s.featureImage, s.featureFallback, { backgroundColor: colors.hero }]}>
+                <SectionIcon name="bed" size={34} color="#D6B66E" background="rgba(255,255,255,0.08)" />
                 <Text style={s.fallbackTitle}>Thoughtful stays. Better experiences.</Text>
               </View>
             )}
-            <View style={s.featuredBody}>
-              <Text style={[s.featuredTitle, { color: colors.text }]} numberOfLines={1}>{featuredName}</Text>
-              <Text style={[s.featuredLocation, { color: colors.muted }]} numberOfLines={1}>{featuredPlace || "Explore our handpicked stays"}</Text>
-              <Text style={[s.featuredPrice, { color: colors.gold }]}>{featuredPrice}</Text>
+            <View style={s.featureBody}>
+              <Text style={[s.featureTitle, { color: colors.text }]} numberOfLines={1}>{featuredName}</Text>
+              <Text style={[s.featureLocation, { color: colors.muted }]} numberOfLines={1}>{featuredPlace || "Explore our handpicked stays"}</Text>
+              <Text style={[s.featurePrice, { color: colors.gold }]}>{featuredPrice}</Text>
             </View>
           </Pressable>
         </Link>
-
-        <View style={[s.bottomNote, { borderTopColor: colors.border }]}>
-          <Text style={[s.bottomNoteText, { color: colors.muted }]}>STAY  ·  DISCOVER  ·  OWN</Text>
-        </View>
+        <View style={{ height: 12 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -124,38 +185,42 @@ export default function HomeScreen() {
 
 const s = StyleSheet.create({
   safe: { flex: 1 },
-  content: { paddingHorizontal: 19, paddingTop: 7, paddingBottom: 28 },
-  topbar: { height: 54, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
-  logo: { width: 88, height: 52 },
-  topActions: { flexDirection: "row", alignItems: "center", gap: 9 },
-  themeButton: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  profileButton: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  greeting: { fontSize: 9, fontWeight: "900", letterSpacing: 1.8, marginBottom: 7 },
-  heading: { fontSize: 28, lineHeight: 34, fontWeight: "900", letterSpacing: -0.8 },
-  subheading: { fontSize: 12, lineHeight: 18, marginTop: 5, marginBottom: 17 },
-  search: { minHeight: 54, borderRadius: 15, borderWidth: 1, flexDirection: "row", alignItems: "center", paddingHorizontal: 10, marginBottom: 25 },
-  searchInput: { flex: 1, fontSize: 11, paddingHorizontal: 8, paddingVertical: 12 },
-  searchGo: { borderRadius: 11, paddingHorizontal: 15, paddingVertical: 10 },
-  sectionRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  sectionTitle: { fontSize: 17, fontWeight: "900", letterSpacing: -0.3 },
+  content: { paddingHorizontal: 16, paddingTop: 5, paddingBottom: 24 },
+  topbar: { minHeight: 58, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 9 },
+  logo: { width: 46, height: 46 },
+  eyebrow: { fontSize: 8, fontWeight: "800", letterSpacing: 1.4 },
+  brandName: { fontSize: 16, fontWeight: "900", marginTop: 2 },
+  topActions: { flexDirection: "row", gap: 8 },
+  iconButton: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  intro: { marginBottom: 15 },
+  heading: { fontSize: 23, lineHeight: 29, fontWeight: "900", letterSpacing: -0.6 },
+  subheading: { fontSize: 11, lineHeight: 17, marginTop: 4 },
+  search: { minHeight: 52, borderRadius: 15, borderWidth: 1, flexDirection: "row", alignItems: "center", paddingHorizontal: 9, marginBottom: 23 },
+  searchInput: { flex: 1, fontSize: 11, paddingHorizontal: 7, paddingVertical: 11 },
+  searchGo: { borderRadius: 11, paddingHorizontal: 13, paddingVertical: 9 },
+  sectionHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 11, marginTop: 2 },
+  sectionTitle: { fontSize: 15, fontWeight: "900", letterSpacing: -0.2 },
+  sectionHint: { fontSize: 9, marginTop: 3 },
+  serviceGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 9, marginBottom: 20 },
+  serviceTile: { width: "48.7%", minHeight: 112, borderRadius: 16, borderWidth: 1, padding: 12, flexDirection: "column", justifyContent: "center" },
+  serviceIcon: { width: 42, height: 42, borderRadius: 14, alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  serviceTitle: { fontSize: 12, fontWeight: "900" },
+  serviceCaption: { fontSize: 9, marginTop: 3 },
+  quickPanel: { borderRadius: 16, borderWidth: 1, paddingVertical: 12, paddingHorizontal: 6, flexDirection: "row", justifyContent: "space-around", marginBottom: 21 },
+  quickItem: { alignItems: "center", flex: 1, gap: 5 },
+  quickIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  quickLabel: { fontSize: 9, fontWeight: "700" },
   seeAll: { fontSize: 10, fontWeight: "900" },
-  categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 26 },
-  categoryCard: { width: "48.3%", minHeight: 120, borderRadius: 17, borderWidth: 1, padding: 13, position: "relative" },
-  categoryIcon: { width: 42, height: 42, borderRadius: 13, alignItems: "center", justifyContent: "center", marginBottom: 9 },
-  categoryTitle: { fontSize: 13, fontWeight: "900" },
-  categorySubtitle: { fontSize: 9, marginTop: 3 },
-  arrow: { position: "absolute", right: 9, top: 12 },
-  featuredCard: { borderRadius: 19, borderWidth: 1, overflow: "hidden" },
-  featuredImage: { height: 166, justifyContent: "flex-start", padding: 12 },
-  featuredImageStyle: { borderTopLeftRadius: 18, borderTopRightRadius: 18 },
-  imagePill: { alignSelf: "flex-start", borderRadius: 20, backgroundColor: "rgba(9,26,20,0.78)", paddingHorizontal: 10, paddingVertical: 6 },
-  imagePillText: { color: "#E2C47D", fontSize: 8, fontWeight: "900", letterSpacing: 1 },
-  featuredFallback: { alignItems: "center", justifyContent: "center", gap: 9 },
-  fallbackTitle: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
-  featuredBody: { padding: 14 },
-  featuredTitle: { fontSize: 14, fontWeight: "900" },
-  featuredLocation: { fontSize: 10, marginTop: 5 },
-  featuredPrice: { fontSize: 11, fontWeight: "900", marginTop: 10 },
-  bottomNote: { borderTopWidth: 1, marginTop: 22, paddingTop: 16 },
-  bottomNoteText: { textAlign: "center", fontSize: 8, letterSpacing: 2, fontWeight: "800" },
+  featureCard: { borderRadius: 17, borderWidth: 1, overflow: "hidden" },
+  featureImage: { height: 150, justifyContent: "flex-start", padding: 11 },
+  featureImageStyle: { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
+  featurePill: { alignSelf: "flex-start", borderRadius: 20, backgroundColor: "rgba(9,26,20,0.78)", paddingHorizontal: 10, paddingVertical: 6 },
+  featurePillText: { color: "#E2C47D", fontSize: 8, fontWeight: "900", letterSpacing: 1 },
+  featureFallback: { alignItems: "center", justifyContent: "center", gap: 8 },
+  fallbackTitle: { color: "#FFFFFF", fontSize: 13, fontWeight: "800" },
+  featureBody: { padding: 12 },
+  featureTitle: { fontSize: 13, fontWeight: "900" },
+  featureLocation: { fontSize: 10, marginTop: 4 },
+  featurePrice: { fontSize: 11, fontWeight: "900", marginTop: 8 },
 });
