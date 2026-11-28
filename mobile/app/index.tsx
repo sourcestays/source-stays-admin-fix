@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link } from "expo-router";
-import { isSupabaseConfigured, supabase } from "@/src/lib/supabase";
+
 import { useAppTheme, ThemeMode } from "@/src/theme/ThemeProvider";
 import { SectionIcon } from "@/src/components/SectionIcon";
 
