@@ -129,6 +129,13 @@ export default function PropertyScreen() {
       }
       setItem(data as Property);
       const [photoResult, roomResult, villaResult, relatedResult] = await Promise.all([
+        supabase.from("property_images").select("image_url").eq("property_id", Number(id)).order("id"),
+        String(data.category).toLowerCase() === "hotel"
+          ? supabase.from("hotel_room_categories_public").select("id,room_name,description,customer_rate,max_guests,photo_urls").eq("property_id", Number(id)).order("sort_order")
+          : Promise.resolve({ data: [], error: null }),
+        String(data.category).toLowerCase() === "shortlet"
+          ? supabase.from("villa_packages_public").select("id,property_id,package_name,package_type,boat_included,description,boat_description,customer_rate,max_guests,sort_order").eq("property_id", Number(id)).order("sort_order", { ascending: true })
+          : Promise.resolve({ data: [], error: null }),
         supabase.from("properties")
           .select("id,title,public_title,category,image_url,location,public_location,price,price_period,hide_partner_identity")
           .eq("published", true)
@@ -137,13 +144,6 @@ export default function PropertyScreen() {
           .order("featured", { ascending: false })
           .order("id", { ascending: false })
           .limit(8),
-        supabase.from("property_images").select("image_url").eq("property_id", Number(id)).order("id"),
-        String(data.category).toLowerCase() === "hotel"
-          ? supabase.from("hotel_room_categories_public").select("id,room_name,description,customer_rate,max_guests,photo_urls").eq("property_id", Number(id)).order("sort_order")
-          : Promise.resolve({ data: [], error: null }),
-        String(data.category).toLowerCase() === "shortlet"
-          ? supabase.from("villa_packages_public").select("id,property_id,package_name,package_type,boat_included,description,boat_description,customer_rate,max_guests,sort_order").eq("property_id", Number(id)).order("sort_order", { ascending: true })
-          : Promise.resolve({ data: [], error: null }),
       ]);
       if (!active) return;
       setImages([data.image_url, ...(photoResult.data || []).map((x: any) => x.image_url)].filter(Boolean) as string[]);
