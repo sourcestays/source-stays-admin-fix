@@ -10,6 +10,7 @@ type FeaturedStay = {
   id: number;
   title: string;
   public_title: string | null;
+  category: string;
   image_url: string | null;
   public_location: string | null;
   location: string | null;
@@ -17,6 +18,13 @@ type FeaturedStay = {
   price_period: string | null;
   hide_partner_identity: boolean | null;
 };
+
+const featuredGroups = [
+  { key: "villa", title: "Villas", caption: "Private escapes", categories: ["villa"], fallback: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=900&q=85" },
+  { key: "shortlet", title: "Shortlets", caption: "Feel at home", categories: ["shortlet"], fallback: "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=900&q=85" },
+  { key: "hotel", title: "Hotels", caption: "Rest in comfort", categories: ["hotel"], fallback: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=900&q=85" },
+  { key: "realestate", title: "Real estate", caption: "Find your next property", categories: ["sale", "land", "rent"], fallback: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=900&q=85" },
+];
 
 const primaryServices = [
   { title: "Shortlets", caption: "Apartments & villas", type: "shortlet", icon: "shortlets" },
@@ -28,33 +36,39 @@ const primaryServices = [
 export default function HomeScreen() {
   const { isDark, colors, mode, setMode } = useAppTheme();
   const [searchTerm, setSearchTerm] = useState("");
-  const [featured, setFeatured] = useState<FeaturedStay | null>(null);
+  const [featured, setFeatured] = useState<FeaturedStay[]>([]);
 
   useEffect(() => {
     let active = true;
     async function loadFeatured() {
       if (!supabase) return;
-      const { data } = await supabase.from("properties")
-        .select("id,title,public_title,image_url,public_location,location,price,price_period,hide_partner_identity")
+      const { data, error } = await supabase.from("properties")
+        .select("id,title,public_title,category,image_url,public_location,location,price,price_period,hide_partner_identity")
         .eq("published", true)
-        .eq("featured", true)
-        .in("category", ["shortlet", "hotel"])
+        .in("category", ["villa", "shortlet", "hotel", "sale", "land", "rent"])
+        .order("featured", { ascending: false })
         .order("id", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (active && data) setFeatured(data as FeaturedStay);
+        .limit(60);
+      if (error) console.warn("[Source Stays] Featured properties could not be loaded:", error.message);
+      if (active && data) setFeatured(data as FeaturedStay[]);
     }
     loadFeatured();
     return () => { active = false; };
   }, []);
 
-  const featuredName = featured?.hide_partner_identity
-    ? featured.public_title || "A beautiful place to stay"
-    : featured?.title || "Find your next favourite stay";
-  const featuredPlace = featured?.hide_partner_identity ? featured.public_location : featured?.location;
-  const featuredPrice = Number(featured?.price) > 0
-    ? "₦" + Number(featured?.price).toLocaleString("en-NG") + " / " + (featured?.price_period || "night")
-    : "Explore handpicked stays";
+  const getFeaturedProperty = (group: typeof featuredGroups[number]) =>
+    featured.find(item => group.categories.includes(item.category) && !!item.image_url)
+    || featured.find(item => group.categories.includes(item.category))
+    || null;
+
+  const displayProperty = (item: FeaturedStay | null, group: typeof featuredGroups[number]) => ({
+    name: item?.hide_partner_identity ? item.public_title || group.title : item?.title || group.title,
+    place: item?.hide_partner_identity ? item.public_location : item?.location,
+    price: Number(item?.price) > 0
+      ? "₦" + Number(item?.price).toLocaleString("en-NG") + " / " + (item?.price_period || "night")
+      : group.caption,
+    image: item?.image_url || group.fallback,
+  });
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: colors.background }]}>
@@ -151,32 +165,39 @@ export default function HomeScreen() {
 
         <View style={s.sectionHeading}>
           <View>
-            <Text style={[s.sectionTitle, { color: colors.text }]}>Featured stay</Text>
-            <Text style={[s.sectionHint, { color: colors.muted }]}>A little inspiration for your next trip</Text>
+            <Text style={[s.sectionTitle, { color: colors.text }]}>Featured stays</Text>
+            <Text style={[s.sectionHint, { color: colors.muted }]}>A little inspiration from every corner of Source Stays</Text>
           </View>
           <Link href={{ pathname: "/division/[type]", params: { type: "shortlet" } }}>
-            <Text style={[s.seeAll, { color: colors.gold }]}>See all</Text>
+            <Text style={[s.seeAll, { color: colors.gold }]}>Explore</Text>
           </Link>
         </View>
-        <Link href={featured ? { pathname: "/property/[id]", params: { id: String(featured.id) } } : { pathname: "/division/[type]", params: { type: "shortlet" } }} asChild>
-          <Pressable style={[s.featureCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            {featured?.image_url ? (
-              <ImageBackground source={{ uri: featured.image_url }} style={s.featureImage} imageStyle={s.featureImageStyle}>
-                <View style={s.featurePill}><Text style={s.featurePillText}>SOURCE STAYS PICK</Text></View>
-              </ImageBackground>
-            ) : (
-              <View style={[s.featureImage, s.featureFallback, { backgroundColor: colors.hero }]}>
-                <SectionIcon name="bed" size={34} color="#D6B66E" background="rgba(255,255,255,0.08)" />
-                <Text style={s.fallbackTitle}>Thoughtful stays. Better experiences.</Text>
-              </View>
-            )}
-            <View style={s.featureBody}>
-              <Text style={[s.featureTitle, { color: colors.text }]} numberOfLines={1}>{featuredName}</Text>
-              <Text style={[s.featureLocation, { color: colors.muted }]} numberOfLines={1}>{featuredPlace || "Explore our handpicked stays"}</Text>
-              <Text style={[s.featurePrice, { color: colors.gold }]}>{featuredPrice}</Text>
-            </View>
-          </Pressable>
-        </Link>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.featureList}>
+          {featuredGroups.map(group => {
+            const item = getFeaturedProperty(group);
+            const card = displayProperty(item, group);
+            const href = group.key === "realestate"
+              ? { pathname: "/division/[type]" as const, params: { type: "realestate" } }
+              : item
+                ? { pathname: "/property/[id]" as const, params: { id: String(item.id) } }
+                : { pathname: "/division/[type]" as const, params: { type: group.key } };
+            return (
+              <Link key={group.key} href={href} asChild>
+                <Pressable style={[s.featureCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <ImageBackground source={{ uri: card.image }} style={s.featureImage} imageStyle={s.featureImageStyle}>
+                    <View style={s.featurePill}><Text style={s.featurePillText}>{group.title.toUpperCase()}</Text></View>
+                    <View style={s.featureShade} />
+                    <View style={s.featureOverlay}>
+                      <Text style={s.featureTitle} numberOfLines={1}>{card.name}</Text>
+                      <Text style={s.featureLocation} numberOfLines={1}>{card.place || group.caption}</Text>
+                      <Text style={s.featurePrice}>{card.price}</Text>
+                    </View>
+                  </ImageBackground>
+                </Pressable>
+              </Link>
+            );
+          })}
+        </ScrollView>
         <View style={{ height: 12 }} />
       </ScrollView>
     </SafeAreaView>
@@ -213,15 +234,15 @@ const s = StyleSheet.create({
   quickIcon: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   quickLabel: { fontSize: 9, fontWeight: "700" },
   seeAll: { fontSize: 10, fontWeight: "900" },
-  featureCard: { borderRadius: 17, borderWidth: 1, overflow: "hidden", shadowColor: "#123D2B", shadowOpacity: 0.07, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 2 },
-  featureImage: { height: 150, justifyContent: "flex-start", padding: 11 },
-  featureImageStyle: { borderTopLeftRadius: 16, borderTopRightRadius: 16 },
-  featurePill: { alignSelf: "flex-start", borderRadius: 20, backgroundColor: "rgba(9,26,20,0.78)", paddingHorizontal: 10, paddingVertical: 6 },
+  featureList: { gap: 12, paddingRight: 4, paddingBottom: 8 },
+  featureCard: { width: 258, borderRadius: 18, borderWidth: 1, overflow: "hidden", shadowColor: "#123D2B", shadowOpacity: 0.09, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 3 },
+  featureImage: { height: 190, justifyContent: "space-between", padding: 11 },
+  featureImageStyle: { borderRadius: 17 },
+  featurePill: { alignSelf: "flex-start", borderRadius: 20, backgroundColor: "rgba(9,26,20,0.78)", paddingHorizontal: 10, paddingVertical: 6, zIndex: 2 },
   featurePillText: { color: "#E2C47D", fontSize: 8, fontWeight: "900", letterSpacing: 1 },
-  featureFallback: { alignItems: "center", justifyContent: "center", gap: 8 },
-  fallbackTitle: { color: "#FFFFFF", fontSize: 13, fontWeight: "800" },
-  featureBody: { padding: 12 },
-  featureTitle: { fontSize: 13, fontWeight: "900" },
-  featureLocation: { fontSize: 10, marginTop: 4 },
-  featurePrice: { fontSize: 11, fontWeight: "900", marginTop: 8 },
+  featureShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.30)" },
+  featureOverlay: { zIndex: 2, marginTop: "auto" },
+  featureTitle: { color: "#FFFFFF", fontSize: 14, fontWeight: "900" },
+  featureLocation: { color: "rgba(255,255,255,0.88)", fontSize: 10, marginTop: 4 },
+  featurePrice: { color: "#F0D58F", fontSize: 11, fontWeight: "900", marginTop: 7 },
 });
